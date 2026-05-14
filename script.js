@@ -15,7 +15,7 @@
 //    설정 방법은 README 또는 페이지 하단 설명을 참고하세요.
 //    URL이 없으면 로컬 저장만 됩니다 (Google Sheets 저장 안 됨).
 // ──────────────────────────────────────────────────────
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwuFoY-kpv29mkcd44PjUMxgPDig5HB6Q9UPi6XTWUDvUAbQSzaTVuTXmOIpu94TD-tZg/exec"; // 예: "https://script.google.com/macros/s/XXXXX/exec"
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkwCEgouoN5Ym1PCTazoTyvk1l56UpKlAlM9SbDRjYzjaJHKCZY_wGddey5JNNZB_wfg/exec"; // 예: "https://script.google.com/macros/s/XXXXX/exec"
 
 // ──────────────────────────────────────────────────────
 // ② 상태 배지 색상 설정
@@ -321,14 +321,15 @@ async function sendToSheets(customer) {
   }
 
   try {
-    // Google Apps Script는 GET 파라미터 방식도 지원하나
-    // 데이터 양이 많으므로 POST + JSON 사용
-    const res = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      // no-cors로 보내야 Apps Script가 받습니다 (CORS 제한)
+    // GET 파라미터 방식으로 전송 (Apps Script CORS 문제 우회)
+    const params = new URLSearchParams();
+    Object.keys(customer).forEach(key => {
+      params.append(key, customer[key] || '');
+    });
+
+    await fetch(SCRIPT_URL + '?' + params.toString(), {
+      method: 'GET',
       mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(customer),
     });
 
     // no-cors 모드에서는 응답을 읽을 수 없으므로 성공으로 간주
