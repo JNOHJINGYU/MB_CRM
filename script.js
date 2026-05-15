@@ -15,7 +15,7 @@
 //    설정 방법은 README 또는 페이지 하단 설명을 참고하세요.
 //    URL이 없으면 로컬 저장만 됩니다 (Google Sheets 저장 안 됨).
 // ──────────────────────────────────────────────────────
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxkwCEgouoN5Ym1PCTazoTyvk1l56UpKlAlM9SbDRjYzjaJHKCZY_wGddey5JNNZB_wfg/exec"; // 예: "https://script.google.com/macros/s/XXXXX/exec"
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx3k3IoUguDgyyAoefW6ngSFu_HB0W7JNGDtNuYAj6HDA75XK9KHb01xu-eh1sVtFBLdA/exec"; // 예: "https://script.google.com/macros/s/XXXXX/exec"
 
 // ──────────────────────────────────────────────────────
 // ② 상태 배지 색상 설정
