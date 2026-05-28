@@ -5,20 +5,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>노진규 고객관리 시스템 | Mercedes-Benz</title>
   <link rel="stylesheet" href="style.css" />
-  <!-- Google Fonts: Cormorant Garamond (럭셔리 제목용) + Noto Sans KR (본문) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ── 관심차종 2단계 선택 추가 스타일 ── */
+    .model-select-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .model-select-wrap select,
+    .model-select-wrap input {
+      width: 100%;
+    }
+    .model-select-wrap select:disabled {
+      background-color: #f5f5f5;
+      color: #bbb;
+      cursor: not-allowed;
+      border-color: #e8e8e8;
+    }
+    .model-custom-input {
+      grid-column: 1 / -1;
+    }
+    @media (max-width: 520px) {
+      .model-select-wrap {
+        grid-template-columns: 1fr;
+      }
+      .model-custom-input {
+        grid-column: 1;
+      }
+    }
+  </style>
 </head>
 <body>
 
   <!-- ===== 헤더 ===== -->
   <header class="site-header">
     <div class="header-inner">
-      <!-- 벤츠 로고 (SVG 인라인) -->
       <div class="logo-wrap">
         <svg class="mb-star" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" aria-label="Mercedes-Benz star">
           <circle cx="30" cy="30" r="28" fill="none" stroke="currentColor" stroke-width="1.5"/>
-          <!-- 삼각별: 3개의 꼭짓점 -->
           <line x1="30" y1="2"  x2="30" y2="30" stroke="currentColor" stroke-width="1.5"/>
           <line x1="30" y1="30" x2="54.6" y2="44" stroke="currentColor" stroke-width="1.5"/>
           <line x1="30" y1="30" x2="5.4"  y2="44" stroke="currentColor" stroke-width="1.5"/>
@@ -28,7 +54,6 @@
           <span class="site-sub">고객과의 관계는 출고 이후부터 시작됩니다.</span>
         </div>
       </div>
-      <!-- 햄버거/메뉴 -->
       <nav class="top-nav">
         <button class="nav-btn active" data-view="dashboard" onclick="showView('dashboard')">대시보드</button>
         <button class="nav-btn" data-view="register" onclick="showView('register')">고객등록</button>
@@ -45,14 +70,11 @@
     ============================= -->
     <section id="view-dashboard" class="view active">
 
-      <!-- 오늘 연락 예정 고객 -->
       <div class="section-label">오늘 연락 예정</div>
       <div id="today-contacts" class="today-section">
-        <!-- JS로 채워짐 -->
         <p class="empty-msg" id="today-empty">오늘 연락 예정 고객이 없습니다.</p>
       </div>
 
-      <!-- 통계 카드 -->
       <div class="section-label mt">현황 요약</div>
       <div class="stat-grid">
         <div class="stat-card">
@@ -73,7 +95,6 @@
         </div>
       </div>
 
-      <!-- 최근 등록 고객 -->
       <div class="section-label mt">최근 등록 고객</div>
       <div id="recent-list" class="card-grid">
         <p class="empty-msg">등록된 고객이 없습니다.</p>
@@ -110,28 +131,36 @@
           <input type="text" id="f-region" placeholder="서울 강남구" />
         </div>
 
-        <!-- 관심차종 -->
-        <div class="form-group">
-          <label for="f-model">관심차종</label>
-          <!--
-            ✏️ 차종 추가 방법:
-            아래 <select>에 <option value="차종명">차종명</option>을 추가하면 됩니다.
-            예: <option value="GLE">GLE</option>
-          -->
-          <select id="f-model">
-            <option value="">선택하세요</option>
-            <option value="E-Class">E-Class</option>
-            <option value="S-Class">S-Class</option>
-            <option value="C-Class">C-Class</option>
-            <option value="GLC">GLC</option>
-            <option value="GLE">GLE</option>
-            <option value="GLS">GLS</option>
-            <option value="CLA">CLA</option>
-            <option value="A-Class">A-Class</option>
-            <option value="EQS">EQS (전기)</option>
-            <option value="EQE">EQE (전기)</option>
-            <option value="기타">기타</option>
-          </select>
+        <!-- 관심차종 (2단계) -->
+        <div class="form-group full">
+          <label>관심차종</label>
+          <div class="model-select-wrap">
+            <!-- 1단계: 대분류 -->
+            <select id="f-model-category" onchange="onModelCategoryChange()">
+              <option value="">대분류 선택</option>
+              <option value="E-Class">E-Class</option>
+              <option value="S-Class">S-Class</option>
+              <option value="C-Class">C-Class</option>
+              <option value="GLC">GLC</option>
+              <option value="GLE">GLE</option>
+              <option value="GLS">GLS</option>
+              <option value="CLA">CLA</option>
+              <option value="A-Class">A-Class</option>
+              <option value="EQ">EQ (전기)</option>
+              <option value="기타">기타</option>
+            </select>
+            <!-- 2단계: 세부모델 (대분류 선택 전 비활성) -->
+            <select id="f-model-detail" disabled onchange="onModelDetailChange()">
+              <option value="">세부모델 선택</option>
+            </select>
+            <!-- 기타 / 직접입력 시 표시 -->
+            <input
+              type="text"
+              id="f-model-custom"
+              class="model-custom-input hidden"
+              placeholder="차종을 직접 입력하세요"
+            />
+          </div>
         </div>
 
         <!-- 구매예산 -->
@@ -149,10 +178,6 @@
         <!-- 유입경로 -->
         <div class="form-group">
           <label for="f-source">유입경로</label>
-          <!--
-            ✏️ 유입경로 추가 방법:
-            아래 <option>을 원하는 만큼 추가하세요.
-          -->
           <select id="f-source">
             <option value="">선택하세요</option>
             <option value="지인소개">지인소개</option>
@@ -169,12 +194,6 @@
         <!-- 현재상태 -->
         <div class="form-group">
           <label for="f-status">현재상태 <span class="req">*</span></label>
-          <!--
-            ✏️ 상태 추가 방법:
-            아래 <option>을 추가하세요. value값과 표시텍스트를 맞춰주세요.
-            script.js의 STATUS_COLORS 객체에도 색상 코드를 추가해야 배지가 예쁘게 나옵니다.
-            예: STATUS_COLORS['신규상태'] = '#hexcolor';
-          -->
           <select id="f-status" required>
             <option value="">선택하세요</option>
             <option value="신규문의">신규문의</option>
@@ -211,7 +230,6 @@
 
       </form>
 
-      <!-- 저장 성공/실패 알림 -->
       <div id="form-alert" class="form-alert hidden"></div>
 
     </section>
@@ -221,7 +239,6 @@
     ============================= -->
     <section id="view-list" class="view">
 
-      <!-- 검색 및 필터 -->
       <div class="filter-bar">
         <input
           type="search"
@@ -229,11 +246,6 @@
           placeholder="고객명 또는 차종 검색..."
           oninput="filterCustomers()"
         />
-        <!--
-          ✏️ 필터 옵션 추가 방법:
-          아래 <select>에 <option value="상태명">상태명</option>을 추가하세요.
-          value는 f-status의 option value와 동일해야 합니다.
-        -->
         <select id="filter-status" onchange="filterCustomers()">
           <option value="">전체 상태</option>
           <option value="신규문의">신규문의</option>
@@ -247,7 +259,6 @@
         </select>
       </div>
 
-      <!-- 계약유력 퀵 필터 버튼 -->
       <div class="quick-filters">
         <button class="qbtn active" onclick="quickFilter('all', this)">전체</button>
         <button class="qbtn" onclick="quickFilter('계약유력', this)">⭐ 계약유력</button>
@@ -255,7 +266,6 @@
         <button class="qbtn" onclick="quickFilter('출고완료', this)">출고완료</button>
       </div>
 
-      <!-- 고객 카드 목록 -->
       <div id="customer-list" class="card-grid">
         <p class="empty-msg">등록된 고객이 없습니다.</p>
       </div>
