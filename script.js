@@ -14,13 +14,14 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbws7wXKTGHoZd7jlcYFn
 
 // 상태 배지 색상
 const STATUS_COLORS = {
-  '신규문의':  { bg: '#e8f0fe', text: '#2c5ecc' },
-  '상담중':    { bg: '#fff3cd', text: '#856404' },
-  '견적전달':  { bg: '#e2f0fb', text: '#1a6fa0' },
-  '시승예정':  { bg: '#e8f5e9', text: '#2e7d32' },
-  '계약유력':  { bg: '#fff8e1', text: '#b8913a' },
-  '보류':      { bg: '#f3f3f3', text: '#666' },
-  '출고완료':  { bg: '#1a1a1a', text: '#fff' },
+  '신규문의':    { bg: '#e8f0fe', text: '#2c5ecc' },
+  '상담중':      { bg: '#fff3cd', text: '#856404' },
+  '계약유력':    { bg: '#fff8e1', text: '#b8913a' },
+  '보류':        { bg: '#f3f3f3', text: '#666' },
+  '타딜러구매':  { bg: '#e5e7eb', text: '#6b7280' },
+  '타브랜드구매':{ bg: '#d1d5db', text: '#4b5563' },
+  '해약':        { bg: '#fee2e2', text: '#991b1b' },
+  '출고완료':    { bg: '#1a1a1a', text: '#fff' },
 };
 
 let editingId        = null;
