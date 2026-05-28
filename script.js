@@ -10,18 +10,92 @@
 // ① Google Apps Script 웹앱 URL
 //    👉 새 배포 후 받은 URL을 여기에 붙여넣으세요
 // ──────────────────────────────────────────────────────
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbws7wXKTGHoZd7jlcYFnFCA5t2mdKQsg3iOOaga0o7Vq9_7yNH8ZW-52hmS4VEFRLxrBQ/exec"; // 예: "https://script.google.com/macros/s/XXXXX/exec"
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbws7wXKTGHoZd7jlcYFnFCA5t2mdKQsg3iOOaga0o7Vq9_7yNH8ZW-52hmS4VEFRLxrBQ/exec";
 
+// ══════════════════════════════════════════════════════
 // 상태 배지 색상
+// ══════════════════════════════════════════════════════
 const STATUS_COLORS = {
-  '신규문의':    { bg: '#e8f0fe', text: '#2c5ecc' },
-  '상담중':      { bg: '#fff3cd', text: '#856404' },
-  '계약유력':    { bg: '#fff8e1', text: '#b8913a' },
-  '보류':        { bg: '#f3f3f3', text: '#666' },
-  '타딜러구매':  { bg: '#e5e7eb', text: '#6b7280' },
-  '타브랜드구매':{ bg: '#d1d5db', text: '#4b5563' },
-  '해약':        { bg: '#fee2e2', text: '#991b1b' },
-  '출고완료':    { bg: '#1a1a1a', text: '#fff' },
+  '신규문의':     { bg: '#e8f0fe', text: '#2c5ecc' },
+  '상담중':       { bg: '#fff3cd', text: '#856404' },
+  '계약유력':     { bg: '#fff8e1', text: '#b8913a' },
+  '보류':         { bg: '#f3f3f3', text: '#666' },
+  '타딜러구매':   { bg: '#e5e7eb', text: '#6b7280' },
+  '타브랜드구매': { bg: '#d1d5db', text: '#4b5563' },
+  '해약':         { bg: '#fee2e2', text: '#991b1b' },
+  '출고완료':     { bg: '#1a1a1a', text: '#fff' },
+};
+
+// ══════════════════════════════════════════════════════
+// 관심차종 세부모델 목록
+// ✏️ 모델 추가/수정: 아래 배열에 문자열을 추가하면 됩니다.
+// ══════════════════════════════════════════════════════
+const MODEL_DETAILS = {
+  'E-Class': [
+    'E 200 exclusive',
+    'E 200 AMG Line',
+    'E 220 d 4MATIC exclusive',
+    'E 300 4MATIC exclusive',
+    'E 300 4MATIC AMG Line',
+    'E 350 e 4MATIC',
+    'E 450 4MATIC AMG Line',
+    'E 450 4MATIC exclusive',
+  ],
+  'S-Class': [
+    'S 350 d 4MATIC SWB',
+    'S 450 4MATIC SWB',
+    'S 450 4MATIC Long',
+    'S 450 4MATIC Long AMG Line',
+    'S 500 4MATIC Long',
+    'S 580 4MATIC Long',
+    'Mercedes-Maybach S 580 4MATIC',
+  ],
+  'C-Class': [
+    'C 200',
+    'C 200 AMG Line',
+    'C 220 d AMG Line',
+    'C 300 4MATIC AMG Line',
+  ],
+  'GLC': [
+    'GLC 300 4MATIC',
+    'GLC 300 4MATIC AMG Line',
+    'GLC 300 4MATIC Coupé',
+    'GLC 300 4MATIC Coupé AMG Line',
+  ],
+  'GLE': [
+    'GLE 300 d 4MATIC',
+    'GLE 350 4MATIC',
+    'GLE 450 4MATIC',
+    'GLE 450 d 4MATIC',
+    'GLE 53 4MATIC+',
+    'GLE 450 4MATIC Coupé',
+    'GLE 53 4MATIC+ Coupé',
+  ],
+  'GLS': [
+    'GLS 450 4MATIC',
+    'GLS 600 4MATIC Maybach',
+  ],
+  'CLA': [
+    'CLA 200',
+    'CLA 200 AMG Line',
+    'CLA 250 4MATIC AMG Line',
+    'CLA 35 AMG 4MATIC',
+  ],
+  'A-Class': [
+    'A 200',
+    'A 200 AMG Line',
+    'A 35 AMG 4MATIC',
+  ],
+  'EQ': [
+    'EQS 450+',
+    'EQS 450 4MATIC',
+    'EQS 580 4MATIC',
+    'EQE 350+',
+    'EQE 350 4MATIC',
+    'EQA 250',
+    'EQB 300 4MATIC',
+  ],
+  // '기타'는 직접입력 텍스트 필드로 처리
 };
 
 let editingId        = null;
@@ -36,15 +110,14 @@ async function sheetRequest(params) {
   if (!SCRIPT_URL) return null;
   const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
   try {
-    const res  = await fetch(url, { mode: 'no-cors' });
-    return true; // no-cors 모드는 응답을 읽을 수 없으므로 성공 간주
+    await fetch(url, { mode: 'no-cors' });
+    return true;
   } catch (e) {
     console.error('시트 요청 오류:', e);
     return null;
   }
 }
 
-// no-cors 없이 데이터를 읽어야 하는 경우 (getAll)
 async function sheetFetch(params) {
   if (!SCRIPT_URL) return null;
   const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
@@ -82,20 +155,14 @@ async function loadFromSheets() {
     renderDashboard();
     return;
   }
-
-  // 로딩 표시
   showLoadingBanner(true);
-
   const result = await sheetFetch({ action: 'getAll' });
-
   if (result && result.result === 'success' && Array.isArray(result.customers)) {
-    // 구글시트 데이터로 로컬 캐시 덮어쓰기
     saveLocalCustomers(result.customers);
     console.log('구글시트에서 ' + result.customers.length + '명 불러옴');
   } else {
     console.warn('구글시트 불러오기 실패 — 로컬 캐시 사용');
   }
-
   showLoadingBanner(false);
   renderDashboard();
 }
@@ -159,7 +226,7 @@ function renderDashboard() {
       card.innerHTML = `
         <div>
           <div class="today-name">${escHtml(c.name)}</div>
-          <div class="today-model">${escHtml(c.model || '차종 미정')} · ${escHtml(c.status)}</div>
+          <div class="today-model">${escHtml(getModelDisplay(c) || '차종 미정')} · ${escHtml(c.status)}</div>
         </div>
         <button class="today-call" onclick="callCustomer('${escHtml(c.phone)}')">📞 연락</button>
       `;
@@ -193,9 +260,10 @@ function buildCard(c) {
     if (c.nextDate < today) dateClass += ' overdue';
     else if (c.nextDate === today) { dateClass += ' today'; dateLabel = '오늘'; }
   }
+  const modelDisplay = getModelDisplay(c);
   card.innerHTML = `
     <div class="card-name">${escHtml(c.name)}</div>
-    <div class="card-model">${escHtml(c.model || '—')} ${c.budget ? '· ' + escHtml(c.budget) : ''}</div>
+    <div class="card-model">${escHtml(modelDisplay || '—')} ${c.budget ? '· ' + escHtml(c.budget) : ''}</div>
     <div class="card-memo">${escHtml(c.memo || '상담 내용 없음')}</div>
     <div class="card-right">
       <span class="status-badge" style="background:${sc.bg};color:${sc.text}">${escHtml(c.status)}</span>
@@ -203,6 +271,21 @@ function buildCard(c) {
     </div>
   `;
   return card;
+}
+
+// ══════════════════════════════════════════════════════
+// 차종 표시 헬퍼
+// - 신규 데이터: modelCategory + modelDetail 조합
+// - 구버전 데이터: model 필드 그대로 사용 (하위호환)
+// ══════════════════════════════════════════════════════
+
+function getModelDisplay(c) {
+  if (c.modelCategory) {
+    if (c.modelDetail) return `${c.modelCategory} / ${c.modelDetail}`;
+    return c.modelCategory;
+  }
+  // 구버전 데이터 호환
+  return c.model || '';
 }
 
 // ══════════════════════════════════════════════════════
@@ -216,7 +299,7 @@ function renderCustomerList(customers) {
     el.innerHTML = '<p class="empty-msg">조건에 맞는 고객이 없습니다.</p>';
     return;
   }
-  [...customers].reverse().forEach(c => el.appendChild(buildCard(c)));
+  customers.forEach(c => el.appendChild(buildCard(c)));
 }
 
 function filterCustomers() {
@@ -224,11 +307,16 @@ function filterCustomers() {
   const status  = document.getElementById('filter-status').value;
   let customers = getCustomers();
   if (keyword) {
-    customers = customers.filter(c =>
-      c.name.toLowerCase().includes(keyword) ||
-      (c.model || '').toLowerCase().includes(keyword) ||
-      (c.phone || '').includes(keyword)
-    );
+    customers = customers.filter(c => {
+      const modelStr = getModelDisplay(c).toLowerCase();
+      return (
+        c.name.toLowerCase().includes(keyword) ||
+        modelStr.includes(keyword) ||
+        (c.modelCategory || '').toLowerCase().includes(keyword) ||
+        (c.modelDetail   || '').toLowerCase().includes(keyword) ||
+        (c.phone || '').includes(keyword)
+      );
+    });
   }
   if (status) customers = customers.filter(c => c.status === status);
   if (currentQuickFilter !== 'all') customers = customers.filter(c => c.status === currentQuickFilter);
@@ -244,26 +332,146 @@ function quickFilter(value, btn) {
 }
 
 // ══════════════════════════════════════════════════════
+// 관심차종 2단계 선택 로직
+// ══════════════════════════════════════════════════════
+
+function onModelCategoryChange() {
+  const cat         = document.getElementById('f-model-category').value;
+  const detailSel   = document.getElementById('f-model-detail');
+  const customInput = document.getElementById('f-model-custom');
+
+  // 초기화
+  detailSel.innerHTML = '<option value="">세부모델 선택</option>';
+  customInput.classList.add('hidden');
+  customInput.value = '';
+
+  if (!cat) {
+    // 아무것도 선택 안 한 상태
+    detailSel.disabled = true;
+    return;
+  }
+
+  if (cat === '기타') {
+    // 기타: 텍스트 직접 입력
+    detailSel.disabled = true;
+    customInput.classList.remove('hidden');
+    return;
+  }
+
+  // 해당 차종의 세부모델 목록 채우기
+  const models = MODEL_DETAILS[cat] || [];
+  models.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = m;
+    detailSel.appendChild(opt);
+  });
+
+  // 직접 입력 옵션 항상 추가
+  const customOpt = document.createElement('option');
+  customOpt.value = '__custom__';
+  customOpt.textContent = '직접 입력';
+  detailSel.appendChild(customOpt);
+
+  detailSel.disabled = false;
+}
+
+function onModelDetailChange() {
+  const detailSel   = document.getElementById('f-model-detail');
+  const customInput = document.getElementById('f-model-custom');
+
+  if (detailSel.value === '__custom__') {
+    customInput.classList.remove('hidden');
+    customInput.placeholder = '세부모델을 직접 입력하세요';
+  } else {
+    customInput.classList.add('hidden');
+    customInput.value = '';
+  }
+}
+
+// 폼에서 최종 차종 정보 추출
+function getModelFromForm() {
+  const cat       = (document.getElementById('f-model-category').value || '').trim();
+  const detailSel = document.getElementById('f-model-detail');
+  const customVal = (document.getElementById('f-model-custom').value || '').trim();
+
+  let detail = '';
+  if (cat === '기타') {
+    detail = customVal;
+  } else if (detailSel.value === '__custom__') {
+    detail = customVal;
+  } else {
+    detail = (detailSel.value || '').trim();
+  }
+
+  const display = cat && detail ? `${cat} / ${detail}` : (cat || detail || '');
+  return { modelCategory: cat, modelDetail: detail, model: display };
+}
+
+// 수정 모드에서 기존 차종값 복원
+function setModelForEdit(c) {
+  let cat    = c.modelCategory || '';
+  let detail = c.modelDetail   || '';
+
+  // 구버전 호환: model 필드만 있는 경우 파싱 시도
+  if (!cat && c.model) {
+    const parts = c.model.split(' / ');
+    cat    = parts[0] ? parts[0].trim() : '';
+    detail = parts[1] ? parts[1].trim() : '';
+  }
+
+  const catSel = document.getElementById('f-model-category');
+  catSel.value = cat;
+  onModelCategoryChange(); // 세부모델 드롭다운 채우기
+
+  if (!cat || cat === '기타') {
+    // 기타: 텍스트 입력란에 값 채우기
+    const customInput = document.getElementById('f-model-custom');
+    customInput.value = detail;
+    return;
+  }
+
+  if (detail) {
+    const detailSel = document.getElementById('f-model-detail');
+    // 목록에 있는지 확인
+    const inList = Array.from(detailSel.options).some(o => o.value === detail);
+    if (inList) {
+      detailSel.value = detail;
+    } else {
+      // 목록에 없으면 직접입력 처리
+      detailSel.value = '__custom__';
+      const customInput = document.getElementById('f-model-custom');
+      customInput.value = detail;
+      customInput.classList.remove('hidden');
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════
 // 고객 등록/수정 폼
 // ══════════════════════════════════════════════════════
 
 async function handleFormSubmit(event) {
   event.preventDefault();
 
+  const { modelCategory, modelDetail, model } = getModelFromForm();
+
   const customer = {
-    id:        editingId || genId(),
-    name:      v('f-name'),
-    phone:     v('f-phone'),
-    region:    v('f-region'),
-    model:     v('f-model'),
-    budget:    v('f-budget'),
-    timing:    v('f-timing'),
-    source:    v('f-source'),
-    status:    v('f-status'),
-    memo:      v('f-memo'),
-    nextDate:  v('f-nextdate'),
-    createdAt: editingId ? '' : new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    id:            editingId || genId(),
+    name:          v('f-name'),
+    phone:         v('f-phone'),
+    region:        v('f-region'),
+    modelCategory: modelCategory,
+    modelDetail:   modelDetail,
+    model:         model,          // "E-Class / E 300 4MATIC AMG Line" 형태로 저장
+    budget:        v('f-budget'),
+    timing:        v('f-timing'),
+    source:        v('f-source'),
+    status:        v('f-status'),
+    memo:          v('f-memo'),
+    nextDate:      v('f-nextdate'),
+    createdAt:     editingId ? '' : new Date().toISOString(),
+    updatedAt:     new Date().toISOString(),
   };
 
   // 로컬 캐시 업데이트
@@ -307,6 +515,14 @@ function v(id) { return (document.getElementById(id)?.value || '').trim(); }
 
 function resetForm() {
   document.getElementById('customer-form').reset();
+  // 차종 선택 UI 초기화
+  const detailSel   = document.getElementById('f-model-detail');
+  const customInput = document.getElementById('f-model-custom');
+  detailSel.innerHTML = '<option value="">세부모델 선택</option>';
+  detailSel.disabled  = true;
+  customInput.classList.add('hidden');
+  customInput.value = '';
+
   editingId = null;
   document.querySelector('.form-title').textContent = '신규 고객 등록';
   hideAlert();
@@ -333,6 +549,7 @@ function openDetailModal(id) {
   if (!c) return;
   modalCustomerId = id;
   const sc = STATUS_COLORS[c.status] || { bg: '#eee', text: '#333' };
+  const modelDisplay = getModelDisplay(c);
   document.getElementById('modal-content').innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
       <div class="detail-name">${escHtml(c.name)}</div>
@@ -340,7 +557,10 @@ function openDetailModal(id) {
     </div>
     <div class="detail-phone">📞 <a href="tel:${escHtml(c.phone)}">${escHtml(c.phone)}</a></div>
     <div class="detail-grid">
-      <div class="detail-item"><span class="detail-key">관심차종</span><span class="detail-val">${escHtml(c.model||'—')}</span></div>
+      <div class="detail-item" style="grid-column:1/-1">
+        <span class="detail-key">관심차종</span>
+        <span class="detail-val">${escHtml(modelDisplay || '—')}</span>
+      </div>
       <div class="detail-item"><span class="detail-key">거주지역</span><span class="detail-val">${escHtml(c.region||'—')}</span></div>
       <div class="detail-item"><span class="detail-key">구매예산</span><span class="detail-val">${escHtml(c.budget||'—')}</span></div>
       <div class="detail-item"><span class="detail-key">구매예정시기</span><span class="detail-val">${escHtml(c.timing||'—')}</span></div>
@@ -377,15 +597,25 @@ function editFromModal() {
   if (!c) return;
   closeDetailModal();
   showView('register');
-  setValue('f-name', c.name); setValue('f-phone', c.phone);
-  setValue('f-region', c.region); setValue('f-model', c.model);
-  setValue('f-budget', c.budget); setValue('f-timing', c.timing);
-  setValue('f-source', c.source); setValue('f-status', c.status);
-  setValue('f-memo', c.memo); setValue('f-nextdate', c.nextDate);
+
+  setValue('f-name',    c.name);
+  setValue('f-phone',   c.phone);
+  setValue('f-region',  c.region);
+  setValue('f-budget',  c.budget);
+  setValue('f-timing',  c.timing);
+  setValue('f-source',  c.source);
+  setValue('f-status',  c.status);
+  setValue('f-memo',    c.memo);
+  setValue('f-nextdate',c.nextDate);
+
+  // 차종 2단계 복원
+  setModelForEdit(c);
+
   editingId = c.id;
   document.querySelector('.form-title').textContent = '고객 정보 수정';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
 function setValue(id, val) {
   const el = document.getElementById(id);
   if (el) el.value = val || '';
@@ -395,10 +625,8 @@ function deleteFromModal() {
   document.getElementById('confirm-msg').textContent = '이 고객 정보를 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.';
   document.getElementById('confirm-dialog').classList.remove('hidden');
   document.getElementById('confirm-ok').onclick = async () => {
-    // 로컬 삭제
     const customers = getCustomers().filter(c => c.id !== modalCustomerId);
     saveLocalCustomers(customers);
-    // 구글시트 삭제
     await sheetRequest({ action: 'delete', id: modalCustomerId });
     closeConfirm();
     closeDetailModal();
@@ -435,5 +663,5 @@ function callCustomer(phone) {
 // 초기 실행 — 구글시트에서 고객 불러오기
 // ══════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-  loadFromSheets(); // 시작 시 구글시트에서 자동 불러오기
+  loadFromSheets();
 });
