@@ -347,16 +347,19 @@ function onModelCategoryChange() {
 
   if (!cat) {
     // 아무것도 선택 안 한 상태
-    detailSel.disabled = true;
+    detailSel.setAttribute('disabled', '');
     return;
   }
 
   if (cat === '기타') {
     // 기타: 텍스트 직접 입력
-    detailSel.disabled = true;
+    detailSel.setAttribute('disabled', '');
     customInput.classList.remove('hidden');
     return;
   }
+
+  // 옵션 추가 전에 먼저 활성화 (모바일 WebKit 호환)
+  detailSel.removeAttribute('disabled');
 
   // 해당 차종의 세부모델 목록 채우기
   const models = MODEL_DETAILS[cat] || [];
@@ -372,8 +375,6 @@ function onModelCategoryChange() {
   customOpt.value = '__custom__';
   customOpt.textContent = '직접 입력';
   detailSel.appendChild(customOpt);
-
-  detailSel.disabled = false;
 }
 
 function onModelDetailChange() {
@@ -519,7 +520,7 @@ function resetForm() {
   const detailSel   = document.getElementById('f-model-detail');
   const customInput = document.getElementById('f-model-custom');
   detailSel.innerHTML = '<option value="">세부모델 선택</option>';
-  detailSel.disabled  = true;
+  detailSel.setAttribute('disabled', '');
   customInput.classList.add('hidden');
   customInput.value = '';
 
