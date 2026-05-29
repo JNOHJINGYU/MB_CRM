@@ -4,8 +4,449 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>빈센노의 MB CRM | Mercedes-Benz</title>
-  <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
+
+<style>
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+
+/* ── CSS 변수 ── */
+:root {
+  --bg:           #f4f5f7;
+  --surface-01:   #ffffff;
+  --surface-02:   #f9fafb;
+  --surface-03:   #f1f3f6;
+  --surface-04:   #e8ebf0;
+
+  --border-dim:   rgba(0,0,0,0.07);
+  --border-soft:  rgba(0,0,0,0.13);
+  --border-med:   rgba(0,0,0,0.22);
+
+  --white:        #ffffff;
+  --text-primary: #111318;
+  --text-secondary:#4b5563;
+  --text-tertiary: #9ca3af;
+
+  --blue:         #0072CE;
+  --blue-dim:     rgba(0,114,206,0.10);
+  --blue-dark:    #005aaa;
+  --blue-glow:    0 0 0 3px rgba(0,114,206,0.15);
+
+  --gold:         #b8913a;
+  --gold-dim:     rgba(184,145,58,0.12);
+  --gold-light:   #d4a847;
+
+  --hot:          #d97706;
+  --hot-dim:      rgba(217,119,6,0.10);
+  --green:        #059669;
+  --green-dim:    rgba(5,150,105,0.10);
+  --red:          #dc2626;
+  --red-dim:      rgba(220,38,38,0.10);
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 26px;
+
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md:   0 4px 16px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
+  --shadow-lg:   0 10px 40px rgba(0,0,0,0.14), 0 4px 16px rgba(0,0,0,0.08);
+  --shadow-blue: 0 4px 14px rgba(0,114,206,0.22);
+
+  --font-body: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  --max-width: 800px;
+  --header-h: 64px;
+  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── 리셋 ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select, textarea { font-family: var(--font-body); font-size: inherit; }
+a { color: inherit; text-decoration: none; }
+
+/* ── 헤더 ── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--border-dim);
+  height: var(--header-h);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06);
+}
+.header-inner {
+  max-width: var(--max-width); margin: 0 auto; padding: 0 20px;
+  height: 100%; display: flex; align-items: center;
+  justify-content: space-between; gap: 12px;
+}
+.logo-wrap { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.mb-star { width: 34px; height: 34px; color: #111; flex-shrink: 0; }
+.header-text { display: flex; flex-direction: column; line-height: 1.25; }
+.site-title { font-size: 1rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text-primary); }
+.site-sub { font-size: 0.65rem; color: var(--blue); letter-spacing: 0.04em; font-weight: 600; }
+
+/* 네비 */
+.top-nav {
+  display: flex; gap: 2px;
+  background: var(--surface-03);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-sm); padding: 3px;
+}
+.nav-btn {
+  background: none; border: none;
+  padding: 7px 14px; font-size: 0.78rem; font-weight: 500;
+  color: var(--text-secondary); cursor: pointer;
+  border-radius: var(--radius-xs); transition: all var(--transition); white-space: nowrap;
+}
+.nav-btn:hover { color: var(--text-primary); background: var(--surface-04); }
+.nav-btn.active { color: #fff; background: #111; font-weight: 700; box-shadow: var(--shadow-sm); }
+
+/* ── 메인 ── */
+.main-wrap { max-width: var(--max-width); margin: 0 auto; padding: 28px 20px 80px; }
+
+/* ── 뷰 전환 ── */
+.view { display: none; }
+.view.active { display: block; animation: viewFadeIn 0.3s ease; }
+@keyframes viewFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Hero ── */
+.dashboard-hero {
+  background: #111318;
+  border-radius: var(--radius-xl);
+  padding: 28px 28px 24px;
+  margin-bottom: 24px;
+  position: relative; overflow: hidden;
+}
+.dashboard-hero::before {
+  content: '';
+  position: absolute; top: -60px; right: -60px;
+  width: 220px; height: 220px;
+  background: radial-gradient(circle, rgba(0,114,206,0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+.dashboard-hero::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, var(--blue), transparent); opacity: 0.5;
+}
+.hero-greeting { font-size: 0.72rem; font-weight: 600; color: var(--blue); letter-spacing: 0.10em; text-transform: uppercase; margin-bottom: 6px; }
+.hero-title { font-size: 1.7rem; font-weight: 700; color: #fff; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 4px; }
+.hero-sub { font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-bottom: 20px; }
+.hero-meta { display: flex; gap: 20px; flex-wrap: wrap; }
+.hero-chip { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: rgba(255,255,255,0.6); }
+.hero-chip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); }
+.hero-chip-dot.hot  { background: #f59e0b; }
+.hero-chip-dot.done { background: #10b981; }
+
+/* ── 섹션 라벨 ── */
+.section-label {
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border-dim); }
+.section-label.mt { margin-top: 32px; }
+
+/* ── 통계 카드 ── */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.stat-card {
+  background: var(--surface-01); border: 1px solid var(--border-dim);
+  border-radius: var(--radius-md); padding: 20px 16px 18px;
+  text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  cursor: default; transition: all var(--transition); box-shadow: var(--shadow-sm);
+  animation: fadeUp 0.4s ease both;
+}
+.stat-card:nth-child(1) { animation-delay: 0.05s; }
+.stat-card:nth-child(2) { animation-delay: 0.10s; }
+.stat-card:nth-child(3) { animation-delay: 0.15s; }
+.stat-card:nth-child(4) { animation-delay: 0.20s; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--border-soft); }
+.stat-card.accent { background: linear-gradient(135deg, rgba(184,145,58,0.08) 0%, rgba(184,145,58,0.02) 100%); border-color: rgba(184,145,58,0.25); }
+.stat-card.accent:hover { border-color: rgba(184,145,58,0.4); }
+.stat-icon { font-size: 1.4rem; line-height: 1; margin-bottom: 2px; }
+.stat-num { font-size: 2.2rem; font-weight: 800; line-height: 1; letter-spacing: -0.04em; color: var(--text-primary); }
+.stat-card.accent .stat-num { color: var(--gold); }
+.stat-label { font-size: 0.7rem; font-weight: 600; color: var(--text-tertiary); letter-spacing: 0.02em; }
+
+/* ── 오늘 연락 ── */
+.today-section {
+  background: var(--surface-01); border: 1px solid var(--border-dim);
+  border-left: 3px solid var(--blue); border-radius: var(--radius-md);
+  padding: 4px 16px; min-height: 60px;
+  display: flex; flex-direction: column; justify-content: center;
+  box-shadow: var(--shadow-sm);
+}
+.today-card {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 0; border-bottom: 1px solid var(--border-dim); gap: 12px; transition: opacity var(--transition);
+}
+.today-card:last-child { border-bottom: none; }
+.today-card:hover { opacity: 0.75; }
+.today-name { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); }
+.today-model { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.today-call {
+  background: #111; color: #fff; border: none;
+  padding: 8px 16px; border-radius: 40px; font-size: 0.78rem; font-weight: 700;
+  cursor: pointer; white-space: nowrap; transition: all var(--transition); flex-shrink: 0;
+}
+.today-call:hover { background: var(--blue); transform: scale(1.04); }
+
+/* ── 카드 그리드 ── */
+.card-grid { display: flex; flex-direction: column; gap: 10px; }
+
+/* 고객 카드 */
+.customer-card {
+  background: var(--surface-01); border: 1px solid var(--border-dim);
+  border-radius: var(--radius-md); padding: 16px 18px;
+  cursor: pointer; transition: all var(--transition);
+  display: grid; grid-template-columns: 1fr auto; gap: 4px 14px; align-items: start;
+  position: relative; overflow: hidden; box-shadow: var(--shadow-sm);
+}
+.customer-card::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: transparent; transition: background var(--transition);
+  border-radius: 0 2px 2px 0;
+}
+.customer-card:hover { border-color: var(--border-soft); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.customer-card:hover::before { background: var(--blue); }
+.customer-card.hot { border-color: rgba(217,119,6,0.2); }
+.customer-card.hot::before { background: var(--hot); }
+.customer-card.hot:hover { border-color: rgba(217,119,6,0.4); }
+
+.card-name { font-weight: 700; font-size: 0.98rem; grid-column: 1; grid-row: 1; color: var(--text-primary); letter-spacing: -0.01em; }
+.card-model { font-size: 0.8rem; color: var(--text-secondary); grid-column: 1; grid-row: 2; margin-top: 2px; }
+.card-memo { font-size: 0.76rem; color: var(--text-tertiary); grid-column: 1; grid-row: 3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; margin-top: 5px; }
+.card-right { grid-column: 2; grid-row: 1 / 4; display: flex; flex-direction: column; align-items: flex-end; gap: 7px; }
+.status-badge { font-size: 0.68rem; font-weight: 700; padding: 4px 10px; border-radius: 40px; white-space: nowrap; letter-spacing: 0.02em; }
+.card-date { font-size: 0.7rem; color: var(--text-tertiary); font-weight: 500; }
+.card-date.overdue { color: var(--red); font-weight: 700; }
+.card-date.today   { color: var(--blue); font-weight: 700; }
+
+/* ── 빈 메시지 ── */
+.empty-msg { color: var(--text-tertiary); font-size: 0.85rem; padding: 28px 0; text-align: center; }
+
+/* ── 폼 헤더 ── */
+.form-header {
+  margin-bottom: 24px; padding: 24px 24px 20px;
+  background: var(--surface-01); border: 1px solid var(--border-dim);
+  border-radius: var(--radius-lg); position: relative; overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.form-header::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, #111, var(--blue), var(--gold), var(--blue), #111);
+  background-size: 200% 100%; animation: shimmer 4s linear infinite;
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+.form-title { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; color: var(--text-primary); }
+.form-desc  { font-size: 0.8rem; color: var(--text-secondary); }
+
+/* 폼 */
+.crm-form {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px;
+  background: var(--surface-01); border: 1px solid var(--border-dim);
+  border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-sm);
+}
+.form-group { display: flex; flex-direction: column; gap: 7px; }
+.form-group.full { grid-column: 1 / -1; }
+label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; color: var(--text-secondary); text-transform: uppercase; }
+.req { color: var(--blue); }
+
+input[type="text"],
+input[type="tel"],
+input[type="date"],
+input[type="search"],
+select,
+textarea {
+  width: 100%; padding: 11px 14px;
+  border: 1.5px solid var(--border-dim);
+  border-radius: var(--radius-sm);
+  background: var(--surface-02); color: var(--text-primary);
+  font-size: 0.9rem; font-weight: 500;
+  transition: all var(--transition); outline: none;
+  appearance: none; -webkit-appearance: none;
+}
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px;
+}
+select option { background: #fff; color: var(--text-primary); }
+input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
+input:focus, select:focus, textarea:focus {
+  border-color: var(--blue); background: #fff; box-shadow: var(--blue-glow);
+}
+textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
+
+.model-select-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.model-select-wrap select, .model-select-wrap input { width: 100%; }
+.model-select-wrap select:disabled { background-color: var(--surface-03); color: var(--text-tertiary); cursor: not-allowed; opacity: 0.6; }
+.model-custom-input { grid-column: 1 / -1; }
+
+.form-actions { display: flex; gap: 10px; margin-top: 4px; }
+
+.btn-primary {
+  flex: 1; padding: 13px 24px; background: #111; color: #fff; border: none;
+  border-radius: var(--radius-sm); font-size: 0.9rem; font-weight: 700; cursor: pointer;
+  letter-spacing: 0.02em; transition: all var(--transition);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+.btn-primary:hover { background: var(--blue); transform: translateY(-1px); box-shadow: var(--shadow-blue); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.btn-secondary {
+  padding: 13px 20px; background: none; color: var(--text-secondary);
+  border: 1.5px solid var(--border-soft); border-radius: var(--radius-sm);
+  font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all var(--transition);
+}
+.btn-secondary:hover { border-color: #111; color: #111; background: var(--surface-03); }
+
+.btn-danger {
+  padding: 10px 20px; background: none; color: var(--red);
+  border: 1.5px solid rgba(220,38,38,0.3); border-radius: var(--radius-sm);
+  font-size: 0.88rem; font-weight: 700; cursor: pointer; transition: all var(--transition);
+}
+.btn-danger:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+.form-alert {
+  margin-top: 14px; padding: 12px 16px; border-radius: var(--radius-sm);
+  font-size: 0.86rem; font-weight: 600; text-align: center; animation: alertSlide 0.25s ease;
+}
+@keyframes alertSlide { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.form-alert.success { background: var(--green-dim); color: var(--green); border: 1.5px solid rgba(5,150,105,0.25); }
+.form-alert.error   { background: var(--red-dim);   color: var(--red);   border: 1.5px solid rgba(220,38,38,0.25); }
+
+/* ── 필터 바 ── */
+.filter-bar { display: flex; gap: 10px; margin-bottom: 12px; }
+.search-wrap { flex: 1; position: relative; }
+.search-wrap::before {
+  content: '🔍'; position: absolute; left: 13px; top: 50%;
+  transform: translateY(-50%); font-size: 0.85rem; pointer-events: none; opacity: 0.45;
+}
+.search-wrap input[type="search"] { padding-left: 36px; width: 100%; }
+.filter-bar select { width: 150px; flex-shrink: 0; }
+
+.quick-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+.qbtn {
+  padding: 6px 16px; background: var(--surface-01); border: 1.5px solid var(--border-dim);
+  border-radius: 40px; font-size: 0.76rem; font-weight: 700; cursor: pointer;
+  color: var(--text-secondary); transition: all var(--transition); letter-spacing: 0.02em;
+  box-shadow: var(--shadow-sm);
+}
+.qbtn:hover { border-color: #111; color: #111; }
+.qbtn.active { background: #111; color: #fff; border-color: #111; }
+
+/* ── 모달 ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(4px); z-index: 200;
+  display: flex; align-items: flex-end; justify-content: center; padding: 0;
+  animation: overlayFade 0.2s ease;
+}
+@keyframes overlayFade { from { opacity: 0; } to { opacity: 1; } }
+@media (min-width: 600px) { .modal-overlay { align-items: center; padding: 20px; } }
+
+.modal-box {
+  background: var(--surface-01); border: 1px solid var(--border-soft);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  width: 100%; max-width: 520px; max-height: 82vh; overflow-y: auto;
+  padding: 28px 24px 24px; position: relative;
+  animation: modalSlide 0.25s cubic-bezier(0.2,0,0,1); box-shadow: var(--shadow-lg);
+}
+@keyframes modalSlide { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@media (min-width: 600px) { .modal-box { border-radius: var(--radius-xl); max-height: 85vh; } }
+
+.modal-close {
+  position: absolute; top: 16px; right: 18px;
+  background: var(--surface-03); border: 1px solid var(--border-dim); border-radius: 50%;
+  width: 32px; height: 32px; font-size: 0.9rem; cursor: pointer; color: var(--text-secondary);
+  display: flex; align-items: center; justify-content: center; transition: all var(--transition);
+}
+.modal-close:hover { background: #111; color: #fff; border-color: #111; }
+.modal-actions { display: flex; gap: 10px; margin-top: 24px; }
+.modal-actions .btn-primary { flex: 1; }
+
+.detail-name { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 4px; }
+.detail-phone { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 18px; }
+.detail-phone a { color: var(--blue); font-weight: 600; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+.detail-item { display: flex; flex-direction: column; gap: 4px; }
+.detail-key { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-tertiary); }
+.detail-val { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); }
+.detail-memo { margin-top: 14px; }
+.detail-memo .detail-key { margin-bottom: 8px; }
+.detail-memo .detail-val {
+  background: var(--surface-02); border: 1px solid var(--border-dim);
+  border-radius: var(--radius-sm); padding: 12px 14px;
+  font-size: 0.84rem; font-weight: 400; line-height: 1.7;
+  white-space: pre-wrap; color: var(--text-secondary);
+}
+
+.confirm-box {
+  background: var(--surface-01); border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg); padding: 28px 24px;
+  max-width: 320px; width: 90%; text-align: center; box-shadow: var(--shadow-lg);
+}
+.confirm-box p { margin-bottom: 22px; font-size: 0.92rem; color: var(--text-secondary); line-height: 1.6; }
+.confirm-actions { display: flex; gap: 10px; justify-content: center; }
+
+/* ── 유틸 ── */
+.hidden { display: none !important; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-soft); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-med); }
+
+/* ── 반응형 ── */
+@media (max-width: 520px) {
+  :root { --header-h: 58px; }
+  .site-title { font-size: 0.88rem; }
+  .site-sub   { display: none; }
+  .mb-star    { width: 28px; height: 28px; }
+  .nav-btn    { padding: 6px 10px; font-size: 0.73rem; }
+  .main-wrap  { padding: 18px 14px 70px; }
+  .dashboard-hero { padding: 22px 18px 20px; border-radius: var(--radius-lg); }
+  .hero-title { font-size: 1.35rem; }
+  .stat-grid  { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat-num   { font-size: 1.9rem; }
+  .crm-form   { grid-template-columns: 1fr; padding: 18px; }
+  .form-group.full { grid-column: 1; }
+  .form-actions { flex-direction: column; }
+  .btn-secondary { width: 100%; text-align: center; }
+  .model-select-wrap { grid-template-columns: 1fr; }
+  .model-custom-input { grid-column: 1; }
+  .filter-bar { flex-direction: column; }
+  .filter-bar select { width: 100%; }
+  .card-memo  { max-width: 180px; }
+  .form-header { padding: 18px 16px 16px; border-radius: var(--radius-md); }
+  .form-title  { font-size: 1.2rem; }
+  .today-call  { padding: 8px 13px; font-size: 0.75rem; }
+  input[type="text"],
+  input[type="tel"],
+  input[type="date"],
+  input[type="search"],
+  select, textarea { font-size: 16px; }
+}
+</style>
+
 </head>
 <body>
 
@@ -32,109 +473,60 @@
     </div>
   </header>
 
-  <!-- ===== 메인 컨텐츠 ===== -->
   <main class="main-wrap">
 
-    <!-- ============================
-         뷰 1: 대시보드
-    ============================= -->
+    <!-- 뷰 1: 대시보드 -->
     <section id="view-dashboard" class="view active">
-
-      <!-- Hero -->
       <div class="dashboard-hero">
         <div class="hero-greeting">WELCOME BACK</div>
         <div class="hero-title">안녕하세요, 노진규 부장님 👋</div>
         <div class="hero-sub">오늘의 고객관리 현황입니다.</div>
         <div class="hero-meta">
-          <span class="hero-chip" id="hero-date">
-            <span class="hero-chip-dot"></span>
-            <span id="hero-date-text">—</span>
-          </span>
-          <span class="hero-chip" id="hero-today-count">
-            <span class="hero-chip-dot"></span>
-            <span id="hero-today-text">오늘 연락 0명</span>
-          </span>
-          <span class="hero-chip" id="hero-hot-count">
-            <span class="hero-chip-dot hot"></span>
-            <span id="hero-hot-text">계약유력 0명</span>
-          </span>
-          <span class="hero-chip">
-            <span class="hero-chip-dot done"></span>
-            <span id="hero-done-text">출고완료 0명</span>
-          </span>
+          <span class="hero-chip"><span class="hero-chip-dot"></span><span id="hero-date-text">—</span></span>
+          <span class="hero-chip"><span class="hero-chip-dot"></span><span id="hero-today-text">오늘 연락 0명</span></span>
+          <span class="hero-chip"><span class="hero-chip-dot hot"></span><span id="hero-hot-text">계약유력 0명</span></span>
+          <span class="hero-chip"><span class="hero-chip-dot done"></span><span id="hero-done-text">출고완료 0명</span></span>
         </div>
       </div>
 
-      <!-- 통계 카드 -->
       <div class="section-label">현황 요약</div>
       <div class="stat-grid">
-        <div class="stat-card">
-          <div class="stat-icon">👥</div>
-          <span class="stat-num" id="stat-total">0</span>
-          <span class="stat-label">전체 고객</span>
-        </div>
-        <div class="stat-card accent">
-          <div class="stat-icon">🔥</div>
-          <span class="stat-num" id="stat-hot">0</span>
-          <span class="stat-label">계약유력</span>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">📞</div>
-          <span class="stat-num" id="stat-today">0</span>
-          <span class="stat-label">오늘 연락</span>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">🚗</div>
-          <span class="stat-num" id="stat-done">0</span>
-          <span class="stat-label">출고완료</span>
-        </div>
+        <div class="stat-card"><div class="stat-icon">👥</div><span class="stat-num" id="stat-total">0</span><span class="stat-label">전체 고객</span></div>
+        <div class="stat-card accent"><div class="stat-icon">🔥</div><span class="stat-num" id="stat-hot">0</span><span class="stat-label">계약유력</span></div>
+        <div class="stat-card"><div class="stat-icon">📞</div><span class="stat-num" id="stat-today">0</span><span class="stat-label">오늘 연락</span></div>
+        <div class="stat-card"><div class="stat-icon">🚗</div><span class="stat-num" id="stat-done">0</span><span class="stat-label">출고완료</span></div>
       </div>
 
-      <!-- 오늘 연락 예정 -->
       <div class="section-label mt">📞 오늘 연락 예정</div>
       <div id="today-contacts" class="today-section">
         <p class="empty-msg" id="today-empty">오늘 연락 예정 고객이 없습니다.</p>
       </div>
 
-      <!-- 최근 등록 고객 -->
       <div class="section-label mt">최근 등록 고객</div>
       <div id="recent-list" class="card-grid">
         <p class="empty-msg">등록된 고객이 없습니다.</p>
       </div>
-
     </section>
 
-    <!-- ============================
-         뷰 2: 고객 등록 폼
-    ============================= -->
+    <!-- 뷰 2: 고객 등록 -->
     <section id="view-register" class="view">
-
       <div class="form-header">
         <h2 class="form-title">고객 등록</h2>
         <p class="form-desc">고객 정보를 등록하고 관리하세요. 저장 즉시 Google Sheets에 기록됩니다.</p>
       </div>
-
       <form id="customer-form" class="crm-form" onsubmit="handleFormSubmit(event)">
-
-        <!-- 고객명 -->
         <div class="form-group">
           <label for="f-name">고객명 <span class="req">*</span></label>
           <input type="text" id="f-name" placeholder="홍길동" required />
         </div>
-
-        <!-- 연락처 -->
         <div class="form-group">
           <label for="f-phone">연락처 <span class="req">*</span></label>
           <input type="tel" id="f-phone" placeholder="010-0000-0000" required />
         </div>
-
-        <!-- 거주지역 -->
         <div class="form-group">
           <label for="f-region">거주지역</label>
           <input type="text" id="f-region" placeholder="서울 강남구" />
         </div>
-
-        <!-- 유입경로 -->
         <div class="form-group">
           <label for="f-source">유입경로</label>
           <select id="f-source">
@@ -149,8 +541,6 @@
             <option value="기타">기타</option>
           </select>
         </div>
-
-        <!-- 관심차종 (2단계) -->
         <div class="form-group full">
           <label>관심차종</label>
           <div class="model-select-wrap">
@@ -170,28 +560,17 @@
             <select id="f-model-detail" disabled onchange="onModelDetailChange()">
               <option value="">세부모델 선택</option>
             </select>
-            <input
-              type="text"
-              id="f-model-custom"
-              class="model-custom-input hidden"
-              placeholder="차종을 직접 입력하세요"
-            />
+            <input type="text" id="f-model-custom" class="model-custom-input hidden" placeholder="차종을 직접 입력하세요" />
           </div>
         </div>
-
-        <!-- 구매예산 -->
         <div class="form-group">
           <label for="f-budget">구매예산</label>
           <input type="text" id="f-budget" placeholder="예: 8,000만원 ~ 1억" />
         </div>
-
-        <!-- 구매예정시기 -->
         <div class="form-group">
           <label for="f-timing">구매예정시기</label>
           <input type="text" id="f-timing" placeholder="예: 2025년 3분기" />
         </div>
-
-        <!-- 현재상태 -->
         <div class="form-group">
           <label for="f-status">현재상태 <span class="req">*</span></label>
           <select id="f-status" required>
@@ -206,20 +585,14 @@
             <option value="출고완료">출고완료</option>
           </select>
         </div>
-
-        <!-- 다음 연락일 -->
         <div class="form-group">
           <label for="f-nextdate">다음 연락일</label>
           <input type="date" id="f-nextdate" />
         </div>
-
-        <!-- 상담내용 -->
         <div class="form-group full">
           <label for="f-memo">상담내용</label>
           <textarea id="f-memo" rows="4" placeholder="상담 내용, 특이사항, 고객 선호도 등을 기록하세요."></textarea>
         </div>
-
-        <!-- 버튼 -->
         <div class="form-actions full">
           <button type="submit" class="btn-primary" id="submit-btn">
             <span id="submit-text">저장하기</span>
@@ -227,26 +600,15 @@
           </button>
           <button type="button" class="btn-secondary" onclick="resetForm()">초기화</button>
         </div>
-
       </form>
-
       <div id="form-alert" class="form-alert hidden"></div>
-
     </section>
 
-    <!-- ============================
-         뷰 3: 고객 목록
-    ============================= -->
+    <!-- 뷰 3: 고객 목록 -->
     <section id="view-list" class="view">
-
       <div class="filter-bar">
         <div class="search-wrap">
-          <input
-            type="search"
-            id="search-input"
-            placeholder="고객명, 차종, 연락처 검색..."
-            oninput="filterCustomers()"
-          />
+          <input type="search" id="search-input" placeholder="고객명, 차종, 연락처 검색..." oninput="filterCustomers()" />
         </div>
         <select id="filter-status" onchange="filterCustomers()">
           <option value="">전체 상태</option>
@@ -260,7 +622,6 @@
           <option value="출고완료">출고완료</option>
         </select>
       </div>
-
       <div class="quick-filters">
         <button class="qbtn active" onclick="quickFilter('all', this)">전체</button>
         <button class="qbtn" onclick="quickFilter('계약유력', this)">🔥 계약유력</button>
@@ -268,16 +629,14 @@
         <button class="qbtn" onclick="quickFilter('타딜러구매', this)">타딜러구매</button>
         <button class="qbtn" onclick="quickFilter('출고완료', this)">출고완료</button>
       </div>
-
       <div id="customer-list" class="card-grid">
         <p class="empty-msg">등록된 고객이 없습니다.</p>
       </div>
-
     </section>
 
   </main>
 
-  <!-- ===== 고객 상세 모달 ===== -->
+  <!-- 고객 상세 모달 -->
   <div id="detail-modal" class="modal-overlay hidden" onclick="closeModal(event)">
     <div class="modal-box">
       <button class="modal-close" onclick="closeDetailModal()">✕</button>
@@ -289,7 +648,7 @@
     </div>
   </div>
 
-  <!-- ===== 확인 다이얼로그 ===== -->
+  <!-- 확인 다이얼로그 -->
   <div id="confirm-dialog" class="modal-overlay hidden">
     <div class="confirm-box">
       <p id="confirm-msg">정말 삭제하시겠습니까?</p>
@@ -300,55 +659,525 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+<script>
+/* =====================================================
+   노진규 고객관리 시스템 — 구글시트 DB 버전
+   ===================================================== */
 
-  <!-- 대시보드 Hero 날짜 + Hero 수치 초기화 -->
-  <script>
-    (function() {
-      const dateEl = document.getElementById('hero-date-text');
-      if (dateEl) {
-        const now = new Date();
-        const days = ['일','월','화','수','목','금','토'];
-        dateEl.textContent =
-          now.getFullYear() + '년 ' +
-          (now.getMonth()+1) + '월 ' +
-          now.getDate() + '일 (' + days[now.getDay()] + ')';
-      }
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbws7wXKTGHoZd7jlcYFnFCA5t2mdKQsg3iOOaga0o7Vq9_7yNH8ZW-52hmS4VEFRLxrBQ/exec";
 
-      // STATUS_COLORS 오버라이드 — 다크 테마 맞춤
-      // (script.js가 로드된 후 덮어씁니다)
-      document.addEventListener('DOMContentLoaded', function() {
-        if (typeof STATUS_COLORS !== 'undefined') {
-          STATUS_COLORS['신규문의']     = { bg: 'rgba(0,174,239,0.15)',   text: '#00AEEF' };
-          STATUS_COLORS['상담중']       = { bg: 'rgba(255,193,7,0.15)',    text: '#FFC107' };
-          STATUS_COLORS['계약유력']     = { bg: 'rgba(255,215,0,0.15)',    text: '#FFD700' };
-          STATUS_COLORS['보류']         = { bg: 'rgba(158,158,158,0.15)',  text: '#9E9E9E' };
-          STATUS_COLORS['타딜러구매']   = { bg: 'rgba(158,158,158,0.12)',  text: '#9E9E9E' };
-          STATUS_COLORS['타브랜드구매'] = { bg: 'rgba(100,100,100,0.15)',  text: '#888' };
-          STATUS_COLORS['해약']         = { bg: 'rgba(255,82,82,0.15)',    text: '#FF5252' };
-          STATUS_COLORS['출고완료']     = { bg: 'rgba(0,200,83,0.15)',     text: '#00C853' };
-        }
-      });
-    })();
+/* ── 상태 배지 색상 (밝은 테마) ── */
+const STATUS_COLORS = {
+  '신규문의':     { bg: '#dbeafe', text: '#1d4ed8' },
+  '상담중':       { bg: '#fef3c7', text: '#92400e' },
+  '계약유력':     { bg: '#fef9c3', text: '#a16207' },
+  '보류':         { bg: '#f3f4f6', text: '#6b7280' },
+  '타딜러구매':   { bg: '#e5e7eb', text: '#4b5563' },
+  '타브랜드구매': { bg: '#d1d5db', text: '#374151' },
+  '해약':         { bg: '#fee2e2', text: '#991b1b' },
+  '출고완료':     { bg: '#111318', text: '#ffffff' },
+};
 
-    // Hero 수치 업데이트 (renderDashboard 이후 호출)
-    const _origRenderDashboard = typeof renderDashboard !== 'undefined' ? renderDashboard : null;
-    document.addEventListener('DOMContentLoaded', function() {
-      const origRD = window.renderDashboard;
-      if (origRD) {
-        window.renderDashboard = function() {
-          origRD();
-          // Hero 수치 업데이트
-          const todayText = document.getElementById('hero-today-text');
-          const hotText   = document.getElementById('hero-hot-text');
-          const doneText  = document.getElementById('hero-done-text');
-          if (todayText) todayText.textContent = '오늘 연락 ' + (document.getElementById('stat-today')?.textContent || '0') + '명';
-          if (hotText)   hotText.textContent   = '계약유력 '  + (document.getElementById('stat-hot')?.textContent   || '0') + '명';
-          if (doneText)  doneText.textContent   = '출고완료 '  + (document.getElementById('stat-done')?.textContent  || '0') + '명';
-        };
-      }
+/* ── 관심차종 세부모델 ── */
+const MODEL_DETAILS = {
+  'E-Class': [
+    'E 200 exclusive',
+    'E 200 AMG Line',
+    'E 220 d 4MATIC exclusive',
+    'E 300 4MATIC exclusive',
+    'E 300 4MATIC AMG Line',
+    'E 350 e 4MATIC',
+    'E 450 4MATIC AMG Line',
+    'E 450 4MATIC exclusive',
+  ],
+  'S-Class': [
+    'S 350 d 4MATIC SWB',
+    'S 450 4MATIC SWB',
+    'S 450 4MATIC Long',
+    'S 450 4MATIC Long AMG Line',
+    'S 500 4MATIC Long',
+    'S 580 4MATIC Long',
+    'Mercedes-Maybach S 580 4MATIC',
+  ],
+  'C-Class': [
+    'C 200',
+    'C 200 AMG Line',
+    'C 220 d AMG Line',
+    'C 300 4MATIC AMG Line',
+  ],
+  'GLC': [
+    'GLC 300 4MATIC',
+    'GLC 300 4MATIC AMG Line',
+    'GLC 300 4MATIC Coupé',
+    'GLC 300 4MATIC Coupé AMG Line',
+  ],
+  'GLE': [
+    'GLE 300 d 4MATIC',
+    'GLE 350 4MATIC',
+    'GLE 450 4MATIC',
+    'GLE 450 d 4MATIC',
+    'GLE 53 4MATIC+',
+    'GLE 450 4MATIC Coupé',
+    'GLE 53 4MATIC+ Coupé',
+  ],
+  'GLS': [
+    'GLS 450 4MATIC',
+    'GLS 600 4MATIC Maybach',
+  ],
+  'CLA': [
+    'CLA 200',
+    'CLA 200 AMG Line',
+    'CLA 250 4MATIC AMG Line',
+    'CLA 35 AMG 4MATIC',
+  ],
+  'A-Class': [
+    'A 200',
+    'A 200 AMG Line',
+    'A 35 AMG 4MATIC',
+  ],
+  'EQ': [
+    'EQA 250 progressive',
+    'EQA 250 AMG Line',
+    'EQB 300 4M progressive',
+    'EQB 300 4M AMG Line',
+    'EQE 350+SUV',
+    'EQE 350+',
+    'EQE 500 4M SUV',
+    'EQS 450 4M SUV',
+    'EQS 580 4M SUV',
+    'G 580 with EQ Technology',
+  ],
+};
+
+let editingId          = null;
+let modalCustomerId    = null;
+let currentQuickFilter = 'all';
+
+/* ── 구글시트 API 헬퍼 ── */
+async function sheetRequest(params) {
+  if (!SCRIPT_URL) return null;
+  const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
+  try { await fetch(url, { mode: 'no-cors' }); return true; }
+  catch(e) { console.error('시트 요청 오류:', e); return null; }
+}
+async function sheetFetch(params) {
+  if (!SCRIPT_URL) return null;
+  const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
+  try { const res = await fetch(url); return await res.json(); }
+  catch(e) { console.error('시트 읽기 오류:', e); return null; }
+}
+
+/* ── 로컬 캐시 ── */
+function getCustomers() {
+  try { return JSON.parse(localStorage.getItem('crm_customers') || '[]'); }
+  catch(e) { return []; }
+}
+function saveLocalCustomers(c) { localStorage.setItem('crm_customers', JSON.stringify(c)); }
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+/* ── 구글시트 불러오기 ── */
+async function loadFromSheets() {
+  if (!SCRIPT_URL) { renderDashboard(); return; }
+  showLoadingBanner(true);
+  const result = await sheetFetch({ action: 'getAll' });
+  if (result && result.result === 'success' && Array.isArray(result.customers)) {
+    saveLocalCustomers(result.customers);
+  } else {
+    console.warn('구글시트 불러오기 실패 — 로컬 캐시 사용');
+  }
+  showLoadingBanner(false);
+  renderDashboard();
+}
+function showLoadingBanner(show) {
+  let el = document.getElementById('loading-banner');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'loading-banner';
+    el.style.cssText = 'position:fixed;top:64px;left:0;right:0;background:#0072CE;color:white;text-align:center;padding:9px;font-size:0.8rem;font-weight:600;z-index:150;';
+    document.body.appendChild(el);
+  }
+  el.textContent = '구글시트에서 고객 정보를 불러오는 중...';
+  el.style.display = show ? 'block' : 'none';
+}
+
+/* ── 뷰 전환 ── */
+function showView(viewName) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + viewName).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === viewName);
+  });
+  if (viewName === 'dashboard') renderDashboard();
+  if (viewName === 'list')      renderCustomerList(getCustomers());
+  if (viewName === 'register' && editingId === null) resetForm();
+}
+
+/* ── 대시보드 ── */
+function renderDashboard() {
+  const customers = getCustomers();
+  const today = todayStr();
+
+  document.getElementById('stat-total').textContent = customers.length;
+  document.getElementById('stat-hot').textContent   = customers.filter(c => c.status === '계약유력').length;
+  document.getElementById('stat-today').textContent = customers.filter(c => c.nextDate === today).length;
+  document.getElementById('stat-done').textContent  = customers.filter(c => c.status === '출고완료').length;
+
+  const todayTxt = document.getElementById('hero-today-text');
+  const hotTxt   = document.getElementById('hero-hot-text');
+  const doneTxt  = document.getElementById('hero-done-text');
+  if (todayTxt) todayTxt.textContent = '오늘 연락 ' + document.getElementById('stat-today').textContent + '명';
+  if (hotTxt)   hotTxt.textContent   = '계약유력 '  + document.getElementById('stat-hot').textContent   + '명';
+  if (doneTxt)  doneTxt.textContent  = '출고완료 '  + document.getElementById('stat-done').textContent  + '명';
+
+  const todayCustomers = customers.filter(c => c.nextDate === today);
+  const todayEl    = document.getElementById('today-contacts');
+  const todayEmpty = document.getElementById('today-empty');
+  todayEl.querySelectorAll('.today-card').forEach(el => el.remove());
+  if (todayCustomers.length === 0) {
+    todayEmpty.classList.remove('hidden');
+  } else {
+    todayEmpty.classList.add('hidden');
+    todayCustomers.forEach(c => {
+      const card = document.createElement('div');
+      card.className = 'today-card';
+      card.innerHTML = `
+        <div>
+          <div class="today-name">${escHtml(c.name)}</div>
+          <div class="today-model">${escHtml(getModelDisplay(c) || '차종 미정')} · ${escHtml(c.status)}</div>
+        </div>
+        <button class="today-call" onclick="callCustomer('${escHtml(c.phone)}')">📞 연락</button>
+      `;
+      todayEl.appendChild(card);
     });
-  </script>
+  }
+
+  const recentEl = document.getElementById('recent-list');
+  recentEl.innerHTML = '';
+  const recent = [...customers].reverse().slice(0, 5);
+  if (recent.length === 0) {
+    recentEl.innerHTML = '<p class="empty-msg">등록된 고객이 없습니다.</p>';
+  } else {
+    recent.forEach(c => recentEl.appendChild(buildCard(c)));
+  }
+}
+
+/* ── 고객 카드 ── */
+function buildCard(c) {
+  const card = document.createElement('div');
+  card.className = 'customer-card' + (c.status === '계약유력' ? ' hot' : '');
+  card.onclick = () => openDetailModal(c.id);
+  const sc = STATUS_COLORS[c.status] || { bg: '#f3f4f6', text: '#374151' };
+  const today = todayStr();
+  let dateClass = 'card-date';
+  let dateLabel = c.nextDate ? formatDate(c.nextDate) : '';
+  if (c.nextDate) {
+    if (c.nextDate < today) dateClass += ' overdue';
+    else if (c.nextDate === today) { dateClass += ' today'; dateLabel = '오늘'; }
+  }
+  const modelDisplay = getModelDisplay(c);
+  card.innerHTML = `
+    <div class="card-name">${escHtml(c.name)}</div>
+    <div class="card-model">${escHtml(modelDisplay || '—')} ${c.budget ? '· ' + escHtml(c.budget) : ''}</div>
+    <div class="card-memo">${escHtml(c.memo || '상담 내용 없음')}</div>
+    <div class="card-right">
+      <span class="status-badge" style="background:${sc.bg};color:${sc.text}">${escHtml(c.status)}</span>
+      ${dateLabel ? `<span class="${dateClass}">${dateLabel}</span>` : ''}
+    </div>
+  `;
+  return card;
+}
+
+/* ── 차종 표시 헬퍼 ── */
+function getModelDisplay(c) {
+  if (c.modelCategory) {
+    if (c.modelDetail) return `${c.modelCategory} / ${c.modelDetail}`;
+    return c.modelCategory;
+  }
+  return c.model || '';
+}
+
+/* ── 고객 목록 & 필터 ── */
+function renderCustomerList(customers) {
+  const el = document.getElementById('customer-list');
+  el.innerHTML = '';
+  if (customers.length === 0) { el.innerHTML = '<p class="empty-msg">조건에 맞는 고객이 없습니다.</p>'; return; }
+  customers.forEach(c => el.appendChild(buildCard(c)));
+}
+function filterCustomers() {
+  const keyword = (document.getElementById('search-input').value || '').trim().toLowerCase();
+  const status  = document.getElementById('filter-status').value;
+  let customers = getCustomers();
+  if (keyword) {
+    customers = customers.filter(c => {
+      const modelStr = getModelDisplay(c).toLowerCase();
+      return (
+        c.name.toLowerCase().includes(keyword) ||
+        modelStr.includes(keyword) ||
+        (c.modelCategory||'').toLowerCase().includes(keyword) ||
+        (c.modelDetail  ||'').toLowerCase().includes(keyword) ||
+        (c.phone||'').includes(keyword)
+      );
+    });
+  }
+  if (status) customers = customers.filter(c => c.status === status);
+  if (currentQuickFilter !== 'all') customers = customers.filter(c => c.status === currentQuickFilter);
+  renderCustomerList(customers);
+}
+function quickFilter(value, btn) {
+  currentQuickFilter = value;
+  document.querySelectorAll('.qbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('filter-status').value = '';
+  filterCustomers();
+}
+
+/* ── 관심차종 2단계 선택 ── */
+function onModelCategoryChange() {
+  const cat         = document.getElementById('f-model-category').value;
+  const detailSel   = document.getElementById('f-model-detail');
+  const customInput = document.getElementById('f-model-custom');
+  detailSel.innerHTML = '<option value="">세부모델 선택</option>';
+  customInput.classList.add('hidden');
+  customInput.value = '';
+  if (!cat) { detailSel.setAttribute('disabled', ''); return; }
+  if (cat === '기타') { detailSel.setAttribute('disabled', ''); customInput.classList.remove('hidden'); return; }
+  detailSel.removeAttribute('disabled');
+  (MODEL_DETAILS[cat] || []).forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m; opt.textContent = m;
+    detailSel.appendChild(opt);
+  });
+  const customOpt = document.createElement('option');
+  customOpt.value = '__custom__'; customOpt.textContent = '직접 입력';
+  detailSel.appendChild(customOpt);
+}
+function onModelDetailChange() {
+  const detailSel   = document.getElementById('f-model-detail');
+  const customInput = document.getElementById('f-model-custom');
+  if (detailSel.value === '__custom__') {
+    customInput.classList.remove('hidden');
+    customInput.placeholder = '세부모델을 직접 입력하세요';
+  } else {
+    customInput.classList.add('hidden');
+    customInput.value = '';
+  }
+}
+function getModelFromForm() {
+  const cat       = (document.getElementById('f-model-category').value || '').trim();
+  const detailSel = document.getElementById('f-model-detail');
+  const customVal = (document.getElementById('f-model-custom').value || '').trim();
+  let detail = '';
+  if (cat === '기타') { detail = customVal; }
+  else if (detailSel.value === '__custom__') { detail = customVal; }
+  else { detail = (detailSel.value || '').trim(); }
+  const display = cat && detail ? `${cat} / ${detail}` : (cat || detail || '');
+  return { modelCategory: cat, modelDetail: detail, model: display };
+}
+function setModelForEdit(c) {
+  let cat    = c.modelCategory || '';
+  let detail = c.modelDetail   || '';
+  if (!cat && c.model) {
+    const parts = c.model.split(' / ');
+    cat    = parts[0] ? parts[0].trim() : '';
+    detail = parts[1] ? parts[1].trim() : '';
+  }
+  document.getElementById('f-model-category').value = cat;
+  onModelCategoryChange();
+  if (!cat || cat === '기타') { document.getElementById('f-model-custom').value = detail; return; }
+  if (detail) {
+    const detailSel = document.getElementById('f-model-detail');
+    const inList = Array.from(detailSel.options).some(o => o.value === detail);
+    if (inList) {
+      detailSel.value = detail;
+    } else {
+      detailSel.value = '__custom__';
+      const customInput = document.getElementById('f-model-custom');
+      customInput.value = detail;
+      customInput.classList.remove('hidden');
+    }
+  }
+}
+
+/* ── 폼 등록/수정 ── */
+async function handleFormSubmit(event) {
+  event.preventDefault();
+  const { modelCategory, modelDetail, model } = getModelFromForm();
+  const customer = {
+    id:            editingId || genId(),
+    name:          v('f-name'),
+    phone:         v('f-phone'),
+    region:        v('f-region'),
+    modelCategory: modelCategory,
+    modelDetail:   modelDetail,
+    model:         model,
+    budget:        v('f-budget'),
+    timing:        v('f-timing'),
+    source:        v('f-source'),
+    status:        v('f-status'),
+    memo:          v('f-memo'),
+    nextDate:      v('f-nextdate'),
+    createdAt:     editingId ? '' : new Date().toISOString(),
+    updatedAt:     new Date().toISOString(),
+  };
+  const customers = getCustomers();
+  if (editingId) {
+    const idx = customers.findIndex(c => c.id === editingId);
+    if (idx > -1) { customer.createdAt = customers[idx].createdAt; customers[idx] = customer; }
+  } else { customers.push(customer); }
+  saveLocalCustomers(customers);
+
+  const submitBtn  = document.getElementById('submit-btn');
+  const submitText = document.getElementById('submit-text');
+  const submitLoad = document.getElementById('submit-loading');
+  submitBtn.disabled = true;
+  submitText.classList.add('hidden');
+  submitLoad.classList.remove('hidden');
+  try {
+    const params = { action: 'save' };
+    Object.keys(customer).forEach(k => params[k] = customer[k] || '');
+    await sheetRequest(params);
+    showAlert('고객정보가 저장되었습니다. ✓', 'success');
+  } catch(e) {
+    showAlert('로컬 저장 완료. 구글시트 전송을 확인하세요.', 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitText.classList.remove('hidden');
+    submitLoad.classList.add('hidden');
+    editingId = null;
+    document.querySelector('.form-title').textContent = '고객 등록';
+  }
+}
+function v(id) { return (document.getElementById(id)?.value || '').trim(); }
+function resetForm() {
+  document.getElementById('customer-form').reset();
+  const detailSel   = document.getElementById('f-model-detail');
+  const customInput = document.getElementById('f-model-custom');
+  detailSel.innerHTML = '<option value="">세부모델 선택</option>';
+  detailSel.setAttribute('disabled', '');
+  customInput.classList.add('hidden');
+  customInput.value = '';
+  editingId = null;
+  document.querySelector('.form-title').textContent = '고객 등록';
+  hideAlert();
+}
+function showAlert(msg, type) {
+  const el = document.getElementById('form-alert');
+  el.textContent = msg; el.className = 'form-alert ' + type;
+  el.classList.remove('hidden');
+  setTimeout(hideAlert, 5000);
+}
+function hideAlert() { document.getElementById('form-alert').classList.add('hidden'); }
+
+/* ── 상세 모달 ── */
+function openDetailModal(id) {
+  const customers = getCustomers();
+  const c = customers.find(x => x.id === id);
+  if (!c) return;
+  modalCustomerId = id;
+  const sc = STATUS_COLORS[c.status] || { bg: '#f3f4f6', text: '#374151' };
+  const modelDisplay = getModelDisplay(c);
+  document.getElementById('modal-content').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <div class="detail-name">${escHtml(c.name)}</div>
+      <span class="status-badge" style="background:${sc.bg};color:${sc.text};margin-top:4px">${escHtml(c.status)}</span>
+    </div>
+    <div class="detail-phone">📞 <a href="tel:${escHtml(c.phone)}">${escHtml(c.phone)}</a></div>
+    <div class="detail-grid">
+      <div class="detail-item" style="grid-column:1/-1">
+        <span class="detail-key">관심차종</span>
+        <span class="detail-val">${escHtml(modelDisplay || '—')}</span>
+      </div>
+      <div class="detail-item"><span class="detail-key">거주지역</span><span class="detail-val">${escHtml(c.region||'—')}</span></div>
+      <div class="detail-item"><span class="detail-key">구매예산</span><span class="detail-val">${escHtml(c.budget||'—')}</span></div>
+      <div class="detail-item"><span class="detail-key">구매예정시기</span><span class="detail-val">${escHtml(c.timing||'—')}</span></div>
+      <div class="detail-item"><span class="detail-key">유입경로</span><span class="detail-val">${escHtml(c.source||'—')}</span></div>
+      <div class="detail-item"><span class="detail-key">다음 연락일</span><span class="detail-val">${c.nextDate ? formatDate(c.nextDate) : '—'}</span></div>
+    </div>
+    <div class="detail-memo">
+      <div class="detail-key">상담내용</div>
+      <div class="detail-val">${escHtml(c.memo||'없음')}</div>
+    </div>
+    <div style="margin-top:12px;font-size:0.72rem;color:#9ca3af">
+      등록일: ${c.createdAt ? new Date(c.createdAt).toLocaleDateString('ko-KR') : '—'}
+    </div>
+  `;
+  document.getElementById('detail-modal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function closeDetailModal() {
+  document.getElementById('detail-modal').classList.add('hidden');
+  document.body.style.overflow = '';
+  modalCustomerId = null;
+}
+function closeModal(event) {
+  if (event.target === document.getElementById('detail-modal')) closeDetailModal();
+}
+
+/* ── 수정 & 삭제 ── */
+function editFromModal() {
+  const c = getCustomers().find(x => x.id === modalCustomerId);
+  if (!c) return;
+  closeDetailModal();
+  showView('register');
+  setValue('f-name',    c.name);
+  setValue('f-phone',   c.phone);
+  setValue('f-region',  c.region);
+  setValue('f-budget',  c.budget);
+  setValue('f-timing',  c.timing);
+  setValue('f-source',  c.source);
+  setValue('f-status',  c.status);
+  setValue('f-memo',    c.memo);
+  setValue('f-nextdate',c.nextDate);
+  setModelForEdit(c);
+  editingId = c.id;
+  document.querySelector('.form-title').textContent = '고객 정보 수정';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function setValue(id, val) { const el = document.getElementById(id); if (el) el.value = val || ''; }
+function deleteFromModal() {
+  document.getElementById('confirm-msg').textContent = '이 고객 정보를 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.';
+  document.getElementById('confirm-dialog').classList.remove('hidden');
+  document.getElementById('confirm-ok').onclick = async () => {
+    const customers = getCustomers().filter(c => c.id !== modalCustomerId);
+    saveLocalCustomers(customers);
+    await sheetRequest({ action: 'delete', id: modalCustomerId });
+    closeConfirm();
+    closeDetailModal();
+    if (document.getElementById('view-list').classList.contains('active')) {
+      renderCustomerList(getCustomers());
+    } else {
+      renderDashboard();
+    }
+  };
+}
+function closeConfirm() { document.getElementById('confirm-dialog').classList.add('hidden'); }
+
+/* ── 유틸 ── */
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+function formatDate(str) {
+  if (!str) return '';
+  const [y,m,d] = str.split('-');
+  return `${parseInt(m)}월 ${parseInt(d)}일`;
+}
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function callCustomer(phone) { window.location.href = 'tel:' + phone.replace(/[^0-9+]/g, ''); }
+
+/* ── Hero 날짜 초기화 ── */
+(function() {
+  const dateEl = document.getElementById('hero-date-text');
+  if (dateEl) {
+    const now = new Date();
+    const days = ['일','월','화','수','목','금','토'];
+    dateEl.textContent = now.getFullYear() + '년 ' + (now.getMonth()+1) + '월 ' + now.getDate() + '일 (' + days[now.getDay()] + ')';
+  }
+})();
+
+/* ── 초기 실행 ── */
+document.addEventListener('DOMContentLoaded', () => { loadFromSheets(); });
+</script>
 
 </body>
 </html>
