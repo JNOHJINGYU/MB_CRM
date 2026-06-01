@@ -779,15 +779,108 @@ function getCustomers() {
 function saveLocalCustomers(c) { localStorage.setItem('crm_customers', JSON.stringify(c)); }
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
+/* ── 날짜 정규화 (다양한 형식 → "yyyy-mm-dd") ── */
+function normalizeDateStr(val) {
+  if (!val) return '';
+  // Date 객체 or 숫자 타임스탬프
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return '';
+    return val.toISOString().split('T')[0];
+  }
+  const s = String(val).trim();
+  if (!s) return '';
+  // 이미 yyyy-mm-dd
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // yyyy.mm.dd
+  if (/^\d{4}\.\d{2}\.\d{2}$/.test(s)) return s.replace(/\./g, '-');
+  // yyyy/mm/dd
+  if (/^\d{4}\/\d{2}\/\d{2}$/.test(s)) return s.replace(/\//g, '-');
+  // ISO 8601 (Date 직렬화)
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return s.split('T')[0];
+  // Google Sheets serial number (숫자인 경우)
+  const num = Number(s);
+  if (!isNaN(num) && num > 1000) {
+    // Sheets epoch: Dec 30, 1899
+    const d = new Date((num - 25569) * 86400 * 1000);
+    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+  }
+  return s; // 알 수 없는 형식은 그대로 반환
+}
+
+/* ── 구글시트 rows → 고객 객체 배열 변환 (헤더명 기준) ── */
+function rowsToCustomers(result) {
+  // Case 1: Apps Script가 이미 {customers: [{name:..., nextDate:...}, ...]} 형태로 반환
+  if (result.customers && Array.isArray(result.customers) && result.customers.length > 0) {
+    const first = result.customers[0];
+    // 객체 배열이면 헤더명 기반 정규화만 수행
+    if (first && typeof first === 'object' && !Array.isArray(first)) {
+      return result.customers.map(row => normalizeCustomerObj(row));
+    }
+  }
+
+  // Case 2: Apps Script가 {rows: [[헤더행], [데이터행], ...]} 형태로 반환
+  const rawRows = result.rows || result.data || result.customers;
+  if (!Array.isArray(rawRows) || rawRows.length < 2) return null;
+
+  const headers = rawRows[0].map(h => String(h).trim());
+  const dataRows = rawRows.slice(1);
+
+  return dataRows.map(row => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = row[i] !== undefined ? row[i] : ''; });
+    return normalizeCustomerObj(obj);
+  });
+}
+
+/* ── 헤더명 → 내부 필드명 매핑 + 날짜 정규화 ── */
+function normalizeCustomerObj(obj) {
+  // 헤더명이 한글(구글시트)이든 영문(기존 저장)이든 모두 처리
+  const get = (...keys) => {
+    for (const k of keys) {
+      if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') return obj[k];
+    }
+    return '';
+  };
+
+  const nextDateRaw = get('다음연락일', 'nextDate', '다음 연락일', 'next_date');
+
+  return {
+    id:            get('고객ID', 'id'),
+    name:          get('고객명', 'name'),
+    companyName:   get('법인명', 'companyName', 'company'),
+    phone:         get('연락처', 'phone'),
+    region:        get('거주지역', 'region'),
+    model:         get('관심차종', 'model'),
+    modelCategory: get('modelCategory', '차종대분류'),
+    modelDetail:   get('modelDetail', '차종세부'),
+    budget:        get('구매예산', 'budget'),
+    timing:        get('구매예정시기', 'timing'),
+    source:        get('유입경로', 'source'),
+    status:        get('현재상태', 'status'),
+    memo:          get('상담내용', 'memo'),
+    nextDate:      normalizeDateStr(nextDateRaw),
+    createdAt:     get('등록일시', 'createdAt'),
+    updatedAt:     get('수정일시', 'updatedAt'),
+    releaseDate:   get('출고일', 'releaseDate'),
+    releaseMonth:  get('출고월', 'releaseMonth'),
+  };
+}
+
 /* ── 구글시트 불러오기 ── */
 async function loadFromSheets() {
   if (!SCRIPT_URL) { renderDashboard(); return; }
   showLoadingBanner(true);
   const result = await sheetFetch({ action: 'getAll' });
-  if (result && result.result === 'success' && Array.isArray(result.customers)) {
-    saveLocalCustomers(result.customers);
+  if (result && result.result === 'success') {
+    const mapped = rowsToCustomers(result);
+    if (mapped) {
+      saveLocalCustomers(mapped);
+      console.log('구글시트에서 ' + mapped.length + '명 불러옴 (헤더명 기반 매핑)');
+    } else {
+      console.warn('구글시트 불러오기 실패 — 로컬 캐시 사용');
+    }
   } else {
-    console.warn('구글시트 불러오기 실패 — 로컬 캐시 사용');
+    console.warn('구글시트 응답 오류 — 로컬 캐시 사용');
   }
   showLoadingBanner(false);
   renderDashboard();
@@ -1184,9 +1277,14 @@ function closeConfirm() { document.getElementById('confirm-dialog').classList.ad
 /* ── 유틸 ── */
 function todayStr() { return new Date().toISOString().split('T')[0]; }
 function formatDate(str) {
-  if (!str) return '';
-  const [y,m,d] = str.split('-');
-  return `${parseInt(m)}월 ${parseInt(d)}일`;
+  const normalized = normalizeDateStr(str);
+  if (!normalized) return '';
+  const parts = normalized.split('-');
+  if (parts.length < 3) return '';
+  const m = parseInt(parts[1], 10);
+  const d = parseInt(parts[2], 10);
+  if (isNaN(m) || isNaN(d)) return '';
+  return m + '월 ' + d + '일';
 }
 function escHtml(str) {
   if (!str) return '';
