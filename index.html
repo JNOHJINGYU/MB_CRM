@@ -520,6 +520,10 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
           <input type="text" id="f-name" placeholder="홍길동" required />
         </div>
         <div class="form-group">
+          <label for="f-company">법인명</label>
+          <input type="text" id="f-company" placeholder="법인 고객일 경우 입력" />
+        </div>
+        <div class="form-group">
           <label for="f-phone">연락처 <span class="req">*</span></label>
           <input type="tel" id="f-phone" placeholder="010-0000-0000" required />
         </div>
@@ -1005,6 +1009,7 @@ async function handleFormSubmit(event) {
   const customer = {
     id:            editingId || genId(),
     name:          v('f-name'),
+    companyName:   v('f-company'),
     phone:         v('f-phone'),
     region:        v('f-region'),
     modelCategory: modelCategory,
@@ -1033,8 +1038,29 @@ async function handleFormSubmit(event) {
   submitText.classList.add('hidden');
   submitLoad.classList.remove('hidden');
   try {
-    const params = { action: 'save' };
-    Object.keys(customer).forEach(k => params[k] = customer[k] || '');
+    // 구글시트 컬럼 순서에 맞게 명시적으로 파라미터 전송
+    // 순서: 고객ID / 고객명 / 법인명 / 연락처 / 거주지역 / 관심차종 / 구매예산 / 구매예정시기 / 유입경로 / 현재상태 / 상담내용 / 다음연락일 / 출고일 / 출고월 / 등록일시 / 수정일시
+    const params = {
+      action:      'save',
+      id:          customer.id          || '',
+      name:        customer.name        || '',
+      companyName: customer.companyName || '',
+      phone:       customer.phone       || '',
+      region:      customer.region      || '',
+      model:       customer.model       || '',
+      budget:      customer.budget      || '',
+      timing:      customer.timing      || '',
+      source:      customer.source      || '',
+      status:      customer.status      || '',
+      memo:        customer.memo        || '',
+      nextDate:    customer.nextDate    || '',
+      releaseDate: customer.releaseDate || '',
+      releaseMonth:customer.releaseMonth|| '',
+      createdAt:   customer.createdAt   || '',
+      updatedAt:   customer.updatedAt   || '',
+      modelCategory: customer.modelCategory || '',
+      modelDetail:   customer.modelDetail   || '',
+    };
     await sheetRequest(params);
     showAlert('고객정보가 저장되었습니다. ✓', 'success');
   } catch(e) {
@@ -1056,6 +1082,7 @@ function resetForm() {
   detailSel.setAttribute('disabled', '');
   customInput.classList.add('hidden');
   customInput.value = '';
+  document.getElementById('f-company').value = '';
   editingId = null;
   document.querySelector('.form-title').textContent = '고객 등록';
   hideAlert();
@@ -1081,7 +1108,7 @@ function openDetailModal(id) {
       <div class="detail-name">${escHtml(c.name)}</div>
       <span class="status-badge" style="background:${sc.bg};color:${sc.text};margin-top:4px">${escHtml(c.status)}</span>
     </div>
-    <div class="detail-phone">📞 <a href="tel:${escHtml(c.phone)}">${escHtml(c.phone)}</a></div>
+    <div class="detail-phone">📞 <a href="tel:${escHtml(c.phone)}">${escHtml(c.phone)}</a>${c.companyName ? ' &nbsp;·&nbsp; 🏢 ' + escHtml(c.companyName) : ''}</div>
     <div class="detail-grid">
       <div class="detail-item" style="grid-column:1/-1">
         <span class="detail-key">관심차종</span>
@@ -1120,6 +1147,7 @@ function editFromModal() {
   closeDetailModal();
   showView('register');
   setValue('f-name',    c.name);
+  setValue('f-company', c.companyName);
   setValue('f-phone',   c.phone);
   setValue('f-region',  c.region);
   setValue('f-budget',  c.budget);
