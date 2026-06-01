@@ -1038,28 +1038,29 @@ async function handleFormSubmit(event) {
   submitText.classList.add('hidden');
   submitLoad.classList.remove('hidden');
   try {
-    // 구글시트 컬럼 순서에 맞게 명시적으로 파라미터 전송
-    // 순서: 고객ID / 고객명 / 법인명 / 연락처 / 거주지역 / 관심차종 / 구매예산 / 구매예정시기 / 유입경로 / 현재상태 / 상담내용 / 다음연락일 / 출고일 / 출고월 / 등록일시 / 수정일시
+    // ★ 구글시트 헤더 순서와 1:1 일치 (절대 순서 변경 금지)
+    // 고객ID / 고객명 / 법인명 / 연락처 / 거주지역 / 관심차종 / 구매예산 / 구매예정시기
+    // 유입경로 / 현재상태 / 상담내용 / 다음연락일 / 등록일시 / 수정일시 / 출고일 / 출고월
     const params = {
-      action:      'save',
-      id:          customer.id          || '',
-      name:        customer.name        || '',
-      companyName: customer.companyName || '',
-      phone:       customer.phone       || '',
-      region:      customer.region      || '',
-      model:       customer.model       || '',
-      budget:      customer.budget      || '',
-      timing:      customer.timing      || '',
-      source:      customer.source      || '',
-      status:      customer.status      || '',
-      memo:        customer.memo        || '',
-      nextDate:    customer.nextDate    || '',
-      releaseDate: customer.releaseDate || '',
-      releaseMonth:customer.releaseMonth|| '',
-      createdAt:   customer.createdAt   || '',
-      updatedAt:   customer.updatedAt   || '',
-      modelCategory: customer.modelCategory || '',
-      modelDetail:   customer.modelDetail   || '',
+      action:        'save',
+      id:            customer.id            || '',   // col 1  고객ID
+      name:          customer.name          || '',   // col 2  고객명
+      companyName:   customer.companyName   || '',   // col 3  법인명 (없으면 빈 문자열 — 생략 불가)
+      phone:         customer.phone         || '',   // col 4  연락처
+      region:        customer.region        || '',   // col 5  거주지역
+      model:         customer.model         || '',   // col 6  관심차종
+      budget:        customer.budget        || '',   // col 7  구매예산
+      timing:        customer.timing        || '',   // col 8  구매예정시기
+      source:        customer.source        || '',   // col 9  유입경로
+      status:        customer.status        || '',   // col 10 현재상태
+      memo:          customer.memo          || '',   // col 11 상담내용
+      nextDate:      customer.nextDate      || '',   // col 12 다음연락일
+      createdAt:     customer.createdAt     || '',   // col 13 등록일시
+      updatedAt:     customer.updatedAt     || '',   // col 14 수정일시
+      releaseDate:   customer.releaseDate   || '',   // col 15 출고일
+      releaseMonth:  customer.releaseMonth  || '',   // col 16 출고월
+      modelCategory: customer.modelCategory || '',   // 부가정보 (시트 외 컬럼)
+      modelDetail:   customer.modelDetail   || '',   // 부가정보 (시트 외 컬럼)
     };
     await sheetRequest(params);
     showAlert('고객정보가 저장되었습니다. ✓', 'success');
