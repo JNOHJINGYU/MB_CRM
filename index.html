@@ -493,6 +493,91 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
   white-space: nowrap;
 }
 
+/* ── 상세 페이지 ── */
+.detail-page-header {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 24px;
+  background: var(--surface-01); border: 1px solid var(--border-dim);
+  border-radius: var(--radius-lg); padding: 20px 24px;
+  box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+}
+.detail-page-header::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, #111, var(--blue), var(--gold), var(--blue), #111);
+  background-size: 200% 100%; animation: shimmer 4s linear infinite;
+}
+.back-btn {
+  background: var(--surface-03); border: 1px solid var(--border-dim);
+  border-radius: var(--radius-sm); padding: 8px 14px;
+  font-size: 0.82rem; font-weight: 700; cursor: pointer;
+  color: var(--text-secondary); transition: all var(--transition);
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+.back-btn:hover { background: #111; color: #fff; border-color: #111; }
+.detail-page-name { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; color: var(--text-primary); flex: 1; }
+.detail-page-status { flex-shrink: 0; }
+
+/* 상세 수정 폼 */
+.detail-edit-form {
+  background: var(--surface-01); border: 1px solid var(--border-dim);
+  border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-sm);
+  display: flex; flex-direction: column; gap: 20px;
+}
+.detail-section-title {
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-tertiary); padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-dim);
+  display: flex; align-items: center; gap: 8px;
+}
+.detail-fields-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px;
+}
+.detail-field { display: flex; flex-direction: column; gap: 7px; }
+.detail-field.full { grid-column: 1 / -1; }
+.detail-field label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; color: var(--text-secondary); text-transform: uppercase; }
+
+/* 상담이력 누적 표시 */
+.memo-history-wrap { display: flex; flex-direction: column; gap: 0; }
+.memo-history-box {
+  background: var(--surface-02); border: 1.5px solid var(--border-dim);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  padding: 12px 14px; font-size: 0.82rem; line-height: 1.8;
+  color: var(--text-secondary); white-space: pre-wrap; max-height: 200px;
+  overflow-y: auto; border-bottom: none;
+}
+.memo-history-label {
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; color: var(--text-tertiary);
+  background: var(--surface-03); border: 1.5px solid var(--border-dim);
+  border-top: none; border-bottom: none;
+  padding: 5px 14px; text-transform: uppercase;
+}
+.memo-new-textarea {
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm) !important;
+  border-top: 1.5px solid var(--border-soft) !important;
+}
+.memo-date-prefix {
+  font-size: 0.72rem; color: var(--text-tertiary); font-weight: 500; margin-bottom: 4px; display: block;
+}
+
+/* 상세 저장 액션 */
+.detail-save-actions {
+  display: flex; gap: 10px; padding-top: 4px;
+}
+.btn-delete-outline {
+  padding: 13px 20px; background: none; color: var(--red);
+  border: 1.5px solid rgba(220,38,38,0.3); border-radius: var(--radius-sm);
+  font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all var(--transition);
+}
+.btn-delete-outline:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+/* 상세 페이지용 반응형 */
+@media (max-width: 520px) {
+  .detail-fields-grid { grid-template-columns: 1fr; }
+  .detail-field.full  { grid-column: 1; }
+  .detail-page-header { padding: 16px 18px; }
+  .detail-page-name   { font-size: 1.1rem; }
+  .detail-edit-form   { padding: 18px; }
+}
+
 /* ── 유틸 ── */
 .hidden { display: none !important; }
 ::-webkit-scrollbar { width: 5px; }
@@ -597,7 +682,7 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
     <section id="view-register" class="view">
       <div class="form-header">
         <h2 class="form-title">고객 등록</h2>
-        <p class="form-desc">고객 정보를 등록하고 관리하세요. 저장 즉시 Google Sheets에 기록됩니다.</p>
+        <p class="form-desc">신규 고객 정보를 등록하세요. 저장 즉시 Google Sheets에 기록됩니다.<br><span style="font-size:0.75rem;color:var(--blue)">※ 기존 고객 수정은 고객목록에서 카드를 클릭하세요.</span></p>
       </div>
       <form id="customer-form" class="crm-form" onsubmit="handleFormSubmit(event)">
         <div class="form-group">
@@ -727,19 +812,118 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
       </div>
     </section>
 
-  </main>
-
-  <!-- 고객 상세 모달 -->
-  <div id="detail-modal" class="modal-overlay hidden" onclick="closeModal(event)">
-    <div class="modal-box">
-      <button class="modal-close" onclick="closeDetailModal()">✕</button>
-      <div id="modal-content"></div>
-      <div class="modal-actions">
-        <button class="btn-primary" onclick="editFromModal()">수정하기</button>
-        <button class="btn-danger" onclick="deleteFromModal()">삭제</button>
+    <!-- 뷰 4: 고객 상세 (인라인 페이지) -->
+    <section id="view-detail" class="view">
+      <!-- 헤더: 뒤로가기 + 이름 + 상태뱃지 -->
+      <div class="detail-page-header">
+        <button class="back-btn" onclick="goBackFromDetail()">← 목록</button>
+        <div class="detail-page-name" id="dp-name">—</div>
+        <div class="detail-page-status" id="dp-status-wrap"></div>
       </div>
-    </div>
-  </div>
+
+      <!-- 수정 폼 -->
+      <div class="detail-edit-form">
+
+        <!-- 기본 정보 (읽기전용 표시) -->
+        <div>
+          <div class="detail-section-title">📋 기본 정보</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;margin-top:14px;" id="dp-info-grid">
+            <!-- JS로 채움 -->
+          </div>
+        </div>
+
+        <!-- 수정 가능 필드 -->
+        <div>
+          <div class="detail-section-title">✏️ 수정 가능 항목</div>
+          <div class="detail-fields-grid" style="margin-top:14px;">
+
+            <div class="detail-field">
+              <label for="dp-f-name">고객명 <span class="req">*</span></label>
+              <input type="text" id="dp-f-name" placeholder="홍길동" required />
+            </div>
+            <div class="detail-field">
+              <label for="dp-f-phone">연락처 <span class="req">*</span></label>
+              <input type="tel" id="dp-f-phone" placeholder="010-0000-0000" required />
+            </div>
+
+            <!-- 관심차종 -->
+            <div class="detail-field full">
+              <label>관심차종</label>
+              <div class="model-select-wrap">
+                <select id="dp-model-category" onchange="dpOnModelCategoryChange()">
+                  <option value="">대분류 선택</option>
+                  <option value="E-Class">E-Class</option>
+                  <option value="S-Class">S-Class</option>
+                  <option value="C-Class">C-Class</option>
+                  <option value="GLC">GLC</option>
+                  <option value="GLE">GLE</option>
+                  <option value="GLS">GLS</option>
+                  <option value="CLA">CLA</option>
+                  <option value="A-Class">A-Class</option>
+                  <option value="EQ">EQ (전기)</option>
+                  <option value="기타">기타</option>
+                </select>
+                <select id="dp-model-detail" disabled onchange="dpOnModelDetailChange()">
+                  <option value="">세부모델 선택</option>
+                </select>
+                <input type="text" id="dp-model-custom" class="model-custom-input hidden" placeholder="차종을 직접 입력하세요" />
+              </div>
+            </div>
+
+            <div class="detail-field">
+              <label for="dp-f-status">현재상태 <span class="req">*</span></label>
+              <select id="dp-f-status" required>
+                <option value="">선택하세요</option>
+                <option value="신규문의">신규문의</option>
+                <option value="상담중">상담중</option>
+                <option value="계약유력">계약유력</option>
+                <option value="보류">보류</option>
+                <option value="타딜러구매">타딜러구매</option>
+                <option value="타브랜드구매">타브랜드구매</option>
+                <option value="해약">해약</option>
+                <option value="출고완료">출고완료</option>
+              </select>
+            </div>
+            <div class="detail-field">
+              <label for="dp-f-nextdate">다음 연락일</label>
+              <input type="date" id="dp-f-nextdate" />
+            </div>
+
+            <!-- 태그 -->
+            <div class="detail-field full">
+              <label>태그</label>
+              <div class="tag-picker" id="dp-tag-picker"></div>
+            </div>
+
+            <!-- 상담내용 누적 -->
+            <div class="detail-field full">
+              <label>상담이력 (누적)</label>
+              <div class="memo-history-wrap">
+                <div class="memo-history-box" id="dp-memo-history">—</div>
+                <div class="memo-date-prefix" id="dp-memo-date-label" style="background:var(--surface-03);border:1.5px solid var(--border-dim);border-top:none;border-bottom:none;padding:5px 14px;font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);">▼ 새 상담내용 추가 (오늘 날짜로 자동 기록)</div>
+                <textarea id="dp-f-memo-new" rows="3"
+                  class="memo-new-textarea"
+                  placeholder="새 상담 내용을 입력하세요. 저장 시 날짜와 함께 기존 이력에 누적됩니다."></textarea>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 저장/삭제 버튼 -->
+        <div class="detail-save-actions">
+          <button class="btn-primary" id="dp-save-btn" onclick="saveDetailChanges()">
+            <span id="dp-save-text">변경사항 저장</span>
+            <span id="dp-save-loading" class="hidden">저장 중...</span>
+          </button>
+          <button class="btn-delete-outline" onclick="deleteFromDetail()">삭제</button>
+        </div>
+        <div id="dp-alert" class="form-alert hidden"></div>
+
+      </div>
+    </section>
+
+  </main>
 
   <!-- 확인 다이얼로그 -->
   <div id="confirm-dialog" class="modal-overlay hidden">
@@ -998,12 +1182,15 @@ function showLoadingBanner(show) {
 function showView(viewName) {
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   document.getElementById('view-' + viewName).classList.add('active');
+  // 상세 뷰는 nav 하이라이트 없음 (목록에 머무는 것처럼)
+  const navTarget = viewName === 'detail' ? detailPrevView : viewName;
   document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.view === viewName);
+    btn.classList.toggle('active', btn.dataset.view === navTarget);
   });
   if (viewName === 'dashboard') renderDashboard();
   if (viewName === 'list')      renderCustomerList(getCustomers());
   if (viewName === 'register' && editingId === null) resetForm();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 /* ── 대시보드 ── */
@@ -1034,12 +1221,13 @@ function renderDashboard() {
     todayCustomers.forEach(c => {
       const card = document.createElement('div');
       card.className = 'today-card';
+      card.style.cursor = 'pointer';
       card.innerHTML = `
-        <div>
+        <div onclick="openDetailPage('${c.id}', 'dashboard')" style="flex:1">
           <div class="today-name">${escHtml(c.name)}</div>
           <div class="today-model">${escHtml(getModelDisplay(c) || '차종 미정')} · ${escHtml(c.status)}</div>
         </div>
-        <button class="today-call" onclick="callCustomer('${escHtml(c.phone)}')">📞 연락</button>
+        <button class="today-call" onclick="event.stopPropagation();callCustomer('${escHtml(c.phone)}')">📞 연락</button>
       `;
       todayEl.appendChild(card);
     });
@@ -1051,15 +1239,15 @@ function renderDashboard() {
   if (recent.length === 0) {
     recentEl.innerHTML = '<p class="empty-msg">등록된 고객이 없습니다.</p>';
   } else {
-    recent.forEach(c => recentEl.appendChild(buildCard(c)));
+    recent.forEach(c => recentEl.appendChild(buildCard(c, 'dashboard')));
   }
 }
 
 /* ── 고객 카드 ── */
-function buildCard(c) {
+function buildCard(c, fromView) {
   const card = document.createElement('div');
   card.className = 'customer-card' + (c.status === '계약유력' ? ' hot' : '');
-  card.onclick = () => openDetailModal(c.id);
+  card.onclick = () => openDetailPage(c.id, fromView || 'list');
   const sc = STATUS_COLORS[c.status] || { bg: '#f3f4f6', text: '#374151' };
   const today = todayStr();
   let dateClass = 'card-date';
@@ -1322,91 +1510,283 @@ function showAlert(msg, type) {
 }
 function hideAlert() { document.getElementById('form-alert').classList.add('hidden'); }
 
-/* ── 상세 모달 ── */
-function openDetailModal(id) {
+/* ── 상세 페이지 ── */
+let detailCustomerId = null;
+let detailPrevView   = 'list'; // 뒤로가기 시 돌아갈 뷰
+
+function openDetailPage(id, fromView) {
   const customers = getCustomers();
   const c = customers.find(x => x.id === id);
   if (!c) return;
-  modalCustomerId = id;
+  detailCustomerId = id;
+  detailPrevView   = fromView || 'list';
+
+  /* 헤더 */
+  document.getElementById('dp-name').textContent = c.name;
   const sc = STATUS_COLORS[c.status] || { bg: '#f3f4f6', text: '#374151' };
-  const modelDisplay = getModelDisplay(c);
-  document.getElementById('modal-content').innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-      <div class="detail-name">${escHtml(c.name)}</div>
-      <span class="status-badge" style="background:${sc.bg};color:${sc.text};margin-top:4px">${escHtml(c.status)}</span>
-    </div>
-    <div class="detail-phone">📞 <a href="tel:${escHtml(c.phone)}">${escHtml(c.phone)}</a>${c.companyName ? ' &nbsp;·&nbsp; 🏢 ' + escHtml(c.companyName) : ''}</div>
-    <div class="detail-grid">
-      <div class="detail-item" style="grid-column:1/-1">
-        <span class="detail-key">관심차종</span>
-        <span class="detail-val">${escHtml(modelDisplay || '—')}</span>
-      </div>
-      <div class="detail-item"><span class="detail-key">거주지역</span><span class="detail-val">${escHtml(c.region||'—')}</span></div>
-      <div class="detail-item"><span class="detail-key">구매예산</span><span class="detail-val">${escHtml(c.budget||'—')}</span></div>
-      <div class="detail-item"><span class="detail-key">구매예정시기</span><span class="detail-val">${escHtml(c.timing||'—')}</span></div>
-      <div class="detail-item"><span class="detail-key">유입경로</span><span class="detail-val">${escHtml(c.source||'—')}</span></div>
-      <div class="detail-item"><span class="detail-key">다음 연락일</span><span class="detail-val">${c.nextDate ? formatDate(c.nextDate) : '—'}</span></div>
-    </div>
-    ${c.tags ? '<div class="detail-item" style="grid-column:1/-1;margin-bottom:4px"><span class="detail-key">태그</span><div class="detail-tags">' + c.tags.split(",").map(t=>t.trim()).filter(Boolean).map(t=>'<span class="detail-tag">'+escHtml(t)+'</span>').join("") + '</div></div>' : ""}
-    <div class="detail-memo">
-      <div class="detail-key">상담내용</div>
-      <div class="detail-val">${escHtml(c.memo||'없음')}</div>
-    </div>
-    <div style="margin-top:12px;font-size:0.72rem;color:#9ca3af">
-      등록일: ${c.createdAt ? new Date(c.createdAt).toLocaleDateString('ko-KR') : '—'}
-    </div>
-  `;
-  document.getElementById('detail-modal').classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
-}
-function closeDetailModal() {
-  document.getElementById('detail-modal').classList.add('hidden');
-  document.body.style.overflow = '';
-  modalCustomerId = null;
-}
-function closeModal(event) {
-  if (event.target === document.getElementById('detail-modal')) closeDetailModal();
+  document.getElementById('dp-status-wrap').innerHTML =
+    `<span class="status-badge" style="background:${sc.bg};color:${sc.text}">${escHtml(c.status)}</span>`;
+
+  /* 기본 정보 그리드 (읽기전용) */
+  const infoItems = [
+    ['연락처', c.phone ? `<a href="tel:${escHtml(c.phone)}" style="color:var(--blue);font-weight:600">${escHtml(c.phone)}</a>` : '—'],
+    ['법인명', escHtml(c.companyName || '—')],
+    ['거주지역', escHtml(c.region || '—')],
+    ['유입경로', escHtml(c.source || '—')],
+    ['구매예산', escHtml(c.budget || '—')],
+    ['구매예정', escHtml(c.timing || '—')],
+    ['등록일', c.createdAt ? new Date(c.createdAt).toLocaleDateString('ko-KR') : '—'],
+    ['최종수정', c.updatedAt ? new Date(c.updatedAt).toLocaleDateString('ko-KR') : '—'],
+  ];
+  document.getElementById('dp-info-grid').innerHTML = infoItems.map(([k, v]) => `
+    <div class="detail-item">
+      <span class="detail-key">${k}</span>
+      <span class="detail-val">${v}</span>
+    </div>`).join('');
+
+  /* 수정 필드 채우기 */
+  document.getElementById('dp-f-name').value    = c.name    || '';
+  document.getElementById('dp-f-phone').value   = c.phone   || '';
+  document.getElementById('dp-f-status').value  = c.status  || '';
+  document.getElementById('dp-f-nextdate').value = c.nextDate || '';
+
+  /* 차종 */
+  dpSetModelForEdit(c);
+
+  /* 태그 */
+  dpInitTagPicker();
+  dpSetSelectedTags(c.tags || '');
+
+  /* 상담이력 */
+  const histBox = document.getElementById('dp-memo-history');
+  histBox.textContent = c.memo || '상담 내용 없음';
+  document.getElementById('dp-f-memo-new').value = '';
+
+  /* 오늘 날짜 라벨 */
+  const today = new Date();
+  const m = today.getMonth() + 1, d = today.getDate();
+  document.getElementById('dp-memo-date-label').textContent =
+    `▼ 새 상담내용 추가 — ${m}/${d} 기록으로 자동 저장됩니다`;
+
+  /* alert 초기화 */
+  document.getElementById('dp-alert').classList.add('hidden');
+
+  showView('detail');
 }
 
-/* ── 수정 & 삭제 ── */
-function editFromModal() {
-  const c = getCustomers().find(x => x.id === modalCustomerId);
-  if (!c) return;
-  closeDetailModal();
-  showView('register');
-  setValue('f-name',    c.name);
-  setValue('f-company', c.companyName);
-  setValue('f-phone',   c.phone);
-  setValue('f-region',  c.region);
-  setValue('f-budget',  c.budget);
-  setValue('f-timing',  c.timing);
-  setValue('f-source',  c.source);
-  setValue('f-status',  c.status);
-  setValue('f-memo',    c.memo);
-  setValue('f-nextdate',c.nextDate);
-  setModelForEdit(c);
-  setSelectedTags(c.tags || '');
-  editingId = c.id;
-  document.querySelector('.form-title').textContent = '고객 정보 수정';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+function goBackFromDetail() {
+  detailCustomerId = null;
+  showView(detailPrevView);
 }
-function setValue(id, val) { const el = document.getElementById(id); if (el) el.value = val || ''; }
-function deleteFromModal() {
+
+/* 상세 페이지 저장 */
+async function saveDetailChanges() {
+  if (!detailCustomerId) return;
+
+  const nameVal   = (document.getElementById('dp-f-name').value  || '').trim();
+  const phoneVal  = (document.getElementById('dp-f-phone').value || '').trim();
+  const statusVal = (document.getElementById('dp-f-status').value || '').trim();
+  if (!nameVal || !phoneVal || !statusVal) {
+    dpShowAlert('고객명, 연락처, 현재상태는 필수 항목입니다.', 'error'); return;
+  }
+
+  const customers = getCustomers();
+  const idx = customers.findIndex(c => c.id === detailCustomerId);
+  if (idx === -1) { dpShowAlert('고객을 찾을 수 없습니다.', 'error'); return; }
+
+  const old = customers[idx];
+
+  /* 상담이력 누적 */
+  const newMemoRaw = (document.getElementById('dp-f-memo-new').value || '').trim();
+  let memoFinal = old.memo || '';
+  if (newMemoRaw) {
+    const today = new Date();
+    const datePrefix = `${today.getMonth() + 1}/${today.getDate()}`;
+    const newEntry = `${datePrefix} ${newMemoRaw}`;
+    memoFinal = memoFinal
+      ? memoFinal + '\n-------------------\n' + newEntry
+      : newEntry;
+  }
+
+  /* 차종 */
+  const { modelCategory, modelDetail, model } = dpGetModelFromForm();
+
+  /* 태그 */
+  const tags = dpGetSelectedTags().join(', ');
+
+  const updated = {
+    ...old,
+    name:          nameVal,
+    phone:         phoneVal,
+    status:        statusVal,
+    nextDate:      (document.getElementById('dp-f-nextdate').value || '').trim(),
+    modelCategory: modelCategory,
+    modelDetail:   modelDetail,
+    model:         model,
+    tags:          tags,
+    memo:          memoFinal,
+    updatedAt:     new Date().toISOString(),
+  };
+  customers[idx] = updated;
+  saveLocalCustomers(customers);
+
+  /* 구글시트 update */
+  const saveBtn  = document.getElementById('dp-save-btn');
+  const saveText = document.getElementById('dp-save-text');
+  const saveLoad = document.getElementById('dp-save-loading');
+  saveBtn.disabled = true;
+  saveText.classList.add('hidden');
+  saveLoad.classList.remove('hidden');
+  try {
+    const params = {
+      action:        'update',          // ← Update (기존 레코드 수정)
+      id:            updated.id,
+      name:          updated.name,
+      companyName:   updated.companyName   || '',
+      phone:         updated.phone,
+      region:        updated.region        || '',
+      model:         updated.model         || '',
+      budget:        updated.budget        || '',
+      timing:        updated.timing        || '',
+      source:        updated.source        || '',
+      status:        updated.status,
+      memo:          updated.memo          || '',
+      nextDate:      updated.nextDate      || '',
+      createdAt:     updated.createdAt     || '',
+      updatedAt:     updated.updatedAt,
+      releaseDate:   updated.releaseDate   || '',
+      releaseMonth:  updated.releaseMonth  || '',
+      tags:          updated.tags          || '',
+      modelCategory: updated.modelCategory || '',
+      modelDetail:   updated.modelDetail   || '',
+    };
+    await sheetRequest(params);
+    dpShowAlert('저장되었습니다. ✓', 'success');
+    /* 헤더 상태뱃지·이름 갱신 */
+    document.getElementById('dp-name').textContent = updated.name;
+    const sc = STATUS_COLORS[updated.status] || { bg: '#f3f4f6', text: '#374151' };
+    document.getElementById('dp-status-wrap').innerHTML =
+      `<span class="status-badge" style="background:${sc.bg};color:${sc.text}">${escHtml(updated.status)}</span>`;
+    /* 이력박스 갱신 */
+    document.getElementById('dp-memo-history').textContent = updated.memo || '상담 내용 없음';
+    document.getElementById('dp-f-memo-new').value = '';
+  } catch(e) {
+    dpShowAlert('로컬 저장 완료. 구글시트 전송을 확인하세요.', 'error');
+  } finally {
+    saveBtn.disabled = false;
+    saveText.classList.remove('hidden');
+    saveLoad.classList.add('hidden');
+  }
+}
+
+function deleteFromDetail() {
   document.getElementById('confirm-msg').textContent = '이 고객 정보를 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.';
   document.getElementById('confirm-dialog').classList.remove('hidden');
   document.getElementById('confirm-ok').onclick = async () => {
-    const customers = getCustomers().filter(c => c.id !== modalCustomerId);
+    const customers = getCustomers().filter(c => c.id !== detailCustomerId);
     saveLocalCustomers(customers);
-    await sheetRequest({ action: 'delete', id: modalCustomerId });
+    await sheetRequest({ action: 'delete', id: detailCustomerId });
     closeConfirm();
-    closeDetailModal();
-    if (document.getElementById('view-list').classList.contains('active')) {
-      renderCustomerList(getCustomers());
-    } else {
-      renderDashboard();
-    }
+    goBackFromDetail();
+    renderDashboard();
   };
 }
+
+function dpShowAlert(msg, type) {
+  const el = document.getElementById('dp-alert');
+  el.textContent = msg; el.className = 'form-alert ' + type;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 5000);
+}
+
+/* 상세 페이지용 태그 피커 */
+function dpInitTagPicker() {
+  const picker = document.getElementById('dp-tag-picker');
+  if (!picker) return;
+  picker.innerHTML = '';
+  TAGS.forEach(tag => {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'tag-btn';
+    btn.textContent = tag; btn.dataset.tag = tag;
+    btn.onclick = () => btn.classList.toggle('selected');
+    picker.appendChild(btn);
+  });
+}
+function dpGetSelectedTags() {
+  return Array.from(document.querySelectorAll('#dp-tag-picker .tag-btn.selected'))
+    .map(b => b.dataset.tag);
+}
+function dpSetSelectedTags(tagStr) {
+  const tags = (tagStr || '').split(',').map(t => t.trim()).filter(Boolean);
+  document.querySelectorAll('#dp-tag-picker .tag-btn').forEach(btn => {
+    btn.classList.toggle('selected', tags.includes(btn.dataset.tag));
+  });
+}
+
+/* 상세 페이지용 차종 드롭다운 */
+function dpOnModelCategoryChange() {
+  const cat       = document.getElementById('dp-model-category').value;
+  const detailSel = document.getElementById('dp-model-detail');
+  const customInp = document.getElementById('dp-model-custom');
+  detailSel.innerHTML = '<option value="">세부모델 선택</option>';
+  customInp.classList.add('hidden'); customInp.value = '';
+  if (!cat) { detailSel.setAttribute('disabled', ''); return; }
+  if (cat === '기타') { detailSel.setAttribute('disabled', ''); customInp.classList.remove('hidden'); return; }
+  detailSel.removeAttribute('disabled');
+  (MODEL_DETAILS[cat] || []).forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m; opt.textContent = m; detailSel.appendChild(opt);
+  });
+  const customOpt = document.createElement('option');
+  customOpt.value = '__custom__'; customOpt.textContent = '직접 입력';
+  detailSel.appendChild(customOpt);
+}
+function dpOnModelDetailChange() {
+  const detailSel = document.getElementById('dp-model-detail');
+  const customInp = document.getElementById('dp-model-custom');
+  if (detailSel.value === '__custom__') {
+    customInp.classList.remove('hidden'); customInp.placeholder = '세부모델을 직접 입력하세요';
+  } else { customInp.classList.add('hidden'); customInp.value = ''; }
+}
+function dpGetModelFromForm() {
+  const cat       = (document.getElementById('dp-model-category').value || '').trim();
+  const detailSel = document.getElementById('dp-model-detail');
+  const customVal = (document.getElementById('dp-model-custom').value || '').trim();
+  let detail = '';
+  if (cat === '기타') { detail = customVal; }
+  else if (detailSel.value === '__custom__') { detail = customVal; }
+  else { detail = (detailSel.value || '').trim(); }
+  const display = cat && detail ? `${cat} / ${detail}` : (cat || detail || '');
+  return { modelCategory: cat, modelDetail: detail, model: display };
+}
+function dpSetModelForEdit(c) {
+  let cat = c.modelCategory || '', detail = c.modelDetail || '';
+  if (!cat && c.model) {
+    const parts = c.model.split(' / ');
+    cat = parts[0] ? parts[0].trim() : '';
+    detail = parts[1] ? parts[1].trim() : '';
+  }
+  document.getElementById('dp-model-category').value = cat;
+  dpOnModelCategoryChange();
+  if (!cat || cat === '기타') { document.getElementById('dp-model-custom').value = detail; return; }
+  if (detail) {
+    const detailSel = document.getElementById('dp-model-detail');
+    const inList = Array.from(detailSel.options).some(o => o.value === detail);
+    if (inList) { detailSel.value = detail; }
+    else {
+      detailSel.value = '__custom__';
+      const ci = document.getElementById('dp-model-custom');
+      ci.value = detail; ci.classList.remove('hidden');
+    }
+  }
+}
+
+/* ── (구) 모달 함수 — 하위 호환을 위해 빈 래퍼만 유지 ── */
+function openDetailModal(id) { openDetailPage(id, 'list'); }
+function closeDetailModal()  {}
+function editFromModal()     {}
+
+
 function closeConfirm() { document.getElementById('confirm-dialog').classList.add('hidden'); }
 
 /* ── 유틸 ── */
