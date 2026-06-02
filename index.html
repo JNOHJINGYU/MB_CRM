@@ -1450,6 +1450,9 @@ async function handleFormSubmit(event) {
   submitText.classList.add('hidden');
   submitLoad.classList.remove('hidden');
   try {
+
+
+
     // ★ 구글시트 헤더 순서와 1:1 일치 (절대 순서 변경 금지)
     // 고객ID / 고객명 / 법인명 / 연락처 / 거주지역 / 관심차종 / 구매예산 / 구매예정시기
     // 유입경로 / 현재상태 / 상담내용 / 다음연락일 / 등록일시 / 수정일시 / 출고일 / 출고월
@@ -1639,7 +1642,7 @@ async function saveDetailChanges() {
   saveLoad.classList.remove('hidden');
   try {
     const params = {
-      action:        'update',          // ← Update (기존 레코드 수정)
+      action:        'save',          // ← Update (기존 레코드 수정)
       id:            updated.id,
       name:          updated.name,
       companyName:   updated.companyName   || '',
