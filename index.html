@@ -408,6 +408,91 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
 .confirm-box p { margin-bottom: 22px; font-size: 0.92rem; color: var(--text-secondary); line-height: 1.6; }
 .confirm-actions { display: flex; gap: 10px; justify-content: center; }
 
+
+/* ── 태그 선택기 ── */
+.tag-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 12px 14px;
+  background: var(--surface-02);
+  border: 1.5px solid var(--border-dim);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.tag-picker:focus-within {
+  border-color: var(--blue);
+  box-shadow: var(--blue-glow);
+  background: #fff;
+}
+.tag-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 13px;
+  border: 1.5px solid var(--border-soft);
+  border-radius: 40px;
+  background: #fff;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  user-select: none;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.tag-btn:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: var(--blue-dim);
+}
+.tag-btn.selected {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+.tag-btn.selected:hover {
+  background: var(--blue);
+  border-color: var(--blue);
+}
+/* 모달 내 태그 표시 */
+.detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.detail-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: #111;
+  color: #fff;
+  border-radius: 40px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+/* 카드 태그 미니 뱃지 */
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  grid-column: 1;
+  grid-row: 4;
+  margin-top: 5px;
+}
+.card-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 40px;
+  background: var(--surface-03);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-dim);
+  white-space: nowrap;
+}
+
 /* ── 유틸 ── */
 .hidden { display: none !important; }
 ::-webkit-scrollbar { width: 5px; }
@@ -593,7 +678,11 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
           <label for="f-nextdate">다음 연락일</label>
           <input type="date" id="f-nextdate" />
         </div>
-        <div class="form-group full">
+        <div class="form-group full" id="tag-picker-group">
+          <label>태그 선택</label>
+          <div class="tag-picker" id="tag-picker"></div>
+        </div>
+                <div class="form-group full">
           <label for="f-memo">상담내용</label>
           <textarea id="f-memo" rows="4" placeholder="상담 내용, 특이사항, 고객 선호도 등을 기록하세요."></textarea>
         </div>
@@ -681,6 +770,13 @@ const STATUS_COLORS = {
   '해약':         { bg: '#fee2e2', text: '#991b1b' },
   '출고완료':     { bg: '#111318', text: '#ffffff' },
 };
+
+/* ── 기본 태그 목록 ── */
+const TAGS = [
+  'VIP', '리드', '고객', '계약자', '후속조치', '재구매',
+  '법인', '개인', 'S클래스 관심', 'E클래스 관심',
+  '장기렌트', '파이낸셜', '시승희망', '견적요청',
+];
 
 /* ── 관심차종 세부모델 ── */
 const MODEL_DETAILS = {
@@ -863,6 +959,7 @@ function normalizeCustomerObj(obj) {
     updatedAt:     get('수정일시', 'updatedAt'),
     releaseDate:   get('출고일', 'releaseDate'),
     releaseMonth:  get('출고월', 'releaseMonth'),
+    tags:          get('태그', 'tags'),
   };
 }
 
@@ -976,6 +1073,7 @@ function buildCard(c) {
     <div class="card-name">${escHtml(c.name)}</div>
     <div class="card-model">${escHtml(modelDisplay || '—')} ${c.budget ? '· ' + escHtml(c.budget) : ''}</div>
     <div class="card-memo">${escHtml(c.memo || '상담 내용 없음')}</div>
+    ${c.tags ? '<div class="card-tags">' + c.tags.split(",").map(t=>t.trim()).filter(Boolean).slice(0,3).map(t=>'<span class="card-tag">'+escHtml(t)+'</span>').join("") + '</div>' : ""}
     <div class="card-right">
       <span class="status-badge" style="background:${sc.bg};color:${sc.text}">${escHtml(c.status)}</span>
       ${dateLabel ? `<span class="${dateClass}">${dateLabel}</span>` : ''}
@@ -1026,6 +1124,38 @@ function quickFilter(value, btn) {
   btn.classList.add('active');
   document.getElementById('filter-status').value = '';
   filterCustomers();
+}
+
+/* ── 태그 선택기 초기화 ── */
+function initTagPicker() {
+  const picker = document.getElementById('tag-picker');
+  if (!picker) return;
+  picker.innerHTML = '';
+  TAGS.forEach(tag => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tag-btn';
+    btn.textContent = tag;
+    btn.dataset.tag = tag;
+    btn.onclick = () => btn.classList.toggle('selected');
+    picker.appendChild(btn);
+  });
+}
+
+function getSelectedTags() {
+  return Array.from(document.querySelectorAll('#tag-picker .tag-btn.selected'))
+    .map(b => b.dataset.tag);
+}
+
+function setSelectedTags(tagStr) {
+  const tags = (tagStr || '').split(',').map(t => t.trim()).filter(Boolean);
+  document.querySelectorAll('#tag-picker .tag-btn').forEach(btn => {
+    btn.classList.toggle('selected', tags.includes(btn.dataset.tag));
+  });
+}
+
+function clearSelectedTags() {
+  document.querySelectorAll('#tag-picker .tag-btn').forEach(btn => btn.classList.remove('selected'));
 }
 
 /* ── 관심차종 2단계 선택 ── */
@@ -1114,6 +1244,7 @@ async function handleFormSubmit(event) {
     status:        v('f-status'),
     memo:          v('f-memo'),
     nextDate:      v('f-nextdate'),
+    tags:          getSelectedTags().join(', '),
     createdAt:     editingId ? '' : new Date().toISOString(),
     updatedAt:     new Date().toISOString(),
   };
@@ -1152,6 +1283,7 @@ async function handleFormSubmit(event) {
       updatedAt:     customer.updatedAt     || '',   // col 14 수정일시
       releaseDate:   customer.releaseDate   || '',   // col 15 출고일
       releaseMonth:  customer.releaseMonth  || '',   // col 16 출고월
+      tags:          customer.tags          || '',   // col 17 태그
       modelCategory: customer.modelCategory || '',   // 부가정보 (시트 외 컬럼)
       modelDetail:   customer.modelDetail   || '',   // 부가정보 (시트 외 컬럼)
     };
@@ -1177,6 +1309,7 @@ function resetForm() {
   customInput.classList.add('hidden');
   customInput.value = '';
   document.getElementById('f-company').value = '';
+  clearSelectedTags();
   editingId = null;
   document.querySelector('.form-title').textContent = '고객 등록';
   hideAlert();
@@ -1214,6 +1347,7 @@ function openDetailModal(id) {
       <div class="detail-item"><span class="detail-key">유입경로</span><span class="detail-val">${escHtml(c.source||'—')}</span></div>
       <div class="detail-item"><span class="detail-key">다음 연락일</span><span class="detail-val">${c.nextDate ? formatDate(c.nextDate) : '—'}</span></div>
     </div>
+    ${c.tags ? '<div class="detail-item" style="grid-column:1/-1;margin-bottom:4px"><span class="detail-key">태그</span><div class="detail-tags">' + c.tags.split(",").map(t=>t.trim()).filter(Boolean).map(t=>'<span class="detail-tag">'+escHtml(t)+'</span>').join("") + '</div></div>' : ""}
     <div class="detail-memo">
       <div class="detail-key">상담내용</div>
       <div class="detail-val">${escHtml(c.memo||'없음')}</div>
@@ -1251,6 +1385,7 @@ function editFromModal() {
   setValue('f-memo',    c.memo);
   setValue('f-nextdate',c.nextDate);
   setModelForEdit(c);
+  setSelectedTags(c.tags || '');
   editingId = c.id;
   document.querySelector('.form-title').textContent = '고객 정보 수정';
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1303,7 +1438,7 @@ function callCustomer(phone) { window.location.href = 'tel:' + phone.replace(/[^
 })();
 
 /* ── 초기 실행 ── */
-document.addEventListener('DOMContentLoaded', () => { loadFromSheets(); });
+document.addEventListener('DOMContentLoaded', () => { initTagPicker(); loadFromSheets(); });
 </script>
 
 </body>
