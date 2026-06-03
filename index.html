@@ -232,7 +232,7 @@ a { color: inherit; text-decoration: none; }
 .card-name { font-weight: 700; font-size: 0.98rem; grid-column: 1; grid-row: 1; color: var(--text-primary); letter-spacing: -0.01em; }
 .card-model { font-size: 0.8rem; color: var(--text-secondary); grid-column: 1; grid-row: 2; margin-top: 2px; }
 .card-memo { font-size: 0.76rem; color: var(--text-tertiary); grid-column: 1; grid-row: 3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; margin-top: 5px; }
-.card-right { grid-column: 2; grid-row: 1 / 4; display: flex; flex-direction: column; align-items: flex-end; gap: 7px; }
+.card-right { grid-column: 2; grid-row: 1 / 5; display: flex; flex-direction: column; align-items: flex-end; gap: 7px; }
 .status-badge { font-size: 0.68rem; font-weight: 700; padding: 4px 10px; border-radius: 40px; white-space: nowrap; letter-spacing: 0.02em; }
 .card-date { font-size: 0.7rem; color: var(--text-tertiary); font-weight: 500; }
 .card-date.overdue { color: var(--red); font-weight: 700; }
@@ -344,7 +344,8 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
 .search-wrap input[type="search"] { padding-left: 36px; width: 100%; }
 .filter-bar select { width: 150px; flex-shrink: 0; }
 
-.quick-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+/* ── 퀵필터 (상태) ── */
+.quick-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
 .qbtn {
   padding: 6px 16px; background: var(--surface-01); border: 1.5px solid var(--border-dim);
   border-radius: 40px; font-size: 0.76rem; font-weight: 700; cursor: pointer;
@@ -353,6 +354,33 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
 }
 .qbtn:hover { border-color: #111; color: #111; }
 .qbtn.active { background: #111; color: #fff; border-color: #111; }
+
+/* ── 태그 필터 바 (신규) ── */
+.tag-filter-section {
+  margin-bottom: 18px;
+}
+.tag-filter-label {
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-bottom: 8px; display: block;
+}
+.tag-filter-row {
+  display: flex; gap: 5px; flex-wrap: wrap;
+}
+.tag-filter-btn {
+  padding: 5px 13px;
+  background: var(--surface-01);
+  border: 1.5px solid var(--border-dim);
+  border-radius: 40px;
+  font-size: 0.73rem; font-weight: 700;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all var(--transition);
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+}
+.tag-filter-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
+.tag-filter-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+.tag-filter-btn.all-btn.active { background: #111; border-color: #111; }
 
 /* ── 모달 ── */
 .modal-overlay {
@@ -388,26 +416,9 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
 .detail-phone { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 18px; }
 .detail-phone a { color: var(--blue); font-weight: 600; }
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
-.detail-item { display: flex; flex-direction: column; gap: 4px; }
-.detail-key { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-tertiary); }
-.detail-val { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); }
-.detail-memo { margin-top: 14px; }
-.detail-memo .detail-key { margin-bottom: 8px; }
-.detail-memo .detail-val {
-  background: var(--surface-02); border: 1px solid var(--border-dim);
-  border-radius: var(--radius-sm); padding: 12px 14px;
-  font-size: 0.84rem; font-weight: 400; line-height: 1.7;
-  white-space: pre-wrap; color: var(--text-secondary);
-}
-
-.confirm-box {
-  background: var(--surface-01); border: 1px solid var(--border-soft);
-  border-radius: var(--radius-lg); padding: 28px 24px;
-  max-width: 320px; width: 90%; text-align: center; box-shadow: var(--shadow-lg);
-}
-.confirm-box p { margin-bottom: 22px; font-size: 0.92rem; color: var(--text-secondary); line-height: 1.6; }
-.confirm-actions { display: flex; gap: 10px; justify-content: center; }
-
+.detail-item { display: flex; flex-direction: column; gap: 3px; }
+.detail-key { font-size: 0.68rem; font-weight: 700; color: var(--text-tertiary); letter-spacing: 0.06em; text-transform: uppercase; }
+.detail-val { font-size: 0.88rem; color: var(--text-primary); font-weight: 500; }
 
 /* ── 태그 선택기 ── */
 .tag-picker {
@@ -454,24 +465,6 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
 .tag-btn.selected:hover {
   background: var(--blue);
   border-color: var(--blue);
-}
-/* 모달 내 태그 표시 */
-.detail-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 4px;
-}
-.detail-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  background: #111;
-  color: #fff;
-  border-radius: 40px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
 }
 /* 카드 태그 미니 뱃지 */
 .card-tags {
@@ -568,6 +561,16 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
   font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all var(--transition);
 }
 .btn-delete-outline:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
+/* confirm 다이얼로그 */
+.confirm-box {
+  background: var(--surface-01); border-radius: var(--radius-lg);
+  padding: 28px 24px 24px; max-width: 340px; width: 90%;
+  box-shadow: var(--shadow-lg); border: 1px solid var(--border-soft);
+  text-align: center;
+}
+.confirm-box p { font-size: 0.95rem; font-weight: 600; margin-bottom: 20px; white-space: pre-line; }
+.confirm-actions { display: flex; gap: 10px; justify-content: center; }
 
 /* 상세 페이지용 반응형 */
 @media (max-width: 520px) {
@@ -672,7 +675,7 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
         <p class="empty-msg" id="today-empty">오늘 연락 예정 고객이 없습니다.</p>
       </div>
 
-      <div class="section-label mt">최근 등록 고객</div>
+      <div class="section-label mt">최근 수정 고객</div>
       <div id="recent-list" class="card-grid">
         <p class="empty-msg">등록된 고객이 없습니다.</p>
       </div>
@@ -767,7 +770,7 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
           <label>태그 선택</label>
           <div class="tag-picker" id="tag-picker"></div>
         </div>
-                <div class="form-group full">
+        <div class="form-group full">
           <label for="f-memo">상담내용</label>
           <textarea id="f-memo" rows="4" placeholder="상담 내용, 특이사항, 고객 선호도 등을 기록하세요."></textarea>
         </div>
@@ -784,6 +787,7 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
 
     <!-- 뷰 3: 고객 목록 -->
     <section id="view-list" class="view">
+      <!-- 검색 + 상태 필터 -->
       <div class="filter-bar">
         <div class="search-wrap">
           <input type="search" id="search-input" placeholder="고객명, 차종, 연락처 검색..." oninput="filterCustomers()" />
@@ -800,13 +804,24 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
           <option value="출고완료">출고완료</option>
         </select>
       </div>
+
+      <!-- 상태 퀵필터 -->
       <div class="quick-filters">
-        <button class="qbtn active" onclick="quickFilter('all', this)">전체</button>
-        <button class="qbtn" onclick="quickFilter('계약유력', this)">🔥 계약유력</button>
-        <button class="qbtn" onclick="quickFilter('상담중', this)">상담중</button>
-        <button class="qbtn" onclick="quickFilter('타딜러구매', this)">타딜러구매</button>
-        <button class="qbtn" onclick="quickFilter('출고완료', this)">출고완료</button>
+        <button class="qbtn active" onclick="quickStatusFilter('all', this)">전체</button>
+        <button class="qbtn" onclick="quickStatusFilter('계약유력', this)">🔥 계약유력</button>
+        <button class="qbtn" onclick="quickStatusFilter('상담중', this)">상담중</button>
+        <button class="qbtn" onclick="quickStatusFilter('타딜러구매', this)">타딜러구매</button>
+        <button class="qbtn" onclick="quickStatusFilter('출고완료', this)">출고완료</button>
       </div>
+
+      <!-- 태그 필터 (신규) -->
+      <div class="tag-filter-section">
+        <span class="tag-filter-label">태그 필터</span>
+        <div class="tag-filter-row" id="tag-filter-row">
+          <!-- JS로 생성 -->
+        </div>
+      </div>
+
       <div id="customer-list" class="card-grid">
         <p class="empty-msg">등록된 고객이 없습니다.</p>
       </div>
@@ -828,7 +843,6 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
         <div>
           <div class="detail-section-title">📋 기본 정보</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;margin-top:14px;" id="dp-info-grid">
-            <!-- JS로 채움 -->
           </div>
         </div>
 
@@ -900,7 +914,7 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
               <label>상담이력 (누적)</label>
               <div class="memo-history-wrap">
                 <div class="memo-history-box" id="dp-memo-history">—</div>
-                <div class="memo-date-prefix" id="dp-memo-date-label" style="background:var(--surface-03);border:1.5px solid var(--border-dim);border-top:none;border-bottom:none;padding:5px 14px;font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);">▼ 새 상담내용 추가 (오늘 날짜로 자동 기록)</div>
+                <div id="dp-memo-date-label" style="background:var(--surface-03);border:1.5px solid var(--border-dim);border-top:none;border-bottom:none;padding:5px 14px;font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);">▼ 새 상담내용 추가 (오늘 날짜로 자동 기록)</div>
                 <textarea id="dp-f-memo-new" rows="3"
                   class="memo-new-textarea"
                   placeholder="새 상담 내용을 입력하세요. 저장 시 날짜와 함께 기존 이력에 누적됩니다."></textarea>
@@ -938,12 +952,18 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
 
 <script>
 /* =====================================================
-   노진규 고객관리 시스템 — 구글시트 DB 버전
+   노진규 고객관리 시스템 — v13 (2026-06)
+   - 태그 전면 개편
+   - 태그 클릭 필터
+   - 최근 수정순 정렬
+   - 기존 고객 update action 수정
+   - 전화번호 중복 방지
+   - 상세 저장 안정화
    ===================================================== */
 
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9uOg-JWmyEJ9MCalS6CF6Tew_bQb0awtTcgIllFG_aiXwZAYpy44HX_Hdn2qG0S5pUw/exec";
 
-/* ── 상태 배지 색상 (밝은 테마) ── */
+/* ── 상태 배지 색상 ── */
 const STATUS_COLORS = {
   '신규문의':     { bg: '#dbeafe', text: '#1d4ed8' },
   '상담중':       { bg: '#fef3c7', text: '#92400e' },
@@ -955,156 +975,145 @@ const STATUS_COLORS = {
   '출고완료':     { bg: '#111318', text: '#ffffff' },
 };
 
-/* ── 기본 태그 목록 ── */
+/* ── 태그 목록 (전면 개편) ── */
 const TAGS = [
-  'VIP', '리드', '고객', '계약자', '후속조치', '재구매',
-  '법인', '개인', 'S클래스 관심', 'E클래스 관심',
-  '장기렌트', '파이낸셜', '시승희망', '견적요청',
+  'VIP', '법인', '개인', '재구매', '트레이드인',
+  'MBF', '에이전시', '수출', '당직고객',
+  'A급가망', 'MBMK', '계약', '출고',
 ];
 
 /* ── 관심차종 세부모델 ── */
 const MODEL_DETAILS = {
   'E-Class': [
-    'E 200 exclusive',
-    'E 200 AMG Line',
-    'E 220 d 4MATIC exclusive',
-    'E 300 4MATIC exclusive',
-    'E 300 4MATIC AMG Line',
-    'E 350 e 4MATIC',
-    'E 450 4MATIC AMG Line',
-    'E 450 4MATIC exclusive',
+    'E 200 exclusive','E 200 AMG Line',
+    'E 220 d 4MATIC exclusive','E 300 4MATIC exclusive',
+    'E 300 4MATIC AMG Line','E 350 e 4MATIC',
+    'E 450 4MATIC AMG Line','E 450 4MATIC exclusive',
   ],
   'S-Class': [
-    'S 350 d 4MATIC SWB',
-    'S 450 4MATIC SWB',
-    'S 450 4MATIC Long',
-    'S 450 4MATIC Long AMG Line',
-    'S 500 4MATIC Long',
-    'S 580 4MATIC Long',
+    'S 350 d 4MATIC SWB','S 450 4MATIC SWB',
+    'S 450 4MATIC Long','S 450 4MATIC Long AMG Line',
+    'S 500 4MATIC Long','S 580 4MATIC Long',
     'Mercedes-Maybach S 580 4MATIC',
   ],
   'C-Class': [
-    'C 200',
-    'C 200 AMG Line',
-    'C 220 d AMG Line',
-    'C 300 4MATIC AMG Line',
+    'C 200','C 200 AMG Line',
+    'C 220 d AMG Line','C 300 4MATIC AMG Line',
   ],
   'GLC': [
-    'GLC 300 4MATIC',
-    'GLC 300 4MATIC AMG Line',
-    'GLC 300 4MATIC Coupé',
-    'GLC 300 4MATIC Coupé AMG Line',
+    'GLC 300 4MATIC','GLC 300 4MATIC AMG Line',
+    'GLC 300 4MATIC Coupé','GLC 300 4MATIC Coupé AMG Line',
   ],
   'GLE': [
-    'GLE 300 d 4MATIC',
-    'GLE 350 4MATIC',
-    'GLE 450 4MATIC',
-    'GLE 450 d 4MATIC',
-    'GLE 53 4MATIC+',
-    'GLE 450 4MATIC Coupé',
+    'GLE 300 d 4MATIC','GLE 350 4MATIC',
+    'GLE 450 4MATIC','GLE 450 d 4MATIC',
+    'GLE 53 4MATIC+','GLE 450 4MATIC Coupé',
     'GLE 53 4MATIC+ Coupé',
   ],
-  'GLS': [
-    'GLS 450 4MATIC',
-    'GLS 600 4MATIC Maybach',
-  ],
+  'GLS': ['GLS 450 4MATIC','GLS 600 4MATIC Maybach'],
   'CLA': [
-    'CLA 200',
-    'CLA 200 AMG Line',
-    'CLA 250 4MATIC AMG Line',
-    'CLA 35 AMG 4MATIC',
+    'CLA 200','CLA 200 AMG Line',
+    'CLA 250 4MATIC AMG Line','CLA 35 AMG 4MATIC',
   ],
-  'A-Class': [
-    'A 200',
-    'A 200 AMG Line',
-    'A 35 AMG 4MATIC',
-  ],
+  'A-Class': ['A 200','A 200 AMG Line','A 35 AMG 4MATIC'],
   'EQ': [
-    'EQA 250 progressive',
-    'EQA 250 AMG Line',
-    'EQB 300 4M progressive',
-    'EQB 300 4M AMG Line',
-    'EQE 350+SUV',
-    'EQE 350+',
-    'EQE 500 4M SUV',
-    'EQS 450 4M SUV',
-    'EQS 580 4M SUV',
-    'G 580 with EQ Technology',
+    'EQA 250 progressive','EQA 250 AMG Line',
+    'EQB 300 4M progressive','EQB 300 4M AMG Line',
+    'EQE 350+SUV','EQE 350+',
+    'EQE 500 4M SUV','EQS 450 4M SUV',
+    'EQS 580 4M SUV','G 580 with EQ Technology',
   ],
 };
 
-let editingId          = null;
-let modalCustomerId    = null;
-let currentQuickFilter = 'all';
+/* ── 필터 상태 ── */
+let currentStatusFilter = 'all';  // 상태 퀵필터
+let currentTagFilter    = 'all';  // 태그 필터 (신규)
 
-/* ── 구글시트 API 헬퍼 ── */
+/* ── 상세 페이지 상태 ── */
+let detailCustomerId = null;
+let detailPrevView   = 'list';
+
+/* =============================================
+   구글시트 API 헬퍼
+   ============================================= */
+
+/* no-cors: 응답 내용 불필요한 단순 write용 */
 async function sheetRequest(params) {
   if (!SCRIPT_URL) return null;
   const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
-  try { await fetch(url, { mode: 'no-cors' }); return true; }
-  catch(e) { console.error('시트 요청 오류:', e); return null; }
+  try {
+    await fetch(url, { mode: 'no-cors' });
+    return true;
+  } catch(e) {
+    console.error('시트 요청 오류:', e);
+    return null;
+  }
 }
+
+/* 응답 JSON 필요한 read용 */
 async function sheetFetch(params) {
   if (!SCRIPT_URL) return null;
   const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
-  try { const res = await fetch(url); return await res.json(); }
-  catch(e) { console.error('시트 읽기 오류:', e); return null; }
+  try {
+    const res = await fetch(url);
+    return await res.json();
+  } catch(e) {
+    console.error('시트 읽기 오류:', e);
+    return null;
+  }
 }
 
-/* ── 로컬 캐시 ── */
+/* =============================================
+   로컬 캐시
+   ============================================= */
 function getCustomers() {
   try { return JSON.parse(localStorage.getItem('crm_customers') || '[]'); }
   catch(e) { return []; }
 }
-function saveLocalCustomers(c) { localStorage.setItem('crm_customers', JSON.stringify(c)); }
-function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function saveLocalCustomers(c) {
+  localStorage.setItem('crm_customers', JSON.stringify(c));
+}
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
 
-/* ── 날짜 정규화 (다양한 형식 → "yyyy-mm-dd") ── */
+/* =============================================
+   날짜 정규화
+   ============================================= */
 function normalizeDateStr(val) {
   if (!val) return '';
-  // Date 객체 or 숫자 타임스탬프
   if (val instanceof Date) {
     if (isNaN(val.getTime())) return '';
     return val.toISOString().split('T')[0];
   }
   const s = String(val).trim();
   if (!s) return '';
-  // 이미 yyyy-mm-dd
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  // yyyy.mm.dd
   if (/^\d{4}\.\d{2}\.\d{2}$/.test(s)) return s.replace(/\./g, '-');
-  // yyyy/mm/dd
   if (/^\d{4}\/\d{2}\/\d{2}$/.test(s)) return s.replace(/\//g, '-');
-  // ISO 8601 (Date 직렬화)
   if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return s.split('T')[0];
-  // Google Sheets serial number (숫자인 경우)
   const num = Number(s);
   if (!isNaN(num) && num > 1000) {
-    // Sheets epoch: Dec 30, 1899
     const d = new Date((num - 25569) * 86400 * 1000);
     if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
   }
-  return s; // 알 수 없는 형식은 그대로 반환
+  return s;
 }
 
-/* ── 구글시트 rows → 고객 객체 배열 변환 (헤더명 기준) ── */
+/* =============================================
+   구글시트 rows → 고객 객체
+   ============================================= */
 function rowsToCustomers(result) {
-  // Case 1: Apps Script가 이미 {customers: [{name:..., nextDate:...}, ...]} 형태로 반환
   if (result.customers && Array.isArray(result.customers) && result.customers.length > 0) {
     const first = result.customers[0];
-    // 객체 배열이면 헤더명 기반 정규화만 수행
     if (first && typeof first === 'object' && !Array.isArray(first)) {
       return result.customers.map(row => normalizeCustomerObj(row));
     }
   }
-
-  // Case 2: Apps Script가 {rows: [[헤더행], [데이터행], ...]} 형태로 반환
   const rawRows = result.rows || result.data || result.customers;
   if (!Array.isArray(rawRows) || rawRows.length < 2) return null;
-
   const headers = rawRows[0].map(h => String(h).trim());
   const dataRows = rawRows.slice(1);
-
   return dataRows.map(row => {
     const obj = {};
     headers.forEach((h, i) => { obj[h] = row[i] !== undefined ? row[i] : ''; });
@@ -1112,18 +1121,14 @@ function rowsToCustomers(result) {
   });
 }
 
-/* ── 헤더명 → 내부 필드명 매핑 + 날짜 정규화 ── */
 function normalizeCustomerObj(obj) {
-  // 헤더명이 한글(구글시트)이든 영문(기존 저장)이든 모두 처리
   const get = (...keys) => {
     for (const k of keys) {
       if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') return obj[k];
     }
     return '';
   };
-
   const nextDateRaw = get('다음연락일', 'nextDate', '다음 연락일', 'next_date');
-
   return {
     id:            get('고객ID', 'id'),
     name:          get('고객명', 'name'),
@@ -1147,7 +1152,9 @@ function normalizeCustomerObj(obj) {
   };
 }
 
-/* ── 구글시트 불러오기 ── */
+/* =============================================
+   구글시트 불러오기
+   ============================================= */
 async function loadFromSheets() {
   if (!SCRIPT_URL) { renderDashboard(); return; }
   showLoadingBanner(true);
@@ -1156,7 +1163,7 @@ async function loadFromSheets() {
     const mapped = rowsToCustomers(result);
     if (mapped) {
       saveLocalCustomers(mapped);
-      console.log('구글시트에서 ' + mapped.length + '명 불러옴 (헤더명 기반 매핑)');
+      console.log('구글시트에서 ' + mapped.length + '명 불러옴');
     } else {
       console.warn('구글시트 불러오기 실패 — 로컬 캐시 사용');
     }
@@ -1166,6 +1173,7 @@ async function loadFromSheets() {
   showLoadingBanner(false);
   renderDashboard();
 }
+
 function showLoadingBanner(show) {
   let el = document.getElementById('loading-banner');
   if (!el) {
@@ -1178,22 +1186,38 @@ function showLoadingBanner(show) {
   el.style.display = show ? 'block' : 'none';
 }
 
-/* ── 뷰 전환 ── */
+/* =============================================
+   정렬: 최근 수정(updatedAt) → 등록(createdAt) 순
+   ============================================= */
+function sortByRecent(list) {
+  return [...list].sort((a, b) => {
+    const ta = a.updatedAt || a.createdAt || '';
+    const tb = b.updatedAt || b.createdAt || '';
+    if (ta > tb) return -1;
+    if (ta < tb) return  1;
+    return 0;
+  });
+}
+
+/* =============================================
+   뷰 전환
+   ============================================= */
 function showView(viewName) {
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   document.getElementById('view-' + viewName).classList.add('active');
-  // 상세 뷰는 nav 하이라이트 없음 (목록에 머무는 것처럼)
   const navTarget = viewName === 'detail' ? detailPrevView : viewName;
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.view === navTarget);
   });
   if (viewName === 'dashboard') renderDashboard();
-  if (viewName === 'list')      renderCustomerList(getCustomers());
-  if (viewName === 'register' && editingId === null) resetForm();
+  if (viewName === 'list')      renderCustomerList(getFilteredCustomers());
+  if (viewName === 'register' && !detailCustomerId) resetForm();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-/* ── 대시보드 ── */
+/* =============================================
+   대시보드
+   ============================================= */
 function renderDashboard() {
   const customers = getCustomers();
   const today = todayStr();
@@ -1210,6 +1234,7 @@ function renderDashboard() {
   if (hotTxt)   hotTxt.textContent   = '계약유력 '  + document.getElementById('stat-hot').textContent   + '명';
   if (doneTxt)  doneTxt.textContent  = '출고완료 '  + document.getElementById('stat-done').textContent  + '명';
 
+  /* 오늘 연락 */
   const todayCustomers = customers.filter(c => c.nextDate === today);
   const todayEl    = document.getElementById('today-contacts');
   const todayEmpty = document.getElementById('today-empty');
@@ -1233,9 +1258,10 @@ function renderDashboard() {
     });
   }
 
+  /* 최근 수정 고객 (정렬 적용) */
   const recentEl = document.getElementById('recent-list');
   recentEl.innerHTML = '';
-  const recent = [...customers].reverse().slice(0, 5);
+  const recent = sortByRecent(customers).slice(0, 5);
   if (recent.length === 0) {
     recentEl.innerHTML = '<p class="empty-msg">등록된 고객이 없습니다.</p>';
   } else {
@@ -1243,7 +1269,9 @@ function renderDashboard() {
   }
 }
 
-/* ── 고객 카드 ── */
+/* =============================================
+   고객 카드
+   ============================================= */
 function buildCard(c, fromView) {
   const card = document.createElement('div');
   card.className = 'customer-card' + (c.status === '계약유력' ? ' hot' : '');
@@ -1257,11 +1285,17 @@ function buildCard(c, fromView) {
     else if (c.nextDate === today) { dateClass += ' today'; dateLabel = '오늘'; }
   }
   const modelDisplay = getModelDisplay(c);
+  const tagsHtml = c.tags
+    ? '<div class="card-tags">' +
+        c.tags.split(',').map(t => t.trim()).filter(Boolean).slice(0, 4)
+          .map(t => '<span class="card-tag">' + escHtml(t) + '</span>').join('') +
+      '</div>'
+    : '';
   card.innerHTML = `
     <div class="card-name">${escHtml(c.name)}</div>
     <div class="card-model">${escHtml(modelDisplay || '—')} ${c.budget ? '· ' + escHtml(c.budget) : ''}</div>
     <div class="card-memo">${escHtml(c.memo || '상담 내용 없음')}</div>
-    ${c.tags ? '<div class="card-tags">' + c.tags.split(",").map(t=>t.trim()).filter(Boolean).slice(0,3).map(t=>'<span class="card-tag">'+escHtml(t)+'</span>').join("") + '</div>' : ""}
+    ${tagsHtml}
     <div class="card-right">
       <span class="status-badge" style="background:${sc.bg};color:${sc.text}">${escHtml(c.status)}</span>
       ${dateLabel ? `<span class="${dateClass}">${dateLabel}</span>` : ''}
@@ -1270,7 +1304,9 @@ function buildCard(c, fromView) {
   return card;
 }
 
-/* ── 차종 표시 헬퍼 ── */
+/* =============================================
+   차종 표시 헬퍼
+   ============================================= */
 function getModelDisplay(c) {
   if (c.modelCategory) {
     if (c.modelDetail) return `${c.modelCategory} / ${c.modelDetail}`;
@@ -1279,42 +1315,109 @@ function getModelDisplay(c) {
   return c.model || '';
 }
 
-/* ── 고객 목록 & 필터 ── */
+/* =============================================
+   고객 목록 렌더링 (정렬 포함)
+   ============================================= */
 function renderCustomerList(customers) {
   const el = document.getElementById('customer-list');
   el.innerHTML = '';
-  if (customers.length === 0) { el.innerHTML = '<p class="empty-msg">조건에 맞는 고객이 없습니다.</p>'; return; }
-  customers.forEach(c => el.appendChild(buildCard(c)));
+  const sorted = sortByRecent(customers);
+  if (sorted.length === 0) {
+    el.innerHTML = '<p class="empty-msg">조건에 맞는 고객이 없습니다.</p>';
+    return;
+  }
+  sorted.forEach(c => el.appendChild(buildCard(c)));
 }
-function filterCustomers() {
-  const keyword = (document.getElementById('search-input').value || '').trim().toLowerCase();
-  const status  = document.getElementById('filter-status').value;
-  let customers = getCustomers();
+
+/* 현재 필터 조건으로 고객 목록 추출 */
+function getFilteredCustomers() {
+  const keyword = (document.getElementById('search-input')?.value || '').trim().toLowerCase();
+  const statusSel = document.getElementById('filter-status')?.value || '';
+  let list = getCustomers();
+
   if (keyword) {
-    customers = customers.filter(c => {
+    list = list.filter(c => {
       const modelStr = getModelDisplay(c).toLowerCase();
       return (
-        c.name.toLowerCase().includes(keyword) ||
+        (c.name || '').toLowerCase().includes(keyword) ||
         modelStr.includes(keyword) ||
-        (c.modelCategory||'').toLowerCase().includes(keyword) ||
-        (c.modelDetail  ||'').toLowerCase().includes(keyword) ||
-        (c.phone||'').includes(keyword)
+        (c.modelCategory || '').toLowerCase().includes(keyword) ||
+        (c.modelDetail   || '').toLowerCase().includes(keyword) ||
+        (c.phone || '').includes(keyword)
       );
     });
   }
-  if (status) customers = customers.filter(c => c.status === status);
-  if (currentQuickFilter !== 'all') customers = customers.filter(c => c.status === currentQuickFilter);
-  renderCustomerList(customers);
+
+  /* 상태 필터 (드롭다운) */
+  if (statusSel) list = list.filter(c => c.status === statusSel);
+
+  /* 상태 퀵필터 */
+  if (currentStatusFilter !== 'all') {
+    list = list.filter(c => c.status === currentStatusFilter);
+  }
+
+  /* 태그 필터 (신규) */
+  if (currentTagFilter !== 'all') {
+    list = list.filter(c => {
+      if (!c.tags) return false;
+      const tags = c.tags.split(',').map(t => t.trim());
+      return tags.includes(currentTagFilter);
+    });
+  }
+
+  return list;
 }
-function quickFilter(value, btn) {
-  currentQuickFilter = value;
+
+function filterCustomers() {
+  renderCustomerList(getFilteredCustomers());
+}
+
+/* 상태 퀵필터 */
+function quickStatusFilter(value, btn) {
+  currentStatusFilter = value;
   document.querySelectorAll('.qbtn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('filter-status').value = '';
   filterCustomers();
 }
 
-/* ── 태그 선택기 초기화 ── */
+/* =============================================
+   태그 필터 버튼 생성 (신규)
+   ============================================= */
+function initTagFilterRow() {
+  const row = document.getElementById('tag-filter-row');
+  if (!row) return;
+  row.innerHTML = '';
+
+  /* 전체 버튼 */
+  const allBtn = document.createElement('button');
+  allBtn.className = 'tag-filter-btn all-btn active';
+  allBtn.textContent = '전체';
+  allBtn.dataset.tag = 'all';
+  allBtn.onclick = () => setTagFilter('all', allBtn);
+  row.appendChild(allBtn);
+
+  /* 각 태그 버튼 */
+  TAGS.forEach(tag => {
+    const btn = document.createElement('button');
+    btn.className = 'tag-filter-btn';
+    btn.textContent = tag;
+    btn.dataset.tag = tag;
+    btn.onclick = () => setTagFilter(tag, btn);
+    row.appendChild(btn);
+  });
+}
+
+function setTagFilter(tag, clickedBtn) {
+  currentTagFilter = tag;
+  document.querySelectorAll('.tag-filter-btn').forEach(b => b.classList.remove('active'));
+  clickedBtn.classList.add('active');
+  filterCustomers();
+}
+
+/* =============================================
+   태그 선택기 초기화 (등록 폼)
+   ============================================= */
 function initTagPicker() {
   const picker = document.getElementById('tag-picker');
   if (!picker) return;
@@ -1334,33 +1437,31 @@ function getSelectedTags() {
   return Array.from(document.querySelectorAll('#tag-picker .tag-btn.selected'))
     .map(b => b.dataset.tag);
 }
-
 function setSelectedTags(tagStr) {
   const tags = (tagStr || '').split(',').map(t => t.trim()).filter(Boolean);
   document.querySelectorAll('#tag-picker .tag-btn').forEach(btn => {
     btn.classList.toggle('selected', tags.includes(btn.dataset.tag));
   });
 }
-
 function clearSelectedTags() {
   document.querySelectorAll('#tag-picker .tag-btn').forEach(btn => btn.classList.remove('selected'));
 }
 
-/* ── 관심차종 2단계 선택 ── */
+/* =============================================
+   관심차종 2단계 선택 (등록 폼)
+   ============================================= */
 function onModelCategoryChange() {
   const cat         = document.getElementById('f-model-category').value;
   const detailSel   = document.getElementById('f-model-detail');
   const customInput = document.getElementById('f-model-custom');
   detailSel.innerHTML = '<option value="">세부모델 선택</option>';
-  customInput.classList.add('hidden');
-  customInput.value = '';
+  customInput.classList.add('hidden'); customInput.value = '';
   if (!cat) { detailSel.setAttribute('disabled', ''); return; }
   if (cat === '기타') { detailSel.setAttribute('disabled', ''); customInput.classList.remove('hidden'); return; }
   detailSel.removeAttribute('disabled');
   (MODEL_DETAILS[cat] || []).forEach(m => {
     const opt = document.createElement('option');
-    opt.value = m; opt.textContent = m;
-    detailSel.appendChild(opt);
+    opt.value = m; opt.textContent = m; detailSel.appendChild(opt);
   });
   const customOpt = document.createElement('option');
   customOpt.value = '__custom__'; customOpt.textContent = '직접 입력';
@@ -1370,12 +1471,8 @@ function onModelDetailChange() {
   const detailSel   = document.getElementById('f-model-detail');
   const customInput = document.getElementById('f-model-custom');
   if (detailSel.value === '__custom__') {
-    customInput.classList.remove('hidden');
-    customInput.placeholder = '세부모델을 직접 입력하세요';
-  } else {
-    customInput.classList.add('hidden');
-    customInput.value = '';
-  }
+    customInput.classList.remove('hidden'); customInput.placeholder = '세부모델을 직접 입력하세요';
+  } else { customInput.classList.add('hidden'); customInput.value = ''; }
 }
 function getModelFromForm() {
   const cat       = (document.getElementById('f-model-category').value || '').trim();
@@ -1389,11 +1486,10 @@ function getModelFromForm() {
   return { modelCategory: cat, modelDetail: detail, model: display };
 }
 function setModelForEdit(c) {
-  let cat    = c.modelCategory || '';
-  let detail = c.modelDetail   || '';
+  let cat = c.modelCategory || '', detail = c.modelDetail || '';
   if (!cat && c.model) {
     const parts = c.model.split(' / ');
-    cat    = parts[0] ? parts[0].trim() : '';
+    cat = parts[0] ? parts[0].trim() : '';
     detail = parts[1] ? parts[1].trim() : '';
   }
   document.getElementById('f-model-category').value = cat;
@@ -1402,26 +1498,39 @@ function setModelForEdit(c) {
   if (detail) {
     const detailSel = document.getElementById('f-model-detail');
     const inList = Array.from(detailSel.options).some(o => o.value === detail);
-    if (inList) {
-      detailSel.value = detail;
-    } else {
+    if (inList) { detailSel.value = detail; }
+    else {
       detailSel.value = '__custom__';
-      const customInput = document.getElementById('f-model-custom');
-      customInput.value = detail;
-      customInput.classList.remove('hidden');
+      const ci = document.getElementById('f-model-custom');
+      ci.value = detail; ci.classList.remove('hidden');
     }
   }
 }
 
-/* ── 폼 등록/수정 ── */
+/* =============================================
+   폼 등록 (신규 고객) — 중복 방지 포함
+   ============================================= */
 async function handleFormSubmit(event) {
   event.preventDefault();
+
+  const phone = v('f-phone');
+  const name  = v('f-name');
+
+  /* ★ 전화번호 중복 검사 */
+  const customers = getCustomers();
+  const duplicate = customers.find(c => normalizePhone(c.phone) === normalizePhone(phone));
+  if (duplicate) {
+    showAlert(`이미 등록된 고객입니다.\n고객목록에서 수정해주세요.\n(등록명: ${duplicate.name})`, 'error');
+    return;
+  }
+
   const { modelCategory, modelDetail, model } = getModelFromForm();
+  const now = new Date().toISOString();
   const customer = {
-    id:            editingId || genId(),
-    name:          v('f-name'),
+    id:            genId(),
+    name:          name,
     companyName:   v('f-company'),
-    phone:         v('f-phone'),
+    phone:         phone,
     region:        v('f-region'),
     modelCategory: modelCategory,
     modelDetail:   modelDetail,
@@ -1433,14 +1542,14 @@ async function handleFormSubmit(event) {
     memo:          v('f-memo'),
     nextDate:      v('f-nextdate'),
     tags:          getSelectedTags().join(', '),
-    createdAt:     editingId ? '' : new Date().toISOString(),
-    updatedAt:     new Date().toISOString(),
+    createdAt:     now,
+    updatedAt:     now,
+    releaseDate:   '',
+    releaseMonth:  '',
   };
-  const customers = getCustomers();
-  if (editingId) {
-    const idx = customers.findIndex(c => c.id === editingId);
-    if (idx > -1) { customer.createdAt = customers[idx].createdAt; customers[idx] = customer; }
-  } else { customers.push(customer); }
+
+  /* localStorage 먼저 저장 */
+  customers.push(customer);
   saveLocalCustomers(customers);
 
   const submitBtn  = document.getElementById('submit-btn');
@@ -1449,74 +1558,77 @@ async function handleFormSubmit(event) {
   submitBtn.disabled = true;
   submitText.classList.add('hidden');
   submitLoad.classList.remove('hidden');
+
   try {
-
-
-
-    // ★ 구글시트 헤더 순서와 1:1 일치 (절대 순서 변경 금지)
-    // 고객ID / 고객명 / 법인명 / 연락처 / 거주지역 / 관심차종 / 구매예산 / 구매예정시기
-    // 유입경로 / 현재상태 / 상담내용 / 다음연락일 / 등록일시 / 수정일시 / 출고일 / 출고월
+    /* ★ action: 'save' = 신규 등록 */
     const params = {
       action:        'save',
-      id:            customer.id            || '',   // col 1  고객ID
-      name:          customer.name          || '',   // col 2  고객명
-      companyName:   customer.companyName   || '',   // col 3  법인명 (없으면 빈 문자열 — 생략 불가)
-      phone:         customer.phone         || '',   // col 4  연락처
-      region:        customer.region        || '',   // col 5  거주지역
-      model:         customer.model         || '',   // col 6  관심차종
-      budget:        customer.budget        || '',   // col 7  구매예산
-      timing:        customer.timing        || '',   // col 8  구매예정시기
-      source:        customer.source        || '',   // col 9  유입경로
-      status:        customer.status        || '',   // col 10 현재상태
-      memo:          customer.memo          || '',   // col 11 상담내용
-      nextDate:      customer.nextDate      || '',   // col 12 다음연락일
-      createdAt:     customer.createdAt     || '',   // col 13 등록일시
-      updatedAt:     customer.updatedAt     || '',   // col 14 수정일시
-      releaseDate:   customer.releaseDate   || '',   // col 15 출고일
-      releaseMonth:  customer.releaseMonth  || '',   // col 16 출고월
-      tags:          customer.tags          || '',   // col 17 태그
-      modelCategory: customer.modelCategory || '',   // 부가정보 (시트 외 컬럼)
-      modelDetail:   customer.modelDetail   || '',   // 부가정보 (시트 외 컬럼)
+      id:            customer.id,
+      name:          customer.name          || '',
+      companyName:   customer.companyName   || '',
+      phone:         customer.phone         || '',
+      region:        customer.region        || '',
+      model:         customer.model         || '',
+      budget:        customer.budget        || '',
+      timing:        customer.timing        || '',
+      source:        customer.source        || '',
+      status:        customer.status        || '',
+      memo:          customer.memo          || '',
+      nextDate:      customer.nextDate      || '',
+      createdAt:     customer.createdAt     || '',
+      updatedAt:     customer.updatedAt     || '',
+      releaseDate:   customer.releaseDate   || '',
+      releaseMonth:  customer.releaseMonth  || '',
+      tags:          customer.tags          || '',
+      modelCategory: customer.modelCategory || '',
+      modelDetail:   customer.modelDetail   || '',
     };
     await sheetRequest(params);
-    showAlert('고객정보가 저장되었습니다. ✓', 'success');
+    showAlert('고객정보가 정상 저장되었습니다. ✓', 'success');
+    console.log('Customer Saved:', customer.id, customer.name);
+    resetForm();
   } catch(e) {
     showAlert('로컬 저장 완료. 구글시트 전송을 확인하세요.', 'error');
+    console.error('Save error:', e);
   } finally {
     submitBtn.disabled = false;
     submitText.classList.remove('hidden');
     submitLoad.classList.add('hidden');
-    editingId = null;
-    document.querySelector('.form-title').textContent = '고객 등록';
   }
 }
+
+/* 전화번호 정규화 (숫자만 추출 후 비교) */
+function normalizePhone(p) {
+  return (p || '').replace(/[^0-9]/g, '');
+}
+
 function v(id) { return (document.getElementById(id)?.value || '').trim(); }
+
 function resetForm() {
   document.getElementById('customer-form').reset();
   const detailSel   = document.getElementById('f-model-detail');
   const customInput = document.getElementById('f-model-custom');
   detailSel.innerHTML = '<option value="">세부모델 선택</option>';
   detailSel.setAttribute('disabled', '');
-  customInput.classList.add('hidden');
-  customInput.value = '';
+  customInput.classList.add('hidden'); customInput.value = '';
   document.getElementById('f-company').value = '';
   clearSelectedTags();
-  editingId = null;
-  document.querySelector('.form-title').textContent = '고객 등록';
   hideAlert();
 }
 function showAlert(msg, type) {
   const el = document.getElementById('form-alert');
   el.textContent = msg; el.className = 'form-alert ' + type;
   el.classList.remove('hidden');
-  setTimeout(hideAlert, 5000);
+  setTimeout(hideAlert, 6000);
 }
-function hideAlert() { document.getElementById('form-alert').classList.add('hidden'); }
+function hideAlert() {
+  const el = document.getElementById('form-alert');
+  if (el) el.classList.add('hidden');
+}
 
-/* ── 상세 페이지 ── */
-let detailCustomerId = null;
-let detailPrevView   = 'list'; // 뒤로가기 시 돌아갈 뷰
-
+/* =============================================
+   상세 페이지 열기
+   ============================================= */
 function openDetailPage(id, fromView) {
   const customers = getCustomers();
   const c = customers.find(x => x.id === id);
@@ -1541,16 +1653,16 @@ function openDetailPage(id, fromView) {
     ['등록일', c.createdAt ? new Date(c.createdAt).toLocaleDateString('ko-KR') : '—'],
     ['최종수정', c.updatedAt ? new Date(c.updatedAt).toLocaleDateString('ko-KR') : '—'],
   ];
-  document.getElementById('dp-info-grid').innerHTML = infoItems.map(([k, v]) => `
+  document.getElementById('dp-info-grid').innerHTML = infoItems.map(([k, val]) => `
     <div class="detail-item">
       <span class="detail-key">${k}</span>
-      <span class="detail-val">${v}</span>
+      <span class="detail-val">${val}</span>
     </div>`).join('');
 
   /* 수정 필드 채우기 */
-  document.getElementById('dp-f-name').value    = c.name    || '';
-  document.getElementById('dp-f-phone').value   = c.phone   || '';
-  document.getElementById('dp-f-status').value  = c.status  || '';
+  document.getElementById('dp-f-name').value     = c.name    || '';
+  document.getElementById('dp-f-phone').value    = c.phone   || '';
+  document.getElementById('dp-f-status').value   = c.status  || '';
   document.getElementById('dp-f-nextdate').value = c.nextDate || '';
 
   /* 차종 */
@@ -1561,8 +1673,7 @@ function openDetailPage(id, fromView) {
   dpSetSelectedTags(c.tags || '');
 
   /* 상담이력 */
-  const histBox = document.getElementById('dp-memo-history');
-  histBox.textContent = c.memo || '상담 내용 없음';
+  document.getElementById('dp-memo-history').textContent = c.memo || '상담 내용 없음';
   document.getElementById('dp-f-memo-new').value = '';
 
   /* 오늘 날짜 라벨 */
@@ -1582,13 +1693,17 @@ function goBackFromDetail() {
   showView(detailPrevView);
 }
 
-/* 상세 페이지 저장 */
+/* =============================================
+   상세 페이지 저장 — action: 'update' 사용
+   순서: 1. localStorage → 2. 화면 반영 → 3. Google Sheets
+   ============================================= */
 async function saveDetailChanges() {
   if (!detailCustomerId) return;
 
   const nameVal   = (document.getElementById('dp-f-name').value  || '').trim();
   const phoneVal  = (document.getElementById('dp-f-phone').value || '').trim();
   const statusVal = (document.getElementById('dp-f-status').value || '').trim();
+
   if (!nameVal || !phoneVal || !statusVal) {
     dpShowAlert('고객명, 연락처, 현재상태는 필수 항목입니다.', 'error'); return;
   }
@@ -1602,13 +1717,14 @@ async function saveDetailChanges() {
   /* 상담이력 누적 */
   const newMemoRaw = (document.getElementById('dp-f-memo-new').value || '').trim();
   let memoFinal = old.memo || '';
+  let appendedMemo = '';
   if (newMemoRaw) {
     const today = new Date();
-    const datePrefix = `${today.getMonth() + 1}/${today.getDate()}`;
-    const newEntry = `${datePrefix} ${newMemoRaw}`;
+    const datePrefix = `[${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}]`;
+    appendedMemo = `${datePrefix}\n${newMemoRaw}`;
     memoFinal = memoFinal
-      ? memoFinal + '\n-------------------\n' + newEntry
-      : newEntry;
+      ? memoFinal + '\n-------------------\n' + appendedMemo
+      : appendedMemo;
   }
 
   /* 차종 */
@@ -1630,51 +1746,63 @@ async function saveDetailChanges() {
     memo:          memoFinal,
     updatedAt:     new Date().toISOString(),
   };
+
+  /* ── 1. localStorage 업데이트 ── */
   customers[idx] = updated;
   saveLocalCustomers(customers);
 
-  /* 구글시트 update */
+  /* ── 2. 화면 즉시 반영 ── */
+  document.getElementById('dp-name').textContent = updated.name;
+  const sc = STATUS_COLORS[updated.status] || { bg: '#f3f4f6', text: '#374151' };
+  document.getElementById('dp-status-wrap').innerHTML =
+    `<span class="status-badge" style="background:${sc.bg};color:${sc.text}">${escHtml(updated.status)}</span>`;
+  document.getElementById('dp-memo-history').textContent = updated.memo || '상담 내용 없음';
+  document.getElementById('dp-f-memo-new').value = '';
+
+  /* ── 3. Google Sheets 업데이트 ── */
   const saveBtn  = document.getElementById('dp-save-btn');
   const saveText = document.getElementById('dp-save-text');
   const saveLoad = document.getElementById('dp-save-loading');
   saveBtn.disabled = true;
   saveText.classList.add('hidden');
   saveLoad.classList.remove('hidden');
+
   try {
+    /* ★ action: 'update' = 기존 고객 수정 (ID 기준 검색) */
     const params = {
-      action:        'save',          // ← Update (기존 레코드 수정)
-      id:            updated.id,
-      name:          updated.name,
+      action:        'update',          // ← 기존 고객 수정은 반드시 'update'
+      id:            updated.id,        // ← ID 기준으로 행 찾기
+      name:          updated.name          || '',
       companyName:   updated.companyName   || '',
-      phone:         updated.phone,
+      phone:         updated.phone         || '',
       region:        updated.region        || '',
       model:         updated.model         || '',
       budget:        updated.budget        || '',
       timing:        updated.timing        || '',
       source:        updated.source        || '',
-      status:        updated.status,
-      memo:          newMemo          || '',
+      status:        updated.status        || '',
+      memo:          updated.memo          || '',   // 전체 누적 메모
       nextDate:      updated.nextDate      || '',
       createdAt:     updated.createdAt     || '',
-      updatedAt:     updated.updatedAt,
+      updatedAt:     updated.updatedAt     || '',
       releaseDate:   updated.releaseDate   || '',
       releaseMonth:  updated.releaseMonth  || '',
       tags:          updated.tags          || '',
       modelCategory: updated.modelCategory || '',
       modelDetail:   updated.modelDetail   || '',
     };
-    await sheetRequest(params);
-    dpShowAlert('저장되었습니다. ✓', 'success');
-    /* 헤더 상태뱃지·이름 갱신 */
-    document.getElementById('dp-name').textContent = updated.name;
-    const sc = STATUS_COLORS[updated.status] || { bg: '#f3f4f6', text: '#374151' };
-    document.getElementById('dp-status-wrap').innerHTML =
-      `<span class="status-badge" style="background:${sc.bg};color:${sc.text}">${escHtml(updated.status)}</span>`;
-    /* 이력박스 갱신 */
-    document.getElementById('dp-memo-history').textContent = updated.memo || '상담 내용 없음';
-    document.getElementById('dp-f-memo-new').value = '';
+
+    const result = await sheetRequest(params);
+    if (result) {
+      dpShowAlert('고객정보가 정상 저장되었습니다. ✓', 'success');
+      console.log('Customer Updated:', updated.id, updated.name);
+    } else {
+      dpShowAlert('로컬 저장 완료. 구글시트 전송을 확인하세요.', 'error');
+      console.error('Update failed: sheetRequest returned null');
+    }
   } catch(e) {
-    dpShowAlert('로컬 저장 완료. 구글시트 전송을 확인하세요.', 'error');
+    dpShowAlert('오류가 발생했습니다. 로컬에는 저장되었습니다.', 'error');
+    console.error('Update error:', e);
   } finally {
     saveBtn.disabled = false;
     saveText.classList.remove('hidden');
@@ -1699,10 +1827,12 @@ function dpShowAlert(msg, type) {
   const el = document.getElementById('dp-alert');
   el.textContent = msg; el.className = 'form-alert ' + type;
   el.classList.remove('hidden');
-  setTimeout(() => el.classList.add('hidden'), 5000);
+  setTimeout(() => el.classList.add('hidden'), 6000);
 }
 
-/* 상세 페이지용 태그 피커 */
+/* =============================================
+   상세 페이지 태그 피커
+   ============================================= */
 function dpInitTagPicker() {
   const picker = document.getElementById('dp-tag-picker');
   if (!picker) return;
@@ -1726,7 +1856,9 @@ function dpSetSelectedTags(tagStr) {
   });
 }
 
-/* 상세 페이지용 차종 드롭다운 */
+/* =============================================
+   상세 페이지 차종 드롭다운
+   ============================================= */
 function dpOnModelCategoryChange() {
   const cat       = document.getElementById('dp-model-category').value;
   const detailSel = document.getElementById('dp-model-detail');
@@ -1784,15 +1916,17 @@ function dpSetModelForEdit(c) {
   }
 }
 
-/* ── (구) 모달 함수 — 하위 호환을 위해 빈 래퍼만 유지 ── */
+/* =============================================
+   하위 호환 래퍼
+   ============================================= */
 function openDetailModal(id) { openDetailPage(id, 'list'); }
 function closeDetailModal()  {}
 function editFromModal()     {}
-
-
 function closeConfirm() { document.getElementById('confirm-dialog').classList.add('hidden'); }
 
-/* ── 유틸 ── */
+/* =============================================
+   유틸
+   ============================================= */
 function todayStr() { return new Date().toISOString().split('T')[0]; }
 function formatDate(str) {
   const normalized = normalizeDateStr(str);
@@ -1806,7 +1940,9 @@ function formatDate(str) {
 }
 function escHtml(str) {
   if (!str) return '';
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function callCustomer(phone) { window.location.href = 'tel:' + phone.replace(/[^0-9+]/g, ''); }
 
@@ -1821,7 +1957,11 @@ function callCustomer(phone) { window.location.href = 'tel:' + phone.replace(/[^
 })();
 
 /* ── 초기 실행 ── */
-document.addEventListener('DOMContentLoaded', () => { initTagPicker(); loadFromSheets(); });
+document.addEventListener('DOMContentLoaded', () => {
+  initTagPicker();
+  initTagFilterRow();
+  loadFromSheets();
+});
 </script>
 
 </body>
