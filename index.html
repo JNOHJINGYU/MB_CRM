@@ -1300,11 +1300,25 @@ let currentEventType = 'manual';
 /* =============================================
    구글시트 API
 ============================================= */
+
+/**
+ * 쓰기 요청 (save/update/delete).
+ * Apps Script가 JSON { result:"success", action:"..." } 를 반환하면 true.
+ * no-cors 방식 대신 일반 fetch → CORS 헤더를 Apps Script에서 반드시 허용해야 함.
+ */
 async function sheetRequest(params) {
   if (!SCRIPT_URL) return null;
   const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
-  try { await fetch(url, { mode: 'no-cors' }); return true; }
-  catch(e) { console.error('시트 요청 오류:', e); return null; }
+  try {
+    const res = await fetch(url, { redirect: 'follow' });
+    const json = await res.json();
+    if (json && json.result === 'success') return true;
+    console.warn('시트 요청 비정상 응답:', json);
+    return false;
+  } catch(e) {
+    console.error('시트 요청 오류:', e);
+    return null;
+  }
 }
 async function sheetFetch(params) {
   if (!SCRIPT_URL) return null;
@@ -2337,36 +2351,47 @@ async function updateKanbanStatus(customerId, targetCol) {
 
   const c = customers[idx];
   let newStatus = c.status;
+  // A급가망은 status가 아니라 tags에 저장되는 파이프라인 태그입니다.
   let newTags = (c.tags || '').split(',').map(t => t.trim()).filter(Boolean);
 
   let contractDate = c.contractDate || '';
   if (targetCol === 'A급가망') {
+    /* A급가망 태그 반드시 추가 */
     if (!newTags.includes('A급가망')) newTags.push('A급가망');
+    /* 상태는 계약유력이나 상담중 유지 (다른 완료 상태일 경우만 계약유력으로 변경) */
     if (newStatus !== '상담중' && newStatus !== '계약유력') newStatus = '계약유력';
   } else if (targetCol === '상담중') {
+    /* 상담중으로 이동하면 A급가망 태그 반드시 제거 */
     newTags = newTags.filter(t => t !== 'A급가망');
     newStatus = '상담중';
   } else if (targetCol === '계약') {
+    /* 계약으로 이동하면 A급가망 태그 반드시 제거 */
     newTags = newTags.filter(t => t !== 'A급가망');
     newStatus = '계약';
     if (!contractDate) contractDate = todayStr();
   } else if (targetCol === '출고') {
+    /* 출고로 이동하면 A급가망 태그 반드시 제거 */
     newTags = newTags.filter(t => t !== 'A급가망');
     newStatus = '출고완료';
   }
 
-  customers[idx] = { ...c, status: newStatus, tags: newTags.join(', '), contractDate, updatedAt: new Date().toISOString() };
+  const tagsStr = newTags.join(', ');
+  const updatedAt = new Date().toISOString();
+  customers[idx] = { ...c, status: newStatus, tags: tagsStr, contractDate, updatedAt };
   saveLocalCustomers(customers);
   renderKanban();
   renderDashboard();
   renderCustomerList(getFilteredCustomers());
   refreshCalendarEvents();
 
-  /* 구글시트 저장 후 최신 데이터 재조회 */
+  /* 구글시트 저장 후 성공 시에만 재조회 */
   try {
     const result = await sheetRequest({
-      action:'update', id:customerId, status:newStatus, tags:newTags.join(', '),
-      contractDate, updatedAt:customers[idx].updatedAt,
+      action:'update', id:customerId,
+      status:newStatus,
+      tags:tagsStr,         /* 태그 반드시 포함 */
+      contractDate,
+      updatedAt,
       name:c.name, phone:c.phone, companyName:c.companyName||'', region:c.region||'',
       model:c.model||'', budget:c.budget||'', timing:c.timing||'', source:c.source||'',
       memo:c.memo||'', nextDate:c.nextDate||'', consultDate:c.consultDate||'',
@@ -2374,15 +2399,20 @@ async function updateKanbanStatus(customerId, targetCol) {
       createdAt:c.createdAt||'', releaseDate:c.releaseDate||'', releaseMonth:c.releaseMonth||'',
       modelCategory:c.modelCategory||'', modelDetail:c.modelDetail||'',
     });
-    if (result) {
+    if (result === true) {
+      /* 저장 성공 확인 후 재조회 */
       await loadFromSheets(true);
       renderAll();
+    } else if (result === false) {
+      /* Apps Script가 오류 응답 반환 */
+      alert('구글시트 동기화에 실패했습니다. 로컬에는 저장되었으나 새로고침 시 되돌아갈 수 있습니다.');
     } else {
-      alert('동기화 실패. 다시 시도해주세요.');
+      /* null = 네트워크 오류 */
+      alert('네트워크 오류로 구글시트에 저장하지 못했습니다. 인터넷 연결을 확인해주세요.');
     }
   } catch(e) {
     console.error('칸반 저장 오류:', e);
-    alert('동기화 실패. 다시 시도해주세요.');
+    alert('동기화 중 오류가 발생했습니다: ' + e.message);
   }
 }
 
