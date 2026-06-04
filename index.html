@@ -617,6 +617,30 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
 .event-type-btn.active { background: #111; color: #fff; border-color: #111; }
 
 /* ────────────────────────────────────────
+   일정 추가 버튼 — 가로 텍스트 강제
+──────────────────────────────────────── */
+.calendar-add-btn {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 110px;
+  white-space: nowrap !important;
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px !important;
+  font-size: 0.85rem;
+}
+@media (max-width: 600px) {
+  .calendar-add-btn {
+    width: auto !important;
+    min-width: 110px;
+    white-space: nowrap !important;
+  }
+}
+
+/* ────────────────────────────────────────
    반응형
 ──────────────────────────────────────── */
 /* 유틸 */
@@ -1138,7 +1162,7 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
           <div style="font-size:1.35rem;font-weight:800;letter-spacing:-0.02em;color:var(--text-primary);">📅 일정 관리</div>
           <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:3px;">날짜를 클릭하여 일정을 추가하거나 이벤트를 클릭하여 수정하세요.</div>
         </div>
-        <button class="btn-primary" style="flex:0;padding:10px 20px;font-size:0.85rem;" onclick="openEventModal()">+ 일정 추가</button>
+        <button class="btn-primary calendar-add-btn" onclick="openEventModal()">+ 일정 추가</button>
       </div>
       <div class="cal-legend">
         <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--hot)"></div>연락 예정</div>
@@ -1211,12 +1235,12 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
 
 <script>
 /* =====================================================
-   노진규 고객관리 시스템 — v15 (2026-06)
-   칸반보드 · 달력 · 오늘일정 · 연락예정 개선
+   노진규 고객관리 시스템 — v16 (2026-06)
+   PC 드래그앤드롭 버그 수정 · 저장 실패 롤백 · 캘린더 버튼 수정
    기존 모든 기능 유지
 ===================================================== */
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZjAaz8032F4V4xnWi8wYUTz9DLaxdPYiWBTtQQD0Bgkun8ItnxytWCXmLBZngsKRTWQ/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzu0JlmK7lPZMcq3WeasZAf7CYJoiCchSdUJVY5MZoq8s610XGw9jB4jqDHDyuQs3bbvQ/exec";
 
 /* ── 상태 배지 색상 ── */
 const STATUS_COLORS = {
@@ -2232,7 +2256,7 @@ function setupKanbanDnD() {
       card.classList.remove('dragging');
       document.querySelectorAll('.drop-placeholder').forEach(p => p.remove());
       document.querySelectorAll('.kanban-cards').forEach(z => z.classList.remove('drag-over'));
-      dragCustomerId = null; dragSourceCol = null; placeholder = null;
+      /* dragCustomerId / dragSourceCol 은 drop 이후에 정리 — drop에서 직접 초기화함 */
     });
   });
 
@@ -2255,11 +2279,16 @@ function setupKanbanDnD() {
       e.preventDefault();
       zone.classList.remove('drag-over');
       document.querySelectorAll('.drop-placeholder').forEach(p => p.remove());
-      placeholder = null;
-      const id = e.dataTransfer.getData('text/plain') || dragCustomerId;
-      if (!id) return;
+
+      /* drop 시점에 로컬 변수로 캡처 — dragend가 나중에 와도 안전 */
+      const id        = e.dataTransfer.getData('text/plain') || dragCustomerId;
+      const sourceCol = dragSourceCol;
       const targetCol = zone.dataset.status;
-      if (!targetCol || targetCol === dragSourceCol) { renderKanban(); return; }
+
+      /* 상태 초기화 */
+      dragCustomerId = null; dragSourceCol = null; placeholder = null;
+
+      if (!id || !targetCol || targetCol === sourceCol) { renderKanban(); return; }
       await updateKanbanStatus(id, targetCol);
     });
   });
@@ -2286,20 +2315,17 @@ function setupKanbanDnD() {
 
     card.addEventListener('touchmove', e => {
       if (!_touchDragId) return;
-      e.preventDefault(); /* 페이지 스크롤 방지 (드래그 중에만) */
+      e.preventDefault();
       const touch = e.touches[0];
       const clientX = touch.clientX, clientY = touch.clientY;
 
-      /* 클론 이동 */
       if (_touchClone) {
         _touchClone.style.left = (clientX - _touchClone.offsetWidth / 2) + 'px';
         _touchClone.style.top  = (clientY - _touchClone.offsetHeight / 2) + 'px';
       }
 
-      /* 자동스크롤 */
       _startAutoScroll(clientY);
 
-      /* 드롭존 하이라이트 */
       document.querySelectorAll('.kanban-cards').forEach(z => z.classList.remove('drag-over'));
       const el = document.elementFromPoint(clientX, clientY);
       const zone = el?.closest('.kanban-cards');
@@ -2350,33 +2376,31 @@ async function updateKanbanStatus(customerId, targetCol) {
   if (idx === -1) return;
 
   const c = customers[idx];
-  let newStatus = c.status;
   // A급가망은 status가 아니라 tags에 저장되는 파이프라인 태그입니다.
+  let newStatus = c.status;
   let newTags = (c.tags || '').split(',').map(t => t.trim()).filter(Boolean);
-
   let contractDate = c.contractDate || '';
+
   if (targetCol === 'A급가망') {
-    /* A급가망 태그 반드시 추가 */
     if (!newTags.includes('A급가망')) newTags.push('A급가망');
-    /* 상태는 계약유력이나 상담중 유지 (다른 완료 상태일 경우만 계약유력으로 변경) */
     if (newStatus !== '상담중' && newStatus !== '계약유력') newStatus = '계약유력';
   } else if (targetCol === '상담중') {
-    /* 상담중으로 이동하면 A급가망 태그 반드시 제거 */
     newTags = newTags.filter(t => t !== 'A급가망');
     newStatus = '상담중';
   } else if (targetCol === '계약') {
-    /* 계약으로 이동하면 A급가망 태그 반드시 제거 */
     newTags = newTags.filter(t => t !== 'A급가망');
     newStatus = '계약';
     if (!contractDate) contractDate = todayStr();
   } else if (targetCol === '출고') {
-    /* 출고로 이동하면 A급가망 태그 반드시 제거 */
     newTags = newTags.filter(t => t !== 'A급가망');
     newStatus = '출고완료';
   }
 
   const tagsStr = newTags.join(', ');
   const updatedAt = new Date().toISOString();
+
+  /* 낙관적 업데이트: 화면에 먼저 반영 */
+  const snapshot = JSON.stringify(customers); // 롤백용 스냅샷
   customers[idx] = { ...c, status: newStatus, tags: tagsStr, contractDate, updatedAt };
   saveLocalCustomers(customers);
   renderKanban();
@@ -2384,12 +2408,12 @@ async function updateKanbanStatus(customerId, targetCol) {
   renderCustomerList(getFilteredCustomers());
   refreshCalendarEvents();
 
-  /* 구글시트 저장 후 성공 시에만 재조회 */
+  /* 구글시트 저장 */
   try {
     const result = await sheetRequest({
       action:'update', id:customerId,
       status:newStatus,
-      tags:tagsStr,         /* 태그 반드시 포함 */
+      tags:tagsStr,
       contractDate,
       updatedAt,
       name:c.name, phone:c.phone, companyName:c.companyName||'', region:c.region||'',
@@ -2400,19 +2424,23 @@ async function updateKanbanStatus(customerId, targetCol) {
       modelCategory:c.modelCategory||'', modelDetail:c.modelDetail||'',
     });
     if (result === true) {
-      /* 저장 성공 확인 후 재조회 */
+      /* 저장 성공 → 구글시트 최신 데이터 재조회 */
       await loadFromSheets(true);
       renderAll();
-    } else if (result === false) {
-      /* Apps Script가 오류 응답 반환 */
-      alert('구글시트 동기화에 실패했습니다. 로컬에는 저장되었으나 새로고침 시 되돌아갈 수 있습니다.');
     } else {
-      /* null = 네트워크 오류 */
-      alert('네트워크 오류로 구글시트에 저장하지 못했습니다. 인터넷 연결을 확인해주세요.');
+      /* 저장 실패 → 롤백하고 오류 표시 */
+      console.error('칸반 저장 실패. 이전 상태로 복구합니다.', result);
+      saveLocalCustomers(JSON.parse(snapshot));
+      renderAll();
+      alert(result === false
+        ? '구글시트 저장에 실패했습니다. 이전 상태로 되돌렸습니다.'
+        : '네트워크 오류로 저장하지 못했습니다. 인터넷 연결을 확인하고 다시 시도해주세요.');
     }
   } catch(e) {
     console.error('칸반 저장 오류:', e);
-    alert('동기화 중 오류가 발생했습니다: ' + e.message);
+    saveLocalCustomers(JSON.parse(snapshot));
+    renderAll();
+    alert('저장 중 오류가 발생했습니다: ' + e.message);
   }
 }
 
