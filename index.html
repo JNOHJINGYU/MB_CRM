@@ -256,6 +256,7 @@ a { color: inherit; text-decoration: none; }
 .card-date { font-size: 0.7rem; color: var(--text-tertiary); font-weight: 500; }
 .card-date.overdue { color: var(--red); font-weight: 700; }
 .card-date.today   { color: var(--blue); font-weight: 700; }
+.card-contract-date { font-size: 0.72rem; color: var(--gold); font-weight: 700; margin-top: 3px; }
 
 /* ── 태그 ── */
 .card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
@@ -530,12 +531,14 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
 }
 .kanban-card:active { cursor: grabbing; }
 .kanban-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--border-soft); }
-.kanban-card.dragging { opacity: 0.4; transform: scale(0.97); }
-.kc-name { font-size: 0.92rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; letter-spacing: -0.01em; cursor: pointer; }
+.kanban-card.dragging{opacity:0.35;transform:scale(0.97);}
+.kanban-card.touch-dragging{box-shadow:0 12px 40px rgba(0,0,0,0.3);transform:scale(1.04);border-color:var(--blue);}
+.kc-name{font-size:0.92rem;font-weight:700;color:var(--text-primary);margin-bottom:5px;letter-spacing:-0.01em;cursor:pointer;}
 .kc-name:hover { color: var(--blue); }
 .kc-phone { font-size: 0.78rem; color: var(--blue); font-weight: 600; margin-bottom: 4px; }
 .kc-phone a { color: inherit; }
 .kc-model { font-size: 0.76rem; color: var(--text-secondary); margin-bottom: 4px; }
+.kc-contract-date { font-size: 0.71rem; color: var(--gold); font-weight: 700; margin-bottom: 4px; }
 .kc-dates { font-size: 0.71rem; color: var(--text-tertiary); display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
 .kc-date-row { display: flex; align-items: center; gap: 4px; }
 .kc-date-row.overdue { color: var(--red); font-weight: 700; }
@@ -593,6 +596,7 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
 .fc-event-testdrive { background: var(--purple) !important; }
 .fc-event-delivery  { background: var(--green) !important; }
 .fc-event-contact   { background: var(--hot) !important; }
+.fc-event-contract  { background: var(--gold) !important; }
 .fc-event-manual    { background: #374151 !important; }
 .fc-daygrid-event-dot { display: none !important; }
 .fc .fc-toolbar { gap: 10px; flex-wrap: wrap; }
@@ -713,6 +717,14 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
 @media (max-width: 540px) {
   .kanban-board { grid-template-columns: 1fr; }
   .kanban-col-header { position: relative; top: auto; }
+  /* 모바일 칸반 카드 최적화 */
+  .kanban-cards { gap: 14px; padding: 10px; }
+  .kanban-card { padding: 9px 12px; }
+  .kc-name { font-size: 0.86rem; margin-bottom: 4px; }
+  .kc-phone { font-size: 0.74rem; }
+  .kc-model { font-size: 0.72rem; }
+  .kc-dates { font-size: 0.69rem; }
+  .kc-contract-date { font-size: 0.69rem; }
 }
 
 </style>
@@ -904,6 +916,10 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
           <label for="f-delivery-date">출고 일정</label>
           <input type="date" id="f-delivery-date" />
         </div>
+        <div class="form-group">
+          <label for="f-contract-date">계약일 🤝</label>
+          <input type="date" id="f-contract-date" />
+        </div>
         <div class="form-group" id="tag-picker-group">
           <label>태그 선택</label>
           <div class="tag-picker" id="tag-picker"></div>
@@ -1013,7 +1029,7 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
             </div>
             <div class="detail-field">
               <label for="dp-f-status">현재상태 <span class="req">*</span></label>
-              <select id="dp-f-status" required>
+              <select id="dp-f-status" required onchange="onDetailStatusChange()">
                 <option value="">선택하세요</option>
                 <option value="신규문의">신규문의</option>
                 <option value="상담중">상담중</option>
@@ -1041,6 +1057,10 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
             <div class="detail-field">
               <label for="dp-f-delivery-date">출고 일정</label>
               <input type="date" id="dp-f-delivery-date" />
+            </div>
+            <div class="detail-field">
+              <label for="dp-f-contract-date">계약일 🤝</label>
+              <input type="date" id="dp-f-contract-date" />
             </div>
             <div class="detail-field full">
               <label>태그</label>
@@ -1124,6 +1144,7 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
         <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--hot)"></div>연락 예정</div>
         <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--blue)"></div>상담</div>
         <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--purple)"></div>시승</div>
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--gold)"></div>계약</div>
         <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--green)"></div>출고</div>
         <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#374151"></div>기타</div>
       </div>
@@ -1376,6 +1397,7 @@ function normalizeCustomerObj(obj) {
     consultDate:   normalizeDateStr(get('상담일시', 'consultDate')),
     testDriveDate: normalizeDateStr(get('시승일정', 'testDriveDate')),
     deliveryDate:  normalizeDateStr(get('출고일정', 'deliveryDate')),
+    contractDate:  normalizeDateStr(get('계약일', 'contractDate')),
     createdAt:     get('등록일시', 'createdAt'),
     updatedAt:     get('수정일시', 'updatedAt'),
     releaseDate:   get('출고일', 'releaseDate'),
@@ -1385,19 +1407,39 @@ function normalizeCustomerObj(obj) {
 }
 
 /* =============================================
-   구글시트 불러오기
+   구글시트 불러오기 (원본 데이터 기준)
 ============================================= */
-async function loadFromSheets() {
+async function loadFromSheets(silent) {
   if (!SCRIPT_URL) { renderDashboard(); return; }
-  showLoadingBanner(true);
+  if (!silent) showLoadingBanner(true);
   const result = await sheetFetch({ action: 'getAll' });
   if (result && result.result === 'success') {
     const mapped = rowsToCustomers(result);
     if (mapped) { saveLocalCustomers(mapped); console.log('구글시트에서 ' + mapped.length + '명 불러옴'); }
     else console.warn('구글시트 불러오기 실패 — 로컬 캐시 사용');
   } else console.warn('구글시트 응답 오류 — 로컬 캐시 사용');
-  showLoadingBanner(false);
+  if (!silent) showLoadingBanner(false);
   renderDashboard();
+}
+
+/* 모든 UI 갱신 */
+function renderAll() {
+  renderDashboard();
+  const activeView = document.querySelector('.view.active');
+  if (!activeView) return;
+  const id = activeView.id;
+  if (id === 'view-list') renderCustomerList(getFilteredCustomers());
+  if (id === 'view-kanban') renderKanban();
+  if (id === 'view-calendar') refreshCalendarEvents();
+}
+
+/* 30초 자동 새로고침 */
+let _autoRefreshTimer = null;
+function startAutoRefresh() {
+  if (_autoRefreshTimer) clearInterval(_autoRefreshTimer);
+  _autoRefreshTimer = setInterval(() => {
+    loadFromSheets(true).then(() => renderAll());
+  }, 30000);
 }
 function showLoadingBanner(show) {
   let el = document.getElementById('loading-banner');
@@ -1423,7 +1465,7 @@ function sortByRecent(list) {
 }
 
 /* =============================================
-   뷰 전환
+   뷰 전환 — 진입마다 최신 데이터 조회
 ============================================= */
 function showView(viewName) {
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -1438,22 +1480,23 @@ function showView(viewName) {
   } else {
     wrap.classList.remove('wide');
   }
-  if (viewName === 'dashboard') renderDashboard();
-  if (viewName === 'list') {
-    if (currentStatFilter === 'all') renderCustomerList(getFilteredCustomers());
-  }
   if (viewName === 'register' && !detailCustomerId) resetForm();
-  if (viewName === 'kanban') {
-    /* 칸반 진입 시 최신 데이터 불러오기 후 렌더 */
-    loadFromSheets().then(() => renderKanban());
-  }
-  if (viewName === 'calendar') {
-    setTimeout(() => {
-      if (!calendarInstance) initCalendar();
-      else { calendarInstance.render(); refreshCalendarEvents(); }
-    }, 50);
-  }
   window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  /* 주요 뷰 진입 시 최신 데이터 재조회 */
+  if (['dashboard','list','kanban','calendar'].includes(viewName)) {
+    loadFromSheets(true).then(() => {
+      if (viewName === 'dashboard') renderDashboard();
+      if (viewName === 'list') renderCustomerList(getFilteredCustomers());
+      if (viewName === 'kanban') renderKanban();
+      if (viewName === 'calendar') {
+        setTimeout(() => {
+          if (!calendarInstance) initCalendar();
+          else { calendarInstance.render(); refreshCalendarEvents(); }
+        }, 50);
+      }
+    });
+  }
 }
 
 /* =============================================
@@ -1590,6 +1633,7 @@ function buildCard(c, fromView) {
     } catch(e) {}
   }
   const createdHtml = createdStr ? `<div class="card-created">${createdStr}</div>` : '';
+  const contractHtml = c.contractDate ? `<div class="card-contract-date">🤝 계약 ${c.contractDate}</div>` : '';
   const tagsHtml = c.tags
     ? '<div class="card-tags">' + c.tags.split(',').map(t => t.trim()).filter(Boolean).map(t => '<span class="card-tag">' + escHtml(t) + '</span>').join('') + '</div>'
     : '';
@@ -1599,6 +1643,7 @@ function buildCard(c, fromView) {
       ${phoneHtml}
       ${createdHtml}
       <div class="card-model">${escHtml(modelDisplay || '—')} ${c.budget ? '· ' + escHtml(c.budget) : ''}</div>
+      ${contractHtml}
       <div class="card-memo">${escHtml(c.memo || '상담 내용 없음')}</div>
       ${tagsHtml}
     </div>
@@ -1782,14 +1827,19 @@ async function handleFormSubmit(event) {
   }
   const { modelCategory, modelDetail, model } = getModelFromForm();
   const now = new Date().toISOString();
+  const statusVal = v('f-status');
+  let contractDate = v('f-contract-date');
+  /* 계약 상태이면 계약일 자동 입력 */
+  if (statusVal === '계약' && !contractDate) contractDate = todayStr();
   const customer = {
     id: genId(), name, companyName: v('f-company'), phone,
     region: v('f-region'), modelCategory, modelDetail, model,
     budget: v('f-budget'), timing: v('f-timing'), source: v('f-source'),
-    status: v('f-status'), memo: v('f-memo'), nextDate: v('f-nextdate'),
+    status: statusVal, memo: v('f-memo'), nextDate: v('f-nextdate'),
     consultDate:   v('f-consult-date'),
     testDriveDate: v('f-testdrive-date'),
     deliveryDate:  v('f-delivery-date'),
+    contractDate,
     tags: getSelectedTags().join(', '),
     createdAt: now, updatedAt: now, releaseDate: '', releaseMonth: '',
   };
@@ -1830,6 +1880,15 @@ function hideAlert() { const el = document.getElementById('form-alert'); if (el)
 /* =============================================
    상세 페이지
 ============================================= */
+/* 계약 상태 변경 시 계약일 자동 입력 */
+function onDetailStatusChange() {
+  const statusVal = document.getElementById('dp-f-status').value;
+  const contractDateEl = document.getElementById('dp-f-contract-date');
+  if (statusVal === '계약' && contractDateEl && !contractDateEl.value) {
+    contractDateEl.value = todayStr();
+  }
+}
+
 function openDetailPage(id, fromView) {
   const customers = getCustomers();
   const c = customers.find(x => x.id === id);
@@ -1846,6 +1905,7 @@ function openDetailPage(id, fromView) {
     ['유입경로', escHtml(c.source||'—')],
     ['구매예산', escHtml(c.budget||'—')],
     ['구매예정', escHtml(c.timing||'—')],
+    ['계약일', c.contractDate ? `<span style="color:var(--gold);font-weight:700">🤝 ${c.contractDate}</span>` : '—'],
     ['등록일', c.createdAt ? new Date(c.createdAt).toLocaleDateString('ko-KR') : '—'],
     ['최종수정', c.updatedAt ? new Date(c.updatedAt).toLocaleDateString('ko-KR') : '—'],
   ];
@@ -1859,6 +1919,7 @@ function openDetailPage(id, fromView) {
   document.getElementById('dp-f-consult-date').value   = c.consultDate   || '';
   document.getElementById('dp-f-testdrive-date').value = c.testDriveDate || '';
   document.getElementById('dp-f-delivery-date').value  = c.deliveryDate  || '';
+  if (document.getElementById('dp-f-contract-date')) document.getElementById('dp-f-contract-date').value = c.contractDate || '';
   dpSetModelForEdit(c);
   dpInitTagPicker(); dpSetSelectedTags(c.tags || '');
   document.getElementById('dp-memo-history').textContent = c.memo || '상담 내용 없음';
@@ -1893,12 +1954,16 @@ async function saveDetailChanges() {
   }
   const { modelCategory, modelDetail, model } = dpGetModelFromForm();
   const tags = dpGetSelectedTags().join(', ');
+  let contractDate = (document.getElementById('dp-f-contract-date')?.value || '').trim();
+  /* 계약 상태로 변경 시 계약일 자동 입력 */
+  if (statusVal === '계약' && !contractDate) contractDate = todayStr();
   const updated = {
     ...old, name: nameVal, phone: phoneVal, status: statusVal,
     nextDate:      (document.getElementById('dp-f-nextdate').value||'').trim(),
     consultDate:   (document.getElementById('dp-f-consult-date').value||'').trim(),
     testDriveDate: (document.getElementById('dp-f-testdrive-date').value||'').trim(),
     deliveryDate:  (document.getElementById('dp-f-delivery-date').value||'').trim(),
+    contractDate,
     modelCategory, modelDetail, model, tags, memo: memoFinal,
     updatedAt: new Date().toISOString(),
   };
@@ -1920,13 +1985,17 @@ async function saveDetailChanges() {
       timing:updated.timing||'', source:updated.source||'', status:updated.status,
       memo:updated.memo||'', nextDate:updated.nextDate||'',
       consultDate:updated.consultDate||'', testDriveDate:updated.testDriveDate||'',
-      deliveryDate:updated.deliveryDate||'',
+      deliveryDate:updated.deliveryDate||'', contractDate:updated.contractDate||'',
       createdAt:updated.createdAt||'', updatedAt:updated.updatedAt||'',
       releaseDate:updated.releaseDate||'', releaseMonth:updated.releaseMonth||'',
       tags:updated.tags||'', modelCategory:updated.modelCategory||'', modelDetail:updated.modelDetail||'',
     });
-    if (result) dpShowAlert('고객정보가 정상 저장되었습니다. ✓', 'success');
-    else dpShowAlert('로컬 저장 완료. 구글시트 전송을 확인하세요.', 'error');
+    if (result) {
+      dpShowAlert('저장되었습니다. ✓', 'success');
+      /* 저장 후 최신 데이터 재조회 → 전기기 동기화 */
+      await loadFromSheets(true);
+      renderAll();
+    } else dpShowAlert('로컬 저장 완료. 구글시트 전송을 확인하세요.', 'error');
     refreshCalendarEvents();
   } catch(e) {
     dpShowAlert('오류가 발생했습니다. 로컬에는 저장되었습니다.', 'error');
@@ -2084,6 +2153,7 @@ function buildKanbanCard(c) {
   let consultHtml = c.consultDate ? `<div class="kc-date-row">💼 ${c.consultDate}</div>` : '';
   let testDriveHtml = c.testDriveDate ? `<div class="kc-date-row">🚘 ${c.testDriveDate}</div>` : '';
   let deliveryHtml  = c.deliveryDate  ? `<div class="kc-date-row">🚗 ${c.deliveryDate}</div>`  : '';
+  const contractKcHtml = c.contractDate ? `<div class="kc-contract-date">🤝 계약 ${c.contractDate}</div>` : '';
   let createdHtml = '';
   if (c.createdAt) {
     try {
@@ -2098,6 +2168,7 @@ function buildKanbanCard(c) {
     <div class="kc-name" onclick="event.stopPropagation();openDetailPage('${c.id}','kanban')">${escHtml(c.name)}</div>
     ${c.phone ? `<div class="kc-phone"><a href="tel:${phoneRaw}" onclick="event.stopPropagation()">📞 ${escHtml(c.phone)}</a></div>` : ''}
     ${c.model || c.modelCategory ? `<div class="kc-model">🚘 ${escHtml(getModelDisplay(c))}</div>` : ''}
+    ${contractKcHtml}
     <div class="kc-dates">${nextDateHtml}${consultHtml}${testDriveHtml}${deliveryHtml}${createdHtml}</div>
     ${tagsHtml}
   `;
@@ -2268,6 +2339,7 @@ async function updateKanbanStatus(customerId, targetCol) {
   let newStatus = c.status;
   let newTags = (c.tags || '').split(',').map(t => t.trim()).filter(Boolean);
 
+  let contractDate = c.contractDate || '';
   if (targetCol === 'A급가망') {
     if (!newTags.includes('A급가망')) newTags.push('A급가망');
     if (newStatus !== '상담중' && newStatus !== '계약유력') newStatus = '계약유력';
@@ -2277,25 +2349,24 @@ async function updateKanbanStatus(customerId, targetCol) {
   } else if (targetCol === '계약') {
     newTags = newTags.filter(t => t !== 'A급가망');
     newStatus = '계약';
+    if (!contractDate) contractDate = todayStr();
   } else if (targetCol === '출고') {
     newTags = newTags.filter(t => t !== 'A급가망');
     newStatus = '출고완료';
   }
 
-  customers[idx] = { ...c, status: newStatus, tags: newTags.join(', '), updatedAt: new Date().toISOString() };
+  customers[idx] = { ...c, status: newStatus, tags: newTags.join(', '), contractDate, updatedAt: new Date().toISOString() };
   saveLocalCustomers(customers);
-
-  /* UI 즉시 갱신 */
   renderKanban();
   renderDashboard();
   renderCustomerList(getFilteredCustomers());
   refreshCalendarEvents();
 
-  /* 구글시트 저장 */
+  /* 구글시트 저장 후 최신 데이터 재조회 */
   try {
     const result = await sheetRequest({
       action:'update', id:customerId, status:newStatus, tags:newTags.join(', '),
-      updatedAt:customers[idx].updatedAt,
+      contractDate, updatedAt:customers[idx].updatedAt,
       name:c.name, phone:c.phone, companyName:c.companyName||'', region:c.region||'',
       model:c.model||'', budget:c.budget||'', timing:c.timing||'', source:c.source||'',
       memo:c.memo||'', nextDate:c.nextDate||'', consultDate:c.consultDate||'',
@@ -2303,12 +2374,15 @@ async function updateKanbanStatus(customerId, targetCol) {
       createdAt:c.createdAt||'', releaseDate:c.releaseDate||'', releaseMonth:c.releaseMonth||'',
       modelCategory:c.modelCategory||'', modelDetail:c.modelDetail||'',
     });
-    if (!result) {
-      alert('동기화 실패, 다시 시도해주세요.');
+    if (result) {
+      await loadFromSheets(true);
+      renderAll();
+    } else {
+      alert('동기화 실패. 다시 시도해주세요.');
     }
   } catch(e) {
     console.error('칸반 저장 오류:', e);
-    alert('동기화 실패, 다시 시도해주세요.');
+    alert('동기화 실패. 다시 시도해주세요.');
   }
 }
 
@@ -2346,6 +2420,12 @@ function buildCalendarEvents() {
       id: 'delivery-' + c.id, title: '[출고] ' + name,
       date: c.deliveryDate, classNames: ['fc-event-delivery'],
       extendedProps: { type:'delivery', customerId: c.id }
+    });
+    /* 계약 */
+    if (c.contractDate) events.push({
+      id: 'contract-' + c.id, title: '[계약] ' + name,
+      date: c.contractDate, classNames: ['fc-event-contract'],
+      extendedProps: { type:'contract', customerId: c.id }
     });
   });
 
@@ -2484,6 +2564,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTagPicker();
   initTagFilterRow();
   loadFromSheets();
+  startAutoRefresh();
 });
 </script>
 
