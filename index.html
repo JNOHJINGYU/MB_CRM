@@ -633,11 +633,48 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
 
 /* 헤더/메인 반응형 */
 @media (max-width: 600px) {
-  :root { --header-h: 58px; }
+  :root { --header-h: 100px; }
+
+  /* 헤더: 2줄 구조로 변경 */
+  .site-header { height: var(--header-h); }
+  .header-inner {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    padding: 10px 14px 8px;
+    gap: 6px;
+    height: 100%;
+  }
+  /* 1줄: 로고 + 타이틀 */
+  .logo-wrap {
+    justify-content: flex-start;
+    gap: 9px;
+  }
+  .mb-star  { width: 26px; height: 26px; }
   .site-title { font-size: 0.88rem; }
   .site-sub   { display: none; }
-  .mb-star    { width: 28px; height: 28px; }
-  .nav-btn    { padding: 5px 8px; font-size: 0.7rem; }
+  /* 2줄: 네비 */
+  .top-nav {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 3px;
+    padding: 3px 2px;
+    background: var(--surface-03);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-dim);
+    scrollbar-width: none;
+  }
+  .top-nav::-webkit-scrollbar { display: none; }
+  .nav-btn {
+    padding: 7px 11px;
+    font-size: 0.73rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-height: 34px;
+  }
+
   .main-wrap  { padding: 18px 14px 70px; }
   .dashboard-hero { padding: 22px 18px 20px; border-radius: var(--radius-lg); }
   .hero-title { font-size: 1.35rem; }
@@ -658,8 +695,17 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
   input[type="text"], input[type="tel"], input[type="date"], input[type="datetime-local"],
   input[type="search"], select, textarea { font-size: 16px; }
   .today-schedule-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  /* 버튼 터치 영역 최소 44px */
+  .nav-btn, .qbtn, .tag-filter-btn, .tag-btn, .today-action-btn,
+  .btn-primary, .btn-secondary, .btn-danger, .btn-delete-outline,
+  .back-btn, .modal-close { min-height: 44px; }
+  .nav-btn { min-height: 34px; } /* nav는 내부 공간이 작으므로 별도 */
+  /* 모달이 화면 밖으로 나가지 않도록 */
+  .modal-box { max-height: 88vh; padding: 22px 18px 20px; }
+  /* 달력 */
+  .cal-wrap { padding: 12px 10px; }
+  .fc .fc-toolbar { flex-direction: column; gap: 8px; }
 }
-
 /* 칸반 반응형 */
 @media (max-width: 900px) {
   .kanban-board { grid-template-columns: repeat(2, 1fr); }
@@ -667,10 +713,8 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
 @media (max-width: 540px) {
   .kanban-board { grid-template-columns: 1fr; }
   .kanban-col-header { position: relative; top: auto; }
-  .cal-wrap { padding: 14px 12px; }
-  .fc .fc-toolbar { flex-direction: column; gap: 8px; }
 }
-</style>
+
 
 </head>
 <body>
@@ -726,7 +770,7 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
         <div class="stat-card clickable" style="background:linear-gradient(135deg,rgba(5,150,105,0.08) 0%,rgba(5,150,105,0.02) 100%);border-color:rgba(5,150,105,0.25);" onclick="statCardFilter('계약')"><div class="stat-icon">✅</div><span class="stat-num" id="stat-contract" style="color:var(--green)">0</span><span class="stat-label">계약</span></div>
         <div class="stat-card clickable" onclick="statCardFilter('today')"><div class="stat-icon">📞</div><span class="stat-num" id="stat-today">0</span><span class="stat-label">오늘 연락</span></div>
         <div class="stat-card clickable" onclick="statCardFilter('출고완료')"><div class="stat-icon">🚗</div><span class="stat-num" id="stat-done">0</span><span class="stat-label">출고완료</span></div>
-        <div class="stat-card clickable" style="background:linear-gradient(135deg,rgba(0,114,206,0.08) 0%,rgba(0,114,206,0.02) 100%);border-color:rgba(0,114,206,0.25);" onclick="statCardFilter('5월출고')"><div class="stat-icon">📅</div><span class="stat-num" id="stat-may" style="color:var(--blue)">0</span><span class="stat-label">5월 출고</span></div>
+        <div class="stat-card clickable" style="background:linear-gradient(135deg,rgba(0,114,206,0.08) 0%,rgba(0,114,206,0.02) 100%);border-color:rgba(0,114,206,0.25);" onclick="statCardFilter('6월출고')"><div class="stat-icon">📅</div><span class="stat-num" id="stat-june" style="color:var(--blue)">0</span><span class="stat-label">6월 출고</span></div>
       </div>
 
       <!-- 오늘 일정 -->
@@ -1398,7 +1442,10 @@ function showView(viewName) {
     if (currentStatFilter === 'all') renderCustomerList(getFilteredCustomers());
   }
   if (viewName === 'register' && !detailCustomerId) resetForm();
-  if (viewName === 'kanban') renderKanban();
+  if (viewName === 'kanban') {
+    /* 칸반 진입 시 최신 데이터 불러오기 후 렌더 */
+    loadFromSheets().then(() => renderKanban());
+  }
   if (viewName === 'calendar') {
     setTimeout(() => {
       if (!calendarInstance) initCalendar();
@@ -1414,14 +1461,14 @@ function showView(viewName) {
 function renderDashboard() {
   const customers = getCustomers();
   const today = todayStr();
-  const mayStr = '2026-05';
+  const juneStr = '2026-06';
 
   document.getElementById('stat-total').textContent    = customers.length;
   document.getElementById('stat-hot').textContent      = customers.filter(c => c.status === '계약유력').length;
   document.getElementById('stat-contract').textContent = customers.filter(c => c.status === '계약').length;
   document.getElementById('stat-today').textContent    = customers.filter(c => c.nextDate === today).length;
   document.getElementById('stat-done').textContent     = customers.filter(c => c.status === '출고완료').length;
-  document.getElementById('stat-may').textContent      = customers.filter(c => (c.releaseMonth || '').startsWith(mayStr)).length;
+  document.getElementById('stat-june').textContent     = customers.filter(c => (c.releaseMonth || '').startsWith(juneStr)).length;
 
   const todayTxt = document.getElementById('hero-today-text');
   const hotTxt   = document.getElementById('hero-hot-text');
@@ -1602,7 +1649,7 @@ function getFilteredCustomers() {
   if (currentStatFilter !== 'all') {
     const today = todayStr();
     if (currentStatFilter === 'today') list = list.filter(c => c.nextDate === today);
-    else if (currentStatFilter === '5월출고') list = list.filter(c => (c.releaseMonth||'').startsWith('2026-05'));
+    else if (currentStatFilter === '6월출고') list = list.filter(c => (c.releaseMonth||'').startsWith('2026-06'));
     else list = list.filter(c => c.status === currentStatFilter);
   }
   return list;
@@ -1628,7 +1675,7 @@ function statCardFilter(type) {
   document.querySelectorAll('.tag-filter-btn').forEach(b => b.classList.remove('active'));
   const allTagBtn = document.querySelector('.tag-filter-btn.all-btn');
   if (allTagBtn) allTagBtn.classList.add('active');
-  const labels = { all:'전체 고객', '계약유력':'계약유력 고객', '계약':'계약 고객', today:'오늘 연락 예정 고객', '출고완료':'출고완료 고객', '5월출고':'5월 출고 고객' };
+  const labels = { all:'전체 고객', '계약유력':'계약유력 고객', '계약':'계약 고객', today:'오늘 연락 예정 고객', '출고완료':'출고완료 고객', '6월출고':'6월 출고 고객' };
   showView('list');
   const banner = document.getElementById('filter-banner');
   const bannerText = document.getElementById('filter-banner-text');
@@ -2056,11 +2103,37 @@ function buildKanbanCard(c) {
   return card;
 }
 
-/* ── 드래그앤드롭 ── */
+/* ── 드래그앤드롭 (PC) + 터치 (모바일) + 자동스크롤 ── */
+
+/* 자동스크롤 상태 */
+let _autoScrollRAF = null;
+let _touchDragId = null;
+let _touchDragSource = null;
+let _touchClone = null;
+
+function _stopAutoScroll() {
+  if (_autoScrollRAF) { cancelAnimationFrame(_autoScrollRAF); _autoScrollRAF = null; }
+}
+function _startAutoScroll(clientY) {
+  _stopAutoScroll();
+  const ZONE = 80, SPEED = 8;
+  function tick() {
+    const vH = window.innerHeight;
+    if (clientY < ZONE) {
+      window.scrollBy(0, -SPEED);
+    } else if (clientY > vH - ZONE) {
+      window.scrollBy(0, SPEED);
+    }
+    _autoScrollRAF = requestAnimationFrame(tick);
+  }
+  _autoScrollRAF = requestAnimationFrame(tick);
+}
+
 function setupKanbanDnD() {
   const cards = document.querySelectorAll('.kanban-card');
   const zones = document.querySelectorAll('.kanban-cards');
 
+  /* ── PC 드래그앤드롭 ── */
   cards.forEach(card => {
     card.addEventListener('dragstart', e => {
       dragCustomerId = card.dataset.id;
@@ -2069,7 +2142,7 @@ function setupKanbanDnD() {
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', card.dataset.id);
     });
-    card.addEventListener('dragend', e => {
+    card.addEventListener('dragend', () => {
       card.classList.remove('dragging');
       document.querySelectorAll('.drop-placeholder').forEach(p => p.remove());
       document.querySelectorAll('.kanban-cards').forEach(z => z.classList.remove('drag-over'));
@@ -2081,7 +2154,6 @@ function setupKanbanDnD() {
     zone.addEventListener('dragover', e => {
       e.preventDefault(); e.dataTransfer.dropEffect = 'move';
       zone.classList.add('drag-over');
-      /* 플레이스홀더 */
       if (!placeholder) {
         placeholder = document.createElement('div');
         placeholder.className = 'drop-placeholder';
@@ -2102,8 +2174,76 @@ function setupKanbanDnD() {
       if (!id) return;
       const targetCol = zone.dataset.status;
       if (!targetCol || targetCol === dragSourceCol) { renderKanban(); return; }
-      /* 상태 업데이트 */
       await updateKanbanStatus(id, targetCol);
+    });
+  });
+
+  /* ── 모바일 터치 드래그 ── */
+  cards.forEach(card => {
+    card.addEventListener('touchstart', e => {
+      if (e.touches.length !== 1) return;
+      _touchDragId = card.dataset.id;
+      _touchDragSource = card.closest('.kanban-cards')?.dataset.status;
+
+      /* 반투명 클론 생성 */
+      const rect = card.getBoundingClientRect();
+      _touchClone = card.cloneNode(true);
+      _touchClone.style.cssText = `
+        position:fixed; top:${rect.top}px; left:${rect.left}px;
+        width:${rect.width}px; opacity:0.7; pointer-events:none;
+        z-index:999; box-shadow:0 8px 32px rgba(0,0,0,0.25);
+        transform:scale(1.03); transition:none;
+      `;
+      document.body.appendChild(_touchClone);
+      card.style.opacity = '0.3';
+    }, { passive: true });
+
+    card.addEventListener('touchmove', e => {
+      if (!_touchDragId) return;
+      e.preventDefault(); /* 페이지 스크롤 방지 (드래그 중에만) */
+      const touch = e.touches[0];
+      const clientX = touch.clientX, clientY = touch.clientY;
+
+      /* 클론 이동 */
+      if (_touchClone) {
+        _touchClone.style.left = (clientX - _touchClone.offsetWidth / 2) + 'px';
+        _touchClone.style.top  = (clientY - _touchClone.offsetHeight / 2) + 'px';
+      }
+
+      /* 자동스크롤 */
+      _startAutoScroll(clientY);
+
+      /* 드롭존 하이라이트 */
+      document.querySelectorAll('.kanban-cards').forEach(z => z.classList.remove('drag-over'));
+      const el = document.elementFromPoint(clientX, clientY);
+      const zone = el?.closest('.kanban-cards');
+      if (zone) zone.classList.add('drag-over');
+    }, { passive: false });
+
+    card.addEventListener('touchend', async e => {
+      _stopAutoScroll();
+      document.querySelectorAll('.kanban-cards').forEach(z => z.classList.remove('drag-over'));
+      if (_touchClone) { _touchClone.remove(); _touchClone = null; }
+      card.style.opacity = '';
+
+      if (!_touchDragId) return;
+      const touch = e.changedTouches[0];
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      const zone = el?.closest('.kanban-cards');
+      const targetCol = zone?.dataset.status;
+      const fromId = _touchDragId, fromCol = _touchDragSource;
+      _touchDragId = null; _touchDragSource = null;
+
+      if (!targetCol || targetCol === fromCol) { renderKanban(); return; }
+      await updateKanbanStatus(fromId, targetCol);
+    });
+
+    card.addEventListener('touchcancel', () => {
+      _stopAutoScroll();
+      if (_touchClone) { _touchClone.remove(); _touchClone = null; }
+      card.style.opacity = '';
+      _touchDragId = null; _touchDragSource = null;
+      document.querySelectorAll('.kanban-cards').forEach(z => z.classList.remove('drag-over'));
     });
   });
 }
@@ -2124,7 +2264,6 @@ async function updateKanbanStatus(customerId, targetCol) {
   if (idx === -1) return;
 
   const c = customers[idx];
-  /* 컬럼에 따라 상태/태그 업데이트 */
   let newStatus = c.status;
   let newTags = (c.tags || '').split(',').map(t => t.trim()).filter(Boolean);
 
@@ -2144,12 +2283,18 @@ async function updateKanbanStatus(customerId, targetCol) {
 
   customers[idx] = { ...c, status: newStatus, tags: newTags.join(', '), updatedAt: new Date().toISOString() };
   saveLocalCustomers(customers);
+
+  /* UI 즉시 갱신 */
   renderKanban();
   renderDashboard();
+  renderCustomerList(getFilteredCustomers());
+  refreshCalendarEvents();
 
   /* 구글시트 저장 */
   try {
-    await sheetRequest({ action:'update', id:customerId, status:newStatus, tags:newTags.join(', '), updatedAt:customers[idx].updatedAt,
+    const result = await sheetRequest({
+      action:'update', id:customerId, status:newStatus, tags:newTags.join(', '),
+      updatedAt:customers[idx].updatedAt,
       name:c.name, phone:c.phone, companyName:c.companyName||'', region:c.region||'',
       model:c.model||'', budget:c.budget||'', timing:c.timing||'', source:c.source||'',
       memo:c.memo||'', nextDate:c.nextDate||'', consultDate:c.consultDate||'',
@@ -2157,7 +2302,13 @@ async function updateKanbanStatus(customerId, targetCol) {
       createdAt:c.createdAt||'', releaseDate:c.releaseDate||'', releaseMonth:c.releaseMonth||'',
       modelCategory:c.modelCategory||'', modelDetail:c.modelDetail||'',
     });
-  } catch(e) { console.error('칸반 저장 오류:', e); }
+    if (!result) {
+      alert('동기화 실패, 다시 시도해주세요.');
+    }
+  } catch(e) {
+    console.error('칸반 저장 오류:', e);
+    alert('동기화 실패, 다시 시도해주세요.');
+  }
 }
 
 /* ════════════════════════════════════════════════════
