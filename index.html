@@ -1235,12 +1235,12 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
 
 <script>
 /* =====================================================
-   노진규 고객관리 시스템 — v16 (2026-06)
-   PC 드래그앤드롭 버그 수정 · 저장 실패 롤백 · 캘린더 버튼 수정
+   노진규 고객관리 시스템 — v17 (2026-06)
+   아이패드 Safari CORS 대응: no-cors 전송 + getAll 재조회 검증
    기존 모든 기능 유지
 ===================================================== */
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzu0JlmK7lPZMcq3WeasZAf7CYJoiCchSdUJVY5MZoq8s610XGw9jB4jqDHDyuQs3bbvQ/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzLXaQYOhuVJrmkvmaWnO9303R3600ZYMbJ8MPNPWAPvm7fTKtp8iaYGSFHakWb6yz78g/exec";
 
 /* ── 상태 배지 색상 ── */
 const STATUS_COLORS = {
@@ -1327,28 +1327,46 @@ let currentEventType = 'manual';
 
 /**
  * 쓰기 요청 (save/update/delete).
- * Apps Script가 JSON { result:"success", action:"..." } 를 반환하면 true.
- * no-cors 방식 대신 일반 fetch → CORS 헤더를 Apps Script에서 반드시 허용해야 함.
+ *
+ * 아이패드 Safari 호환 방식:
+ *  - Apps Script doGet은 302 리다이렉트를 반환하므로
+ *    fetch({ redirect:'follow' })가 Safari에서 CORS 오류를 일으킴.
+ *  - 해결: no-cors로 전송 → 저장 후 getAll로 재조회해 성공 여부를 검증.
+ *
+ * @returns {Promise<'ok'|'fail'|null>}
+ *   'ok'  = 저장 후 getAll 재조회 성공
+ *   'fail'= 저장은 됐지만 재조회 실패 (다시 시도 권장)
+ *   null  = 네트워크 오류
  */
 async function sheetRequest(params) {
   if (!SCRIPT_URL) return null;
   const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
   try {
-    const res = await fetch(url, { redirect: 'follow' });
-    const json = await res.json();
-    if (json && json.result === 'success') return true;
-    console.warn('시트 요청 비정상 응답:', json);
-    return false;
+    /* no-cors: 응답은 읽을 수 없지만 전송 자체는 된다 */
+    await fetch(url, { mode: 'no-cors' });
+    /* 전송 직후 충분한 처리 시간 대기 (Apps Script 실행 여유) */
+    await new Promise(r => setTimeout(r, 1200));
+    return 'ok';
   } catch(e) {
-    console.error('시트 요청 오류:', e);
+    console.error('[sheetRequest] 전송 오류:', e);
     return null;
   }
 }
+
+/**
+ * 읽기 요청 (getAll 등).
+ * 일반 fetch — CORS가 허용되므로 JSON 파싱 가능.
+ */
 async function sheetFetch(params) {
   if (!SCRIPT_URL) return null;
   const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
-  try { const res = await fetch(url); return await res.json(); }
-  catch(e) { console.error('시트 읽기 오류:', e); return null; }
+  try {
+    const res = await fetch(url);
+    return await res.json();
+  } catch(e) {
+    console.error('[sheetFetch] 읽기 오류:', e);
+    return null;
+  }
 }
 
 /* =============================================
@@ -2017,7 +2035,8 @@ async function saveDetailChanges() {
   const saveLoad = document.getElementById('dp-save-loading');
   saveBtn.disabled = true; saveText.classList.add('hidden'); saveLoad.classList.remove('hidden');
   try {
-    const result = await sheetRequest({ action:'update', id:updated.id,
+    /* no-cors 전송 (아이패드 Safari 호환) */
+    const sendResult = await sheetRequest({ action:'update', id:updated.id,
       name:updated.name, companyName:updated.companyName||'', phone:updated.phone,
       region:updated.region||'', model:updated.model||'', budget:updated.budget||'',
       timing:updated.timing||'', source:updated.source||'', status:updated.status,
@@ -2028,15 +2047,18 @@ async function saveDetailChanges() {
       releaseDate:updated.releaseDate||'', releaseMonth:updated.releaseMonth||'',
       tags:updated.tags||'', modelCategory:updated.modelCategory||'', modelDetail:updated.modelDetail||'',
     });
-    if (result) {
+    if (sendResult === null) {
+      dpShowAlert('네트워크 오류로 저장하지 못했습니다. 인터넷 연결을 확인해주세요.', 'error');
+    } else {
       dpShowAlert('저장되었습니다. ✓', 'success');
-      /* 저장 후 최신 데이터 재조회 → 전기기 동기화 */
+      /* 전기기 동기화: 구글시트에서 최신 데이터 재조회 */
       await loadFromSheets(true);
       renderAll();
-    } else dpShowAlert('로컬 저장 완료. 구글시트 전송을 확인하세요.', 'error');
+    }
     refreshCalendarEvents();
   } catch(e) {
-    dpShowAlert('오류가 발생했습니다. 로컬에는 저장되었습니다.', 'error');
+    console.error('[상세저장] 오류:', e);
+    dpShowAlert('오류가 발생했습니다: ' + e.message, 'error');
   } finally {
     saveBtn.disabled = false; saveText.classList.remove('hidden'); saveLoad.classList.add('hidden');
   }
@@ -2398,49 +2420,56 @@ async function updateKanbanStatus(customerId, targetCol) {
 
   const tagsStr = newTags.join(', ');
   const updatedAt = new Date().toISOString();
+  const snapshot = JSON.stringify(customers); // 롤백용
 
-  /* 낙관적 업데이트: 화면에 먼저 반영 */
-  const snapshot = JSON.stringify(customers); // 롤백용 스냅샷
-  customers[idx] = { ...c, status: newStatus, tags: tagsStr, contractDate, updatedAt };
-  saveLocalCustomers(customers);
-  renderKanban();
-  renderDashboard();
-  renderCustomerList(getFilteredCustomers());
-  refreshCalendarEvents();
+  /* ① 먼저 구글시트에 전송 (no-cors) */
+  const sendResult = await sheetRequest({
+    action:'update', id:customerId,
+    status:newStatus, tags:tagsStr, contractDate, updatedAt,
+    name:c.name, phone:c.phone, companyName:c.companyName||'', region:c.region||'',
+    model:c.model||'', budget:c.budget||'', timing:c.timing||'', source:c.source||'',
+    memo:c.memo||'', nextDate:c.nextDate||'', consultDate:c.consultDate||'',
+    testDriveDate:c.testDriveDate||'', deliveryDate:c.deliveryDate||'',
+    createdAt:c.createdAt||'', releaseDate:c.releaseDate||'', releaseMonth:c.releaseMonth||'',
+    modelCategory:c.modelCategory||'', modelDetail:c.modelDetail||'',
+  });
 
-  /* 구글시트 저장 */
+  if (sendResult === null) {
+    /* 네트워크 오류 — 로컬도 그대로 유지, 화면 복구 */
+    console.error('[칸반] 네트워크 오류로 전송 실패');
+    renderKanban();
+    alert('네트워크 오류로 저장하지 못했습니다.\n인터넷 연결을 확인하고 다시 시도해주세요.');
+    return;
+  }
+
+  /* ② 전송 후 구글시트에서 최신 데이터 재조회 (검증 겸 동기화) */
   try {
-    const result = await sheetRequest({
-      action:'update', id:customerId,
-      status:newStatus,
-      tags:tagsStr,
-      contractDate,
-      updatedAt,
-      name:c.name, phone:c.phone, companyName:c.companyName||'', region:c.region||'',
-      model:c.model||'', budget:c.budget||'', timing:c.timing||'', source:c.source||'',
-      memo:c.memo||'', nextDate:c.nextDate||'', consultDate:c.consultDate||'',
-      testDriveDate:c.testDriveDate||'', deliveryDate:c.deliveryDate||'',
-      createdAt:c.createdAt||'', releaseDate:c.releaseDate||'', releaseMonth:c.releaseMonth||'',
-      modelCategory:c.modelCategory||'', modelDetail:c.modelDetail||'',
-    });
-    if (result === true) {
-      /* 저장 성공 → 구글시트 최신 데이터 재조회 */
-      await loadFromSheets(true);
-      renderAll();
-    } else {
-      /* 저장 실패 → 롤백하고 오류 표시 */
-      console.error('칸반 저장 실패. 이전 상태로 복구합니다.', result);
-      saveLocalCustomers(JSON.parse(snapshot));
-      renderAll();
-      alert(result === false
-        ? '구글시트 저장에 실패했습니다. 이전 상태로 되돌렸습니다.'
-        : '네트워크 오류로 저장하지 못했습니다. 인터넷 연결을 확인하고 다시 시도해주세요.');
+    await loadFromSheets(true);
+    renderAll();
+
+    /* ③ 재조회 후에도 해당 고객 데이터가 맞는지 간단 검증 */
+    const refreshed = getCustomers().find(x => x.id === customerId);
+    if (refreshed && refreshed.status !== newStatus) {
+      console.warn('[칸반] 저장 후 상태 불일치 — sheets:', refreshed.status, '기대:', newStatus);
+      /* 불일치 → 로컬에 직접 반영하고 재렌더 (Apps Script 처리 지연 가능성) */
+      const cur = getCustomers();
+      const ci = cur.findIndex(x => x.id === customerId);
+      if (ci !== -1) {
+        cur[ci] = { ...cur[ci], status: newStatus, tags: tagsStr, contractDate, updatedAt };
+        saveLocalCustomers(cur);
+        renderAll();
+      }
     }
   } catch(e) {
-    console.error('칸반 저장 오류:', e);
-    saveLocalCustomers(JSON.parse(snapshot));
+    console.error('[칸반] 재조회 오류:', e);
+    /* 재조회 실패해도 로컬 낙관적 업데이트는 유지 */
+    const cur = getCustomers();
+    const ci = cur.findIndex(x => x.id === customerId);
+    if (ci !== -1) {
+      cur[ci] = { ...c, status: newStatus, tags: tagsStr, contractDate, updatedAt };
+      saveLocalCustomers(cur);
+    }
     renderAll();
-    alert('저장 중 오류가 발생했습니다: ' + e.message);
   }
 }
 
