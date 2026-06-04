@@ -852,6 +852,9 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
           <button onclick="manualSyncFromSheet()" style="background:none;border:1px solid var(--green);border-radius:var(--radius-sm);padding:8px 18px;font-size:0.75rem;color:var(--green);cursor:pointer;font-weight:600;">
             ☁️ 구글시트에서 지금 동기화
           </button>
+          <button onclick="syncLocalToSheet()" style="background:none;border:1px solid var(--gold);border-radius:var(--radius-sm);padding:8px 18px;font-size:0.75rem;color:var(--gold);cursor:pointer;font-weight:600;">
+            ⬆️ 로컬 34명 구글시트로 업로드
+          </button>
         </div>
         <div id="sheet-test-result" style="font-size:0.78rem;margin-top:4px;min-height:20px;"></div>
       </div>
@@ -1252,7 +1255,7 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
 
 <script>
 /* =====================================================
-   노진규 고객관리 시스템 — v18 (2026-06) 데이터 안전 패치
+   노진규 고객관리 시스템 — v20 (2026-06) PC/모바일 구글시트 완전 동기화 패치
    ✅ STORAGE_KEY 통합 ('mb_crm_customers')
    ✅ 레거시 키 마이그레이션
    ✅ 빈 배열 저장 차단 (데이터 보호)
@@ -1262,7 +1265,7 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
    ✅ refreshAllViews() 통합 갱신 함수
 ===================================================== */
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxnDm5LqKLISbi8GDb5a5654BtSAgLuuDtOgX_FD5_BwNl7dLYwRCWj7B0zbWl0fnYrag/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzgUk3sBYz-nMpYXTk6k9CoCUOB5eYXt76C_DdxxrcFEK9AK8fdIckR0dI6ruZf1ZXsRA/exec";
 
 /* ── 상태 배지 색상 ── */
 const STATUS_COLORS = {
@@ -1356,54 +1359,56 @@ let currentEventType = 'manual';
  *
  * @returns {Promise<'ok'|'network-error'>}
  */
+function jsonpRequest(params, timeoutMs = 15000) {
+  return new Promise((resolve, reject) => {
+    if (!SCRIPT_URL) return reject(new Error('SCRIPT_URL이 비어있습니다.'));
+    const callbackName = 'mbcrm_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    const cleanup = () => {
+      try { delete window[callbackName]; } catch(e) { window[callbackName] = undefined; }
+      if (script && script.parentNode) script.parentNode.removeChild(script);
+      if (timer) clearTimeout(timer);
+    };
+    window[callbackName] = (data) => { cleanup(); resolve(data); };
+    const query = new URLSearchParams({ ...params, callback: callbackName, _t: Date.now().toString() }).toString();
+    const script = document.createElement('script');
+    script.src = SCRIPT_URL + '?' + query;
+    script.async = true;
+    script.onerror = () => { cleanup(); reject(new Error('Apps Script 호출 실패')); };
+    const timer = setTimeout(() => { cleanup(); reject(new Error('Apps Script 응답 시간 초과')); }, timeoutMs);
+    document.head.appendChild(script);
+  });
+}
+
+/**
+ * 쓰기 요청 (save/update/delete)
+ * ✅ v20: no-cors 제거, JSONP로 실제 성공/실패 응답 확인
+ */
 async function sheetRequest(params) {
-  if (!SCRIPT_URL) {
-    console.error('[sheetRequest] ❌ SCRIPT_URL이 비어있음. 저장 불가.');
-    return 'network-error';
-  }
-  const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
-  console.log('[sheetRequest] 전송 시작:', params.action, '→', url.substring(0, 80) + '...');
+  console.log('[sheetRequest] 전송 시작:', params.action, params.name || params.id || '');
   try {
-    await fetch(url, { mode: 'no-cors' });
-    /* Apps Script 처리 여유 시간 대기 */
-    await new Promise(r => setTimeout(r, 2000));
-    console.log('[sheetRequest] ✅ 전송 완료 (no-cors, 응답 확인 불가)');
-    return 'ok';
+    const res = await jsonpRequest(params, 20000);
+    console.log('[sheetRequest] 응답:', res);
+    if (res && res.result === 'success') return 'ok';
+    console.error('[sheetRequest] Apps Script 오류:', res);
+    return 'network-error';
   } catch(e) {
-    console.error('[sheetRequest] ❌ 네트워크 오류:', e.message);
+    console.error('[sheetRequest] ❌ 오류:', e.message);
     return 'network-error';
   }
 }
 
 /**
- * 읽기 요청 (getAll / test 등).
- * Apps Script에서 ContentService.setMimeType(MIME_TYPE.JSON) + CORS 헤더가
- * 설정되어 있어야 JSON 파싱이 가능.
+ * 읽기 요청 (getAll/test)
+ * ✅ v20: PC/모바일 동일하게 JSONP 사용
  */
 async function sheetFetch(params) {
-  if (!SCRIPT_URL) {
-    console.error('[sheetFetch] ❌ SCRIPT_URL이 비어있음. 읽기 불가.');
-    return null;
-  }
-  const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
   console.log('[sheetFetch] 읽기 요청:', params.action);
   try {
-    const res = await fetch(url, { redirect: 'follow' });
-    if (!res.ok) {
-      console.error('[sheetFetch] ❌ HTTP 오류:', res.status, res.statusText);
-      return null;
-    }
-    const text = await res.text();
-    try {
-      const json = JSON.parse(text);
-      console.log('[sheetFetch] ✅ 응답 수신:', JSON.stringify(json).substring(0, 120));
-      return json;
-    } catch(parseErr) {
-      console.error('[sheetFetch] ❌ JSON 파싱 실패. 응답 텍스트:', text.substring(0, 200));
-      return null;
-    }
+    const res = await jsonpRequest(params, 20000);
+    console.log('[sheetFetch] 응답:', JSON.stringify(res).substring(0, 200));
+    return res;
   } catch(e) {
-    console.error('[sheetFetch] ❌ 네트워크 오류:', e.message);
+    console.error('[sheetFetch] ❌ 오류:', e.message);
     return null;
   }
 }
@@ -1660,6 +1665,24 @@ function normalizeCustomerObj(obj) {
 /* =============================================
    구글시트 불러오기 (원본 데이터 기준)
 ============================================= */
+function mergeCustomers(local, remote) {
+  const map = new Map();
+  const keyOf = (c) => {
+    const phone = normalizePhone(c.phone || '');
+    return phone ? 'p:' + phone : 'i:' + (c.id || (c.name || '') + '|' + (c.createdAt || ''));
+  };
+  [...(local || []), ...(remote || [])].forEach(c => {
+    if (!c || typeof c !== 'object') return;
+    const key = keyOf(c);
+    const prev = map.get(key);
+    if (!prev) { map.set(key, c); return; }
+    const prevTime = prev.updatedAt || prev.createdAt || '';
+    const curTime = c.updatedAt || c.createdAt || '';
+    map.set(key, curTime >= prevTime ? { ...prev, ...c } : { ...c, ...prev });
+  });
+  return Array.from(map.values()).filter(c => c.name || c.phone);
+}
+
 async function loadFromSheets(silent) {
   if (!SCRIPT_URL) {
     console.warn('[loadFromSheets] SCRIPT_URL 없음. 로컬 캐시로 렌더링.');
@@ -1673,16 +1696,15 @@ async function loadFromSheets(silent) {
     if (!result) {
       console.warn('[loadFromSheets] ❌ 응답 없음 — 로컬 캐시 사용');
     } else if (result.result === 'success') {
-      const mapped = rowsToCustomers(result);
-      if (mapped && mapped.length > 0) {
-        saveLocalCustomers(mapped);
-        console.log('[loadFromSheets] ✅ 구글시트에서 ' + mapped.length + '명 동기화 완료');
-      } else if (mapped && mapped.length === 0) {
-        /* 구글시트가 실제로 비어있어도 로컬 데이터는 보호 */
+      const mapped = rowsToCustomers(result) || [];
+      if (mapped.length > 0) {
+        const local = getCustomers();
+        const merged = mergeCustomers(local, mapped);
+        saveLocalCustomers(merged);
+        console.log('[loadFromSheets] ✅ 구글시트 ' + mapped.length + '명 + 로컬 ' + local.length + '명 → 통합 ' + merged.length + '명');
+      } else {
         const local = getCustomers();
         console.warn('[loadFromSheets] ⚠️ 구글시트 응답이 비어있음. 로컬 캐시 ' + local.length + '명 유지.');
-      } else {
-        console.warn('[loadFromSheets] ⚠️ 데이터 파싱 실패 — 로컬 캐시 사용');
       }
     } else {
       console.warn('[loadFromSheets] ❌ Apps Script 오류 응답:', JSON.stringify(result));
@@ -1693,6 +1715,24 @@ async function loadFromSheets(silent) {
     if (!silent) showLoadingBanner(false);
   }
   renderDashboard();
+}
+
+async function syncLocalToSheet() {
+  const resultEl = document.getElementById('sheet-test-result');
+  const customers = getCustomers();
+  if (!customers.length) { alert('로컬에 동기화할 고객 데이터가 없습니다.'); return; }
+  if (!confirm('현재 브라우저에 저장된 고객 ' + customers.length + '명을 구글시트로 동기화합니다.\n이미 있는 고객은 연락처/ID 기준으로 업데이트됩니다. 진행할까요?')) return;
+  if (resultEl) { resultEl.textContent = '로컬 고객을 구글시트로 업로드 중... 0/' + customers.length; resultEl.style.color = 'var(--blue)'; }
+  let ok = 0, fail = 0;
+  for (let i = 0; i < customers.length; i++) {
+    const c = customers[i];
+    const r = await sheetRequest({ action: 'upsert', ...c });
+    if (r === 'ok') ok++; else fail++;
+    if (resultEl) resultEl.textContent = '로컬 고객을 구글시트로 업로드 중... ' + (i+1) + '/' + customers.length + ' (성공 ' + ok + ', 실패 ' + fail + ')';
+  }
+  await loadFromSheets(true);
+  refreshAllViews();
+  if (resultEl) { resultEl.textContent = '✅ 업로드 완료 — 성공 ' + ok + '명, 실패 ' + fail + '명 / 현재 화면 ' + getCustomers().length + '명'; resultEl.style.color = fail ? 'var(--red)' : 'var(--green)'; }
 }
 
 /* 수동 동기화 버튼용 */
