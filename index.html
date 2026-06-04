@@ -838,6 +838,13 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
       <div id="recent-list" class="card-grid">
         <p class="empty-msg">등록된 고객이 없습니다.</p>
       </div>
+
+      <!-- 데이터 복구 버튼 (긴급용) -->
+      <div style="margin-top:32px;text-align:center;">
+        <button onclick="restoreFromBackup()" style="background:none;border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:8px 18px;font-size:0.75rem;color:var(--text-tertiary);cursor:pointer;" title="저장 전 자동 백업에서 고객 데이터를 복구합니다">
+          🔄 백업에서 데이터 복구
+        </button>
+      </div>
     </section>
 
     <!-- ══════════════════════════════════════════
@@ -1235,9 +1242,14 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
 
 <script>
 /* =====================================================
-   노진규 고객관리 시스템 — v17 (2026-06)
-   아이패드 Safari CORS 대응: no-cors 전송 + getAll 재조회 검증
-   기존 모든 기능 유지
+   노진규 고객관리 시스템 — v18 (2026-06) 데이터 안전 패치
+   ✅ STORAGE_KEY 통합 ('mb_crm_customers')
+   ✅ 레거시 키 마이그레이션
+   ✅ 빈 배열 저장 차단 (데이터 보호)
+   ✅ 구글시트 응답이 비어있어도 로컬 데이터 유지
+   ✅ 뷰 전환 시 즉시 렌더링 후 백그라운드 동기화
+   ✅ 저장 전 자동 백업 (mb_crm_customers_backup)
+   ✅ refreshAllViews() 통합 갱신 함수
 ===================================================== */
 
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzLXaQYOhuVJrmkvmaWnO9303R3600ZYMbJ8MPNPWAPvm7fTKtp8iaYGSFHakWb6yz78g/exec";
@@ -1370,20 +1382,144 @@ async function sheetFetch(params) {
 }
 
 /* =============================================
-   로컬 캐시
+   로컬 캐시 — 통합 STORAGE_KEY 관리
+   ⚠️  이 키만 사용. 절대 다른 키로 저장 금지.
 ============================================= */
-function getCustomers() {
-  try { return JSON.parse(localStorage.getItem('crm_customers') || '[]'); }
-  catch(e) { return []; }
+const STORAGE_KEY = 'mb_crm_customers';
+const STORAGE_KEY_BACKUP = 'mb_crm_customers_backup';
+const STORAGE_KEY_CAL   = 'crm_cal_events';
+
+/* 과거에 사용했을 수 있는 키 후보 목록 */
+const LEGACY_KEYS = [
+  'crm_customers',
+  'customers',
+  'crmCustomers',
+  'mbCustomers',
+  'mb_customers',
+  'customerData',
+  'mb_crm_customers',
+];
+
+/**
+ * 여러 키에서 고객 데이터 읽기.
+ * 전화번호 기준 중복 제거 후 반환.
+ */
+function migrateAndGetCustomers() {
+  let merged = [];
+  const seenPhone = new Set();
+  const seenNameDate = new Set();
+
+  LEGACY_KEYS.forEach(key => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr) || arr.length === 0) return;
+      arr.forEach(c => {
+        if (!c || typeof c !== 'object') return;
+        const phone = (c.phone || '').replace(/[^0-9]/g, '');
+        if (phone) {
+          if (seenPhone.has(phone)) return;
+          seenPhone.add(phone);
+        } else {
+          const key2 = (c.name || '') + '|' + (c.createdAt || '');
+          if (seenNameDate.has(key2)) return;
+          seenNameDate.add(key2);
+        }
+        merged.push(c);
+      });
+      console.log(`[마이그레이션] ${key}에서 ${arr.length}명 발견`);
+    } catch(e) { /* 무시 */ }
+  });
+
+  if (merged.length > 0) {
+    /* 마이그레이션 완료 → STORAGE_KEY에 통합 저장 */
+    _saveToStorage(merged);
+    console.log(`✅ [마이그레이션] 총 ${merged.length}명을 '${STORAGE_KEY}'로 통합 저장 완료`);
+  }
+  return merged;
 }
-function saveLocalCustomers(c) { localStorage.setItem('crm_customers', JSON.stringify(c)); }
+
+/** 실제 localStorage 쓰기 (내부용) */
+function _saveToStorage(arr) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+  } catch(e) {
+    console.error('[저장 오류]', e);
+  }
+}
+
+/** 고객 목록 읽기 */
+function getCustomers() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr) && arr.length > 0) {
+        console.log(`[getCustomers] '${STORAGE_KEY}' 에서 ${arr.length}명 로드`);
+        return arr;
+      }
+    }
+    /* STORAGE_KEY가 비어있으면 레거시 키 마이그레이션 시도 */
+    const migrated = migrateAndGetCustomers();
+    return migrated;
+  } catch(e) {
+    console.error('[getCustomers 오류]', e);
+    return [];
+  }
+}
+
+/**
+ * 고객 목록 저장 (안전 버전)
+ * ⚠️  반드시 전체 배열을 전달해야 함. 빈 배열 보호.
+ */
+function saveLocalCustomers(arr) {
+  if (!Array.isArray(arr)) {
+    console.error('[saveLocalCustomers] 배열이 아닌 값 저장 시도 차단:', arr);
+    return;
+  }
+  /* 빈 배열 저장 시도 시 기존 데이터 확인 */
+  if (arr.length === 0) {
+    const existing = (() => {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch(e) { return []; }
+    })();
+    if (existing.length > 0) {
+      console.warn(`[saveLocalCustomers] ⚠️ 빈 배열 저장 시도 차단! 기존 ${existing.length}명 데이터 보호.`);
+      return; /* 기존 데이터 보호 — 저장 안 함 */
+    }
+  }
+  /* 저장 전 백업 */
+  try {
+    const existing = localStorage.getItem(STORAGE_KEY);
+    if (existing) localStorage.setItem(STORAGE_KEY_BACKUP, existing);
+  } catch(e) { /* 백업 실패는 무시 */ }
+
+  _saveToStorage(arr);
+  console.log(`[saveLocalCustomers] ${arr.length}명 저장 완료`);
+}
+
+/** 백업에서 복구 */
+function restoreFromBackup() {
+  try {
+    const backup = localStorage.getItem(STORAGE_KEY_BACKUP);
+    if (!backup) { alert('백업 데이터가 없습니다.'); return; }
+    const arr = JSON.parse(backup);
+    if (!Array.isArray(arr) || arr.length === 0) { alert('백업 데이터가 비어있습니다.'); return; }
+    _saveToStorage(arr);
+    refreshAllViews();
+    alert(`백업에서 ${arr.length}명 복구 완료!`);
+  } catch(e) {
+    alert('백업 복구 오류: ' + e.message);
+  }
+}
+
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
 function getCalEvents() {
-  try { return JSON.parse(localStorage.getItem('crm_cal_events') || '[]'); }
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY_CAL) || '[]'); }
   catch(e) { return []; }
 }
-function saveCalEvents(ev) { localStorage.setItem('crm_cal_events', JSON.stringify(ev)); }
+function saveCalEvents(ev) { localStorage.setItem(STORAGE_KEY_CAL, JSON.stringify(ev)); }
 
 /* =============================================
    날짜 정규화
@@ -1468,18 +1604,36 @@ function normalizeCustomerObj(obj) {
 async function loadFromSheets(silent) {
   if (!SCRIPT_URL) { renderDashboard(); return; }
   if (!silent) showLoadingBanner(true);
-  const result = await sheetFetch({ action: 'getAll' });
-  if (result && result.result === 'success') {
-    const mapped = rowsToCustomers(result);
-    if (mapped) { saveLocalCustomers(mapped); console.log('구글시트에서 ' + mapped.length + '명 불러옴'); }
-    else console.warn('구글시트 불러오기 실패 — 로컬 캐시 사용');
-  } else console.warn('구글시트 응답 오류 — 로컬 캐시 사용');
-  if (!silent) showLoadingBanner(false);
+  try {
+    const result = await sheetFetch({ action: 'getAll' });
+    if (result && result.result === 'success') {
+      const mapped = rowsToCustomers(result);
+      if (mapped && mapped.length > 0) {
+        /* ✅ 구글시트 데이터가 실제로 있을 때만 저장 */
+        saveLocalCustomers(mapped);
+        console.log('[구글시트] ' + mapped.length + '명 동기화 완료');
+      } else if (mapped && mapped.length === 0) {
+        /* ⚠️ 구글시트가 비어있어도 로컬 데이터는 절대 삭제 안 함 */
+        const local = getCustomers();
+        console.warn('[구글시트] 응답이 비어있음. 로컬 캐시 ' + local.length + '명 유지.');
+      } else {
+        console.warn('[구글시트] 파싱 실패 — 로컬 캐시 사용');
+      }
+    } else {
+      console.warn('[구글시트] 응답 오류 — 로컬 캐시 사용');
+    }
+  } catch(e) {
+    console.error('[구글시트] 네트워크 오류:', e);
+  } finally {
+    if (!silent) showLoadingBanner(false);
+  }
   renderDashboard();
 }
 
-/* 모든 UI 갱신 */
-function renderAll() {
+/* 모든 UI 갱신 — 통합 함수 */
+function refreshAllViews() {
+  const customers = getCustomers();
+  console.log('[refreshAllViews] 렌더링 고객 수:', customers.length);
   renderDashboard();
   const activeView = document.querySelector('.view.active');
   if (!activeView) return;
@@ -1488,6 +1642,9 @@ function renderAll() {
   if (id === 'view-kanban') renderKanban();
   if (id === 'view-calendar') refreshCalendarEvents();
 }
+
+/* 하위 호환 별칭 */
+function renderAll() { refreshAllViews(); }
 
 /* 30초 자동 새로고침 */
 let _autoRefreshTimer = null;
@@ -1539,19 +1696,20 @@ function showView(viewName) {
   if (viewName === 'register' && !detailCustomerId) resetForm();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
-  /* 주요 뷰 진입 시 최신 데이터 재조회 */
+  /* 뷰 전환 시: 로컬 데이터로 즉시 렌더링 후 백그라운드 동기화 */
+  if (viewName === 'dashboard') renderDashboard();
+  if (viewName === 'list') renderCustomerList(getFilteredCustomers());
+  if (viewName === 'kanban') renderKanban();
+  if (viewName === 'calendar') {
+    setTimeout(() => {
+      if (!calendarInstance) initCalendar();
+      else { calendarInstance.render(); refreshCalendarEvents(); }
+    }, 50);
+  }
+
+  /* 백그라운드 구글시트 동기화 (화면은 먼저 표시, 결과는 나중에 반영) */
   if (['dashboard','list','kanban','calendar'].includes(viewName)) {
-    loadFromSheets(true).then(() => {
-      if (viewName === 'dashboard') renderDashboard();
-      if (viewName === 'list') renderCustomerList(getFilteredCustomers());
-      if (viewName === 'kanban') renderKanban();
-      if (viewName === 'calendar') {
-        setTimeout(() => {
-          if (!calendarInstance) initCalendar();
-          else { calendarInstance.render(); refreshCalendarEvents(); }
-        }, 50);
-      }
-    });
+    loadFromSheets(true).then(() => refreshAllViews());
   }
 }
 
@@ -1900,6 +2058,8 @@ async function handleFormSubmit(event) {
     createdAt: now, updatedAt: now, releaseDate: '', releaseMonth: '',
   };
   customers.push(customer); saveLocalCustomers(customers);
+  /* 즉시 전체 뷰 갱신 */
+  refreshAllViews();
   const submitBtn = document.getElementById('submit-btn');
   const submitText = document.getElementById('submit-text');
   const submitLoad = document.getElementById('submit-loading');
@@ -1909,6 +2069,8 @@ async function handleFormSubmit(event) {
     showAlert('고객정보가 정상 저장되었습니다. ✓', 'success');
     resetForm();
     refreshCalendarEvents();
+    /* 구글시트 저장 후 동기화 */
+    loadFromSheets(true).then(() => refreshAllViews());
   } catch(e) {
     showAlert('로컬 저장 완료. 구글시트 전송을 확인하세요.', 'error');
   } finally {
@@ -2024,6 +2186,8 @@ async function saveDetailChanges() {
     updatedAt: new Date().toISOString(),
   };
   customers[idx] = updated; saveLocalCustomers(customers);
+  /* 즉시 전체 뷰 갱신 */
+  refreshAllViews();
   document.getElementById('dp-name').textContent = updated.name;
   const sc = STATUS_COLORS[updated.status] || { bg:'#f3f4f6', text:'#374151' };
   document.getElementById('dp-status-wrap').innerHTML =
@@ -2051,9 +2215,8 @@ async function saveDetailChanges() {
       dpShowAlert('네트워크 오류로 저장하지 못했습니다. 인터넷 연결을 확인해주세요.', 'error');
     } else {
       dpShowAlert('저장되었습니다. ✓', 'success');
-      /* 전기기 동기화: 구글시트에서 최신 데이터 재조회 */
-      await loadFromSheets(true);
-      renderAll();
+      /* 백그라운드 구글시트 동기화 */
+      loadFromSheets(true).then(() => refreshAllViews());
     }
     refreshCalendarEvents();
   } catch(e) {
@@ -2070,7 +2233,7 @@ function deleteFromDetail() {
     const customers = getCustomers().filter(c => c.id !== detailCustomerId);
     saveLocalCustomers(customers);
     await sheetRequest({ action:'delete', id:detailCustomerId });
-    closeConfirm(); goBackFromDetail(); renderDashboard(); refreshCalendarEvents();
+    closeConfirm(); goBackFromDetail(); refreshAllViews();
   };
 }
 function dpShowAlert(msg, type) {
@@ -2443,33 +2606,33 @@ async function updateKanbanStatus(customerId, targetCol) {
   }
 
   /* ② 전송 후 구글시트에서 최신 데이터 재조회 (검증 겸 동기화) */
+  /* 먼저 로컬에 낙관적 업데이트 적용 */
+  const localCustomers = getCustomers();
+  const localIdx = localCustomers.findIndex(x => x.id === customerId);
+  if (localIdx !== -1) {
+    localCustomers[localIdx] = { ...localCustomers[localIdx], status: newStatus, tags: tagsStr, contractDate, updatedAt };
+    saveLocalCustomers(localCustomers);
+  }
+  refreshAllViews();
+
   try {
     await loadFromSheets(true);
-    renderAll();
-
-    /* ③ 재조회 후에도 해당 고객 데이터가 맞는지 간단 검증 */
+    /* 재조회 후 해당 고객 상태 검증 */
     const refreshed = getCustomers().find(x => x.id === customerId);
     if (refreshed && refreshed.status !== newStatus) {
       console.warn('[칸반] 저장 후 상태 불일치 — sheets:', refreshed.status, '기대:', newStatus);
-      /* 불일치 → 로컬에 직접 반영하고 재렌더 (Apps Script 처리 지연 가능성) */
+      /* 불일치 → 로컬에 직접 반영 */
       const cur = getCustomers();
       const ci = cur.findIndex(x => x.id === customerId);
       if (ci !== -1) {
         cur[ci] = { ...cur[ci], status: newStatus, tags: tagsStr, contractDate, updatedAt };
         saveLocalCustomers(cur);
-        renderAll();
       }
     }
+    refreshAllViews();
   } catch(e) {
     console.error('[칸반] 재조회 오류:', e);
-    /* 재조회 실패해도 로컬 낙관적 업데이트는 유지 */
-    const cur = getCustomers();
-    const ci = cur.findIndex(x => x.id === customerId);
-    if (ci !== -1) {
-      cur[ci] = { ...c, status: newStatus, tags: tagsStr, contractDate, updatedAt };
-      saveLocalCustomers(cur);
-    }
-    renderAll();
+    refreshAllViews();
   }
 }
 
@@ -2648,9 +2811,24 @@ function callCustomer(phone) { window.location.href = 'tel:' + phone.replace(/[^
 
 /* 초기 실행 */
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('[CRM 초기화] 시작');
+  console.log('[CRM] 사용 중인 STORAGE_KEY:', STORAGE_KEY);
+
+  /* ① 기존 키 마이그레이션 및 고객 데이터 복구 */
+  const customers = getCustomers();
+  console.log('[CRM 초기화] 복구된 고객 수:', customers.length);
+
+  /* ② UI 초기화 */
   initTagPicker();
   initTagFilterRow();
-  loadFromSheets();
+
+  /* ③ 전체 뷰 렌더링 (로컬 데이터 우선) */
+  refreshAllViews();
+
+  /* ④ 구글시트 동기화 (로컬 데이터를 덮어쓰지 않는 안전한 버전) */
+  loadFromSheets(false);
+
+  /* ⑤ 자동 새로고침 시작 */
   startAutoRefresh();
 });
 </script>
