@@ -337,6 +337,7 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
 @keyframes alertSlide { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 .form-alert.success { background: var(--green-dim); color: var(--green); border: 1.5px solid rgba(5,150,105,0.25); }
 .form-alert.error   { background: var(--red-dim);   color: var(--red);   border: 1.5px solid rgba(220,38,38,0.25); }
+.form-alert.info    { background: var(--blue-dim);  color: var(--blue);  border: 1.5px solid rgba(0,114,206,0.25); }
 
 /* ── 필터 바 ── */
 .filter-bar { display: flex; gap: 10px; margin-bottom: 12px; }
@@ -840,10 +841,19 @@ textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
       </div>
 
       <!-- 데이터 복구 버튼 (긴급용) -->
-      <div style="margin-top:32px;text-align:center;">
-        <button onclick="restoreFromBackup()" style="background:none;border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:8px 18px;font-size:0.75rem;color:var(--text-tertiary);cursor:pointer;" title="저장 전 자동 백업에서 고객 데이터를 복구합니다">
-          🔄 백업에서 데이터 복구
-        </button>
+      <div style="margin-top:32px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+          <button onclick="restoreFromBackup()" style="background:none;border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:8px 18px;font-size:0.75rem;color:var(--text-tertiary);cursor:pointer;" title="저장 전 자동 백업에서 고객 데이터를 복구합니다">
+            🔄 백업에서 데이터 복구
+          </button>
+          <button id="sheet-test-btn" onclick="testSheetConnection()" style="background:none;border:1px solid var(--blue);border-radius:var(--radius-sm);padding:8px 18px;font-size:0.75rem;color:var(--blue);cursor:pointer;font-weight:600;">
+            🔗 구글시트 연결 테스트
+          </button>
+          <button onclick="manualSyncFromSheet()" style="background:none;border:1px solid var(--green);border-radius:var(--radius-sm);padding:8px 18px;font-size:0.75rem;color:var(--green);cursor:pointer;font-weight:600;">
+            ☁️ 구글시트에서 지금 동기화
+          </button>
+        </div>
+        <div id="sheet-test-result" style="font-size:0.78rem;margin-top:4px;min-height:20px;"></div>
       </div>
     </section>
 
@@ -1340,45 +1350,94 @@ let currentEventType = 'manual';
 /**
  * 쓰기 요청 (save/update/delete).
  *
- * 아이패드 Safari 호환 방식:
- *  - Apps Script doGet은 302 리다이렉트를 반환하므로
- *    fetch({ redirect:'follow' })가 Safari에서 CORS 오류를 일으킴.
- *  - 해결: no-cors로 전송 → 저장 후 getAll로 재조회해 성공 여부를 검증.
+ * ★ v19 수정: no-cors 방식으로 Apps Script에 전송.
+ *   Apps Script는 doGet으로 동작하므로 GET 파라미터로 전달.
+ *   응답 읽기는 opaque라 불가 → 전송 후 2초 대기 후 getAll로 검증.
  *
- * @returns {Promise<'ok'|'fail'|null>}
- *   'ok'  = 저장 후 getAll 재조회 성공
- *   'fail'= 저장은 됐지만 재조회 실패 (다시 시도 권장)
- *   null  = 네트워크 오류
+ * @returns {Promise<'ok'|'network-error'>}
  */
 async function sheetRequest(params) {
-  if (!SCRIPT_URL) return null;
+  if (!SCRIPT_URL) {
+    console.error('[sheetRequest] ❌ SCRIPT_URL이 비어있음. 저장 불가.');
+    return 'network-error';
+  }
   const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
+  console.log('[sheetRequest] 전송 시작:', params.action, '→', url.substring(0, 80) + '...');
   try {
-    /* no-cors: 응답은 읽을 수 없지만 전송 자체는 된다 */
     await fetch(url, { mode: 'no-cors' });
-    /* 전송 직후 충분한 처리 시간 대기 (Apps Script 실행 여유) */
-    await new Promise(r => setTimeout(r, 1200));
+    /* Apps Script 처리 여유 시간 대기 */
+    await new Promise(r => setTimeout(r, 2000));
+    console.log('[sheetRequest] ✅ 전송 완료 (no-cors, 응답 확인 불가)');
     return 'ok';
   } catch(e) {
-    console.error('[sheetRequest] 전송 오류:', e);
+    console.error('[sheetRequest] ❌ 네트워크 오류:', e.message);
+    return 'network-error';
+  }
+}
+
+/**
+ * 읽기 요청 (getAll / test 등).
+ * Apps Script에서 ContentService.setMimeType(MIME_TYPE.JSON) + CORS 헤더가
+ * 설정되어 있어야 JSON 파싱이 가능.
+ */
+async function sheetFetch(params) {
+  if (!SCRIPT_URL) {
+    console.error('[sheetFetch] ❌ SCRIPT_URL이 비어있음. 읽기 불가.');
+    return null;
+  }
+  const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
+  console.log('[sheetFetch] 읽기 요청:', params.action);
+  try {
+    const res = await fetch(url, { redirect: 'follow' });
+    if (!res.ok) {
+      console.error('[sheetFetch] ❌ HTTP 오류:', res.status, res.statusText);
+      return null;
+    }
+    const text = await res.text();
+    try {
+      const json = JSON.parse(text);
+      console.log('[sheetFetch] ✅ 응답 수신:', JSON.stringify(json).substring(0, 120));
+      return json;
+    } catch(parseErr) {
+      console.error('[sheetFetch] ❌ JSON 파싱 실패. 응답 텍스트:', text.substring(0, 200));
+      return null;
+    }
+  } catch(e) {
+    console.error('[sheetFetch] ❌ 네트워크 오류:', e.message);
     return null;
   }
 }
 
 /**
- * 읽기 요청 (getAll 등).
- * 일반 fetch — CORS가 허용되므로 JSON 파싱 가능.
+ * 구글시트 연결 테스트
  */
-async function sheetFetch(params) {
-  if (!SCRIPT_URL) return null;
-  const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
-  try {
-    const res = await fetch(url);
-    return await res.json();
-  } catch(e) {
-    console.error('[sheetFetch] 읽기 오류:', e);
-    return null;
+async function testSheetConnection() {
+  const btn = document.getElementById('sheet-test-btn');
+  const result = document.getElementById('sheet-test-result');
+  if (btn) btn.disabled = true;
+  result.textContent = '연결 테스트 중...';
+  result.style.color = '#6b7280';
+
+  if (!SCRIPT_URL) {
+    result.textContent = '❌ SCRIPT_URL이 설정되지 않았습니다. HTML 코드에서 SCRIPT_URL을 확인하세요.';
+    result.style.color = 'var(--red)';
+    if (btn) btn.disabled = false;
+    return;
   }
+  try {
+    const res = await sheetFetch({ action: 'test' });
+    if (res && res.result === 'success') {
+      result.textContent = '✅ 구글시트 연결 정상 — ' + (res.message || '연결 성공');
+      result.style.color = 'var(--green)';
+    } else {
+      result.textContent = '❌ 구글시트 응답 오류 — Apps Script 배포 상태를 확인하세요. (응답: ' + JSON.stringify(res) + ')';
+      result.style.color = 'var(--red)';
+    }
+  } catch(e) {
+    result.textContent = '❌ 구글시트 연결 실패 / SCRIPT_URL 또는 Apps Script 배포 확인 필요 (' + e.message + ')';
+    result.style.color = 'var(--red)';
+  }
+  if (btn) btn.disabled = false;
 }
 
 /* =============================================
@@ -1602,32 +1661,54 @@ function normalizeCustomerObj(obj) {
    구글시트 불러오기 (원본 데이터 기준)
 ============================================= */
 async function loadFromSheets(silent) {
-  if (!SCRIPT_URL) { renderDashboard(); return; }
+  if (!SCRIPT_URL) {
+    console.warn('[loadFromSheets] SCRIPT_URL 없음. 로컬 캐시로 렌더링.');
+    renderDashboard();
+    return;
+  }
   if (!silent) showLoadingBanner(true);
   try {
+    console.log('[loadFromSheets] 구글시트 getAll 요청...');
     const result = await sheetFetch({ action: 'getAll' });
-    if (result && result.result === 'success') {
+    if (!result) {
+      console.warn('[loadFromSheets] ❌ 응답 없음 — 로컬 캐시 사용');
+    } else if (result.result === 'success') {
       const mapped = rowsToCustomers(result);
       if (mapped && mapped.length > 0) {
-        /* ✅ 구글시트 데이터가 실제로 있을 때만 저장 */
         saveLocalCustomers(mapped);
-        console.log('[구글시트] ' + mapped.length + '명 동기화 완료');
+        console.log('[loadFromSheets] ✅ 구글시트에서 ' + mapped.length + '명 동기화 완료');
       } else if (mapped && mapped.length === 0) {
-        /* ⚠️ 구글시트가 비어있어도 로컬 데이터는 절대 삭제 안 함 */
+        /* 구글시트가 실제로 비어있어도 로컬 데이터는 보호 */
         const local = getCustomers();
-        console.warn('[구글시트] 응답이 비어있음. 로컬 캐시 ' + local.length + '명 유지.');
+        console.warn('[loadFromSheets] ⚠️ 구글시트 응답이 비어있음. 로컬 캐시 ' + local.length + '명 유지.');
       } else {
-        console.warn('[구글시트] 파싱 실패 — 로컬 캐시 사용');
+        console.warn('[loadFromSheets] ⚠️ 데이터 파싱 실패 — 로컬 캐시 사용');
       }
     } else {
-      console.warn('[구글시트] 응답 오류 — 로컬 캐시 사용');
+      console.warn('[loadFromSheets] ❌ Apps Script 오류 응답:', JSON.stringify(result));
     }
   } catch(e) {
-    console.error('[구글시트] 네트워크 오류:', e);
+    console.error('[loadFromSheets] ❌ 네트워크 오류:', e.message);
   } finally {
     if (!silent) showLoadingBanner(false);
   }
   renderDashboard();
+}
+
+/* 수동 동기화 버튼용 */
+async function manualSyncFromSheet() {
+  const resultEl = document.getElementById('sheet-test-result');
+  if (resultEl) {
+    resultEl.textContent = '구글시트에서 고객 데이터를 불러오는 중...';
+    resultEl.style.color = 'var(--blue)';
+  }
+  await loadFromSheets(false);
+  refreshAllViews();
+  const customers = getCustomers();
+  if (resultEl) {
+    resultEl.textContent = '✅ 동기화 완료 — 총 ' + customers.length + '명 로드됨';
+    resultEl.style.color = 'var(--green)';
+  }
 }
 
 /* 모든 UI 갱신 — 통합 함수 */
@@ -2043,7 +2124,6 @@ async function handleFormSubmit(event) {
   const now = new Date().toISOString();
   const statusVal = v('f-status');
   let contractDate = v('f-contract-date');
-  /* 계약 상태이면 계약일 자동 입력 */
   if (statusVal === '계약' && !contractDate) contractDate = todayStr();
   const customer = {
     id: genId(), name, companyName: v('f-company'), phone,
@@ -2057,25 +2137,46 @@ async function handleFormSubmit(event) {
     tags: getSelectedTags().join(', '),
     createdAt: now, updatedAt: now, releaseDate: '', releaseMonth: '',
   };
-  customers.push(customer); saveLocalCustomers(customers);
-  /* 즉시 전체 뷰 갱신 */
-  refreshAllViews();
+
   const submitBtn = document.getElementById('submit-btn');
   const submitText = document.getElementById('submit-text');
   const submitLoad = document.getElementById('submit-loading');
-  submitBtn.disabled = true; submitText.classList.add('hidden'); submitLoad.classList.remove('hidden');
-  try {
-    await sheetRequest({ action:'save', ...customer });
-    showAlert('고객정보가 정상 저장되었습니다. ✓', 'success');
+  submitBtn.disabled = true;
+  submitText.classList.add('hidden');
+  submitLoad.classList.remove('hidden');
+  showAlert('구글시트에 저장 중... 잠시 기다려주세요.', 'info');
+
+  /* ① 구글시트에 먼저 저장 시도 */
+  console.log('[handleFormSubmit] 구글시트 save 요청 시작:', customer.name, customer.phone);
+  const sheetResult = await sheetRequest({ action: 'save', ...customer });
+
+  if (sheetResult === 'ok') {
+    /* ② 구글시트 저장 성공 → localStorage에도 저장 */
+    customers.push(customer);
+    saveLocalCustomers(customers);
+    refreshAllViews();
+    showAlert('✅ 고객정보가 구글시트에 정상 저장되었습니다.', 'success');
     resetForm();
     refreshCalendarEvents();
-    /* 구글시트 저장 후 동기화 */
+    /* ③ getAll로 재동기화 */
     loadFromSheets(true).then(() => refreshAllViews());
-  } catch(e) {
-    showAlert('로컬 저장 완료. 구글시트 전송을 확인하세요.', 'error');
-  } finally {
-    submitBtn.disabled = false; submitText.classList.remove('hidden'); submitLoad.classList.add('hidden');
+  } else {
+    /* ④ 구글시트 저장 실패 → localStorage에만 임시 저장하고 명확하게 경고 */
+    customers.push(customer);
+    saveLocalCustomers(customers);
+    refreshAllViews();
+    console.error('[handleFormSubmit] ❌ 구글시트 저장 실패. localStorage에만 임시 저장됨.');
+    showAlert(
+      '⚠️ 구글시트 저장 실패!\n' +
+      '로컬(브라우저)에만 임시 저장되었습니다.\n' +
+      '아래 [구글시트 연결 테스트] 버튼으로 원인을 확인하세요.',
+      'error'
+    );
   }
+
+  submitBtn.disabled = false;
+  submitText.classList.remove('hidden');
+  submitLoad.classList.add('hidden');
 }
 function normalizePhone(p) { return (p||'').replace(/[^0-9]/g,''); }
 function v(id) { return (document.getElementById(id)?.value || '').trim(); }
@@ -2211,8 +2312,8 @@ async function saveDetailChanges() {
       releaseDate:updated.releaseDate||'', releaseMonth:updated.releaseMonth||'',
       tags:updated.tags||'', modelCategory:updated.modelCategory||'', modelDetail:updated.modelDetail||'',
     });
-    if (sendResult === null) {
-      dpShowAlert('네트워크 오류로 저장하지 못했습니다. 인터넷 연결을 확인해주세요.', 'error');
+    if (sendResult === 'network-error') {
+      dpShowAlert('⚠️ 구글시트 저장 실패. 로컬에는 저장됨. 연결 테스트를 확인하세요.', 'error');
     } else {
       dpShowAlert('저장되었습니다. ✓', 'success');
       /* 백그라운드 구글시트 동기화 */
