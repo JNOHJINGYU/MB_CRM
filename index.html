@@ -2,2977 +2,526 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>빈센노의 MB CRM | Mercedes-Benz</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <!-- FullCalendar -->
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>노진규 고객관리 시스템</title>
 
-<style>
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+  <!-- ============================================================
+       Google Apps Script 웹앱 URL 설정
+       아래 SCRIPT_URL 값을 Apps Script 배포 후 생성된 URL로 교체하세요.
+       예시: https://script.google.com/macros/s/AKfyc.../exec
+  ============================================================ -->
+  <script>
+    // ▼▼▼ 여기에 Apps Script 웹앱 URL을 붙여넣으세요 ▼▼▼
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxswUgpfFoncBTJ_MUaLx7dcT4pbZXvVNhiQqYj75xwAXqfs-GuCPU6w_YbT2jVVbDelQ/exec";
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+  </script>
 
-/* ── CSS 변수 ── */
-:root {
-  --bg:           #f4f5f7;
-  --surface-01:   #ffffff;
-  --surface-02:   #f9fafb;
-  --surface-03:   #f1f3f6;
-  --surface-04:   #e8ebf0;
-  --border-dim:   rgba(0,0,0,0.07);
-  --border-soft:  rgba(0,0,0,0.13);
-  --border-med:   rgba(0,0,0,0.22);
-  --white:        #ffffff;
-  --text-primary: #111318;
-  --text-secondary:#4b5563;
-  --text-tertiary: #9ca3af;
-  --blue:         #0072CE;
-  --blue-dim:     rgba(0,114,206,0.10);
-  --blue-dark:    #005aaa;
-  --blue-glow:    0 0 0 3px rgba(0,114,206,0.15);
-  --gold:         #b8913a;
-  --gold-dim:     rgba(184,145,58,0.12);
-  --gold-light:   #d4a847;
-  --hot:          #d97706;
-  --hot-dim:      rgba(217,119,6,0.10);
-  --green:        #059669;
-  --green-dim:    rgba(5,150,105,0.10);
-  --red:          #dc2626;
-  --red-dim:      rgba(220,38,38,0.10);
-  --purple:       #7c3aed;
-  --radius-xs: 6px;
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 26px;
-  --shadow-sm:   0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md:   0 4px 16px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
-  --shadow-lg:   0 10px 40px rgba(0,0,0,0.14), 0 4px 16px rgba(0,0,0,0.08);
-  --shadow-blue: 0 4px 14px rgba(0,114,206,0.22);
-  --font-body: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-  --max-width: 800px;
-  --header-h: 64px;
-  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
+  <style>
+    /* ── 리셋 & 기본 ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── 리셋 ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 15px; -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
-body { font-family: var(--font-body); background: var(--bg); color: var(--text-primary); line-height: 1.6; min-height: 100vh; -webkit-font-smoothing: antialiased; }
-button, input, select, textarea { font-family: var(--font-body); font-size: inherit; }
-a { color: inherit; text-decoration: none; }
+    :root {
+      --bg:        #0f0f14;
+      --surface:   #1a1a24;
+      --border:    #2e2e40;
+      --gold:      #c9a84c;
+      --gold-lt:   #e2c97e;
+      --text:      #e8e8f0;
+      --text-dim:  #8888aa;
+      --danger:    #e05050;
+      --success:   #4caf7d;
+      --radius:    10px;
+      --font:      'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+    }
 
-/* ── 헤더 ── */
-.site-header {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(255,255,255,0.96);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid var(--border-dim);
-  height: var(--header-h);
-  box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06);
-}
-.header-inner {
-  max-width: 1200px; margin: 0 auto; padding: 0 20px;
-  height: 100%; display: flex; align-items: center;
-  justify-content: space-between; gap: 12px;
-}
-.logo-wrap { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-.mb-star { width: 34px; height: 34px; color: #111; flex-shrink: 0; }
-.header-text { display: flex; flex-direction: column; line-height: 1.25; }
-.site-title { font-size: 1rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text-primary); }
-.site-sub { font-size: 0.65rem; color: var(--blue); letter-spacing: 0.04em; font-weight: 600; }
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 15px;
+      line-height: 1.6;
+    }
 
-/* 네비 */
-.top-nav { display: flex; gap: 2px; background: var(--surface-03); border: 1px solid var(--border-dim); border-radius: var(--radius-sm); padding: 3px; }
-.nav-btn {
-  background: none; border: none;
-  padding: 7px 12px; font-size: 0.76rem; font-weight: 500;
-  color: var(--text-secondary); cursor: pointer;
-  border-radius: var(--radius-xs); transition: all var(--transition); white-space: nowrap;
-}
-.nav-btn:hover { color: var(--text-primary); background: var(--surface-04); }
-.nav-btn.active { color: #fff; background: #111; font-weight: 700; box-shadow: var(--shadow-sm); }
+    /* ── 레이아웃 ────────────────────────────────────────── */
+    .page-wrap {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 60px;
+    }
 
-/* ── 메인 ── */
-.main-wrap { max-width: var(--max-width); margin: 0 auto; padding: 28px 20px 80px; }
-.main-wrap.wide { max-width: 1200px; }
+    .card {
+      width: 100%;
+      max-width: 680px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,.5);
+    }
 
-/* ── 뷰 전환 ── */
-.view { display: none; }
-.view.active { display: block; animation: viewFadeIn 0.3s ease; }
-@keyframes viewFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* ── 헤더 ────────────────────────────────────────────── */
+    .card-header {
+      padding: 28px 32px 24px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, #14141e 0%, #1e1e2e 100%);
+    }
 
-/* ── Hero ── */
-.dashboard-hero {
-  background: #111318; border-radius: var(--radius-xl);
-  padding: 28px 28px 24px; margin-bottom: 24px; position: relative; overflow: hidden;
-}
-.dashboard-hero::before {
-  content: ''; position: absolute; top: -60px; right: -60px;
-  width: 220px; height: 220px;
-  background: radial-gradient(circle, rgba(0,114,206,0.18) 0%, transparent 70%);
-  pointer-events: none;
-}
-.dashboard-hero::after {
-  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, var(--blue), transparent); opacity: 0.5;
-}
-.hero-greeting { font-size: 0.72rem; font-weight: 600; color: var(--blue); letter-spacing: 0.10em; text-transform: uppercase; margin-bottom: 6px; }
-.hero-title { font-size: 1.7rem; font-weight: 700; color: #fff; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 4px; }
-.hero-sub { font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-bottom: 20px; }
-.hero-meta { display: flex; gap: 20px; flex-wrap: wrap; }
-.hero-chip { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: rgba(255,255,255,0.6); }
-.hero-chip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); }
-.hero-chip-dot.hot  { background: #f59e0b; }
-.hero-chip-dot.done { background: #10b981; }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
 
-/* ── 섹션 라벨 ── */
-.section-label {
-  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--text-tertiary); margin-bottom: 12px;
-  display: flex; align-items: center; gap: 8px;
-}
-.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border-dim); }
-.section-label.mt { margin-top: 32px; }
+    .header-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 2px solid var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: var(--gold);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
 
-/* ── 통계 카드 ── */
-.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-.stat-card {
-  background: var(--surface-01); border: 1px solid var(--border-dim);
-  border-radius: var(--radius-md); padding: 20px 16px 18px;
-  text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px;
-  cursor: default; transition: all var(--transition); box-shadow: var(--shadow-sm);
-  animation: fadeUp 0.4s ease both;
-}
-.stat-card.clickable { cursor: pointer; }
-.stat-card.clickable:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--border-soft); }
-.stat-card:nth-child(1){animation-delay:.05s} .stat-card:nth-child(2){animation-delay:.10s}
-.stat-card:nth-child(3){animation-delay:.15s} .stat-card:nth-child(4){animation-delay:.20s}
-.stat-card:nth-child(5){animation-delay:.25s} .stat-card:nth-child(6){animation-delay:.30s}
-@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-.stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--border-soft); }
-.stat-card.accent { background: linear-gradient(135deg, rgba(184,145,58,0.08) 0%, rgba(184,145,58,0.02) 100%); border-color: rgba(184,145,58,0.25); }
-.stat-card.accent:hover { border-color: rgba(184,145,58,0.4); }
-.stat-icon { font-size: 1.4rem; line-height: 1; margin-bottom: 2px; }
-.stat-num { font-size: 2.2rem; font-weight: 800; line-height: 1; letter-spacing: -0.04em; color: var(--text-primary); }
-.stat-card.accent .stat-num { color: var(--gold); }
-.stat-label { font-size: 0.7rem; font-weight: 600; color: var(--text-tertiary); letter-spacing: 0.02em; }
+    .header-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
 
-/* 필터 배너 */
-.filter-banner {
-  display: none; align-items: center; justify-content: space-between;
-  background: #111318; color: #fff; border-radius: var(--radius-sm);
-  padding: 10px 16px; margin-bottom: 14px; font-size: 0.85rem; font-weight: 700; gap: 12px;
-}
-.filter-banner.show { display: flex; }
-.filter-banner-close {
-  background: rgba(255,255,255,0.15); border: none; color: #fff;
-  border-radius: 40px; padding: 4px 12px; font-size: 0.75rem; font-weight: 700;
-  cursor: pointer; transition: background var(--transition); white-space: nowrap;
-}
-.filter-banner-close:hover { background: rgba(255,255,255,0.3); }
+    .header-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
 
-/* ── 오늘 연락 ── */
-.today-section {
-  background: var(--surface-01); border: 1px solid var(--border-dim);
-  border-left: 3px solid var(--blue); border-radius: var(--radius-md);
-  padding: 4px 16px; min-height: 60px;
-  display: flex; flex-direction: column; justify-content: center;
-  box-shadow: var(--shadow-sm);
-}
-.today-card {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 0; border-bottom: 1px solid var(--border-dim); gap: 12px; transition: opacity var(--transition);
-}
-.today-card:last-child { border-bottom: none; }
-.today-card:hover { opacity: 0.8; }
-.today-name { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); }
-.today-model { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
-.today-actions { display: flex; gap: 6px; flex-shrink: 0; }
-.today-action-btn {
-  border: none; border-radius: 40px; font-size: 0.75rem; font-weight: 700;
-  cursor: pointer; white-space: nowrap; transition: all var(--transition); padding: 7px 13px;
-}
-.today-call { background: #111; color: #fff; }
-.today-call:hover { background: var(--blue); transform: scale(1.04); }
-.today-sms { background: var(--surface-03); color: var(--text-secondary); border: 1px solid var(--border-dim); }
-.today-sms:hover { background: var(--green); color: #fff; border-color: var(--green); }
-.today-detail { background: var(--surface-03); color: var(--text-secondary); border: 1px solid var(--border-dim); }
-.today-detail:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+    /* ── 폼 바디 ─────────────────────────────────────────── */
+    .card-body {
+      padding: 28px 32px 32px;
+    }
 
-/* ── 오늘 일정 섹션 ── */
-.today-schedule-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 4px; }
-.sched-mini-card {
-  background: var(--surface-01); border: 1px solid var(--border-dim);
-  border-radius: var(--radius-sm); padding: 14px 12px; text-align: center;
-  cursor: pointer; transition: all var(--transition); box-shadow: var(--shadow-sm);
-}
-.sched-mini-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-.sched-mini-num { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.04em; }
-.sched-mini-label { font-size: 0.7rem; font-weight: 600; color: var(--text-tertiary); margin-top: 2px; }
-.sched-mini-card.consult { border-top: 3px solid var(--blue); }
-.sched-mini-card.consult .sched-mini-num { color: var(--blue); }
-.sched-mini-card.test-drive { border-top: 3px solid var(--purple); }
-.sched-mini-card.test-drive .sched-mini-num { color: var(--purple); }
-.sched-mini-card.delivery { border-top: 3px solid var(--green); }
-.sched-mini-card.delivery .sched-mini-num { color: var(--green); }
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin: 24px 0 14px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
 
-/* ── 카드 그리드 ── */
-.card-grid { display: flex; flex-direction: column; gap: 10px; }
+    .section-label:first-child { margin-top: 0; }
 
-/* 고객 카드 */
-.customer-card {
-  background: var(--surface-01); border: 1px solid var(--border-dim);
-  border-radius: var(--radius-md); padding: 16px 18px;
-  cursor: pointer; transition: all var(--transition);
-  display: grid; grid-template-columns: 1fr auto; gap: 4px 14px; align-items: start;
-  position: relative; overflow: hidden; box-shadow: var(--shadow-sm);
-}
-.customer-card::before {
-  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-  width: 3px; background: transparent; transition: background var(--transition);
-  border-radius: 0 2px 2px 0;
-}
-.customer-card:hover { border-color: var(--border-soft); transform: translateY(-2px); box-shadow: var(--shadow-md); }
-.customer-card:hover::before { background: var(--blue); }
-.customer-card.hot { border-color: rgba(217,119,6,0.2); }
-.customer-card.hot::before { background: var(--hot); }
-.customer-card.hot:hover { border-color: rgba(217,119,6,0.4); }
+    /* 2열 그리드 */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
 
-.card-main { grid-column: 1; display: flex; flex-direction: column; gap: 3px; }
-.card-name { font-weight: 700; font-size: 0.98rem; color: var(--text-primary); letter-spacing: -0.01em; }
-.card-phone { font-size: 0.82rem; margin-top: 2px; }
-.card-phone-link {
-  color: var(--blue); font-weight: 600; text-decoration: none;
-  display: inline-flex; align-items: center; gap: 3px; transition: opacity var(--transition);
-}
-.card-phone-link:hover { opacity: 0.75; text-decoration: underline; }
-.card-created { font-size: 0.72rem; color: var(--text-tertiary); font-weight: 500; margin-top: 1px; }
-.card-model { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; }
-.card-memo { font-size: 0.76rem; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; margin-top: 3px; }
-.card-right { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; align-items: flex-end; gap: 7px; }
-.status-badge { font-size: 0.68rem; font-weight: 700; padding: 4px 10px; border-radius: 40px; white-space: nowrap; letter-spacing: 0.02em; }
-.card-date { font-size: 0.7rem; color: var(--text-tertiary); font-weight: 500; }
-.card-date.overdue { color: var(--red); font-weight: 700; }
-.card-date.today   { color: var(--blue); font-weight: 700; }
-.card-contract-date { font-size: 0.72rem; color: var(--gold); font-weight: 700; margin-top: 3px; }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
 
-/* ── 태그 ── */
-.card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
-.card-tag { font-size: 0.65rem; font-weight: 700; padding: 2px 7px; border-radius: 40px; background: var(--surface-03); color: var(--text-secondary); border: 1px solid var(--border-dim); white-space: nowrap; }
+    .field.full { grid-column: 1 / -1; }
 
-/* ── 빈 메시지 ── */
-.empty-msg { color: var(--text-tertiary); font-size: 0.85rem; padding: 28px 0; text-align: center; }
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+      letter-spacing: 0.3px;
+    }
 
-/* ── 폼 ── */
-.form-header {
-  margin-bottom: 24px; padding: 24px 24px 20px;
-  background: var(--surface-01); border: 1px solid var(--border-dim);
-  border-radius: var(--radius-lg); position: relative; overflow: hidden; box-shadow: var(--shadow-sm);
-}
-.form-header::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-  background: linear-gradient(90deg, #111, var(--blue), var(--gold), var(--blue), #111);
-  background-size: 200% 100%; animation: shimmer 4s linear infinite;
-}
-@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-.form-title { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; color: var(--text-primary); }
-.form-desc  { font-size: 0.8rem; color: var(--text-secondary); }
-.crm-form {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px;
-  background: var(--surface-01); border: 1px solid var(--border-dim);
-  border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-sm);
-}
-.form-group { display: flex; flex-direction: column; gap: 7px; }
-.form-group.full { grid-column: 1 / -1; }
-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; color: var(--text-secondary); text-transform: uppercase; }
-.req { color: var(--blue); }
+    label .req {
+      color: var(--gold);
+      margin-left: 2px;
+    }
 
-input[type="text"], input[type="tel"], input[type="date"], input[type="datetime-local"],
-input[type="search"], select, textarea {
-  width: 100%; padding: 11px 14px;
-  border: 1.5px solid var(--border-dim); border-radius: var(--radius-sm);
-  background: var(--surface-02); color: var(--text-primary);
-  font-size: 0.9rem; font-weight: 500; transition: all var(--transition); outline: none;
-  appearance: none; -webkit-appearance: none;
-}
-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px;
-}
-select option { background: #fff; color: var(--text-primary); }
-input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
-input:focus, select:focus, textarea:focus { border-color: var(--blue); background: #fff; box-shadow: var(--blue-glow); }
-textarea { resize: vertical; line-height: 1.65; min-height: 96px; }
-.model-select-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.model-select-wrap select, .model-select-wrap input { width: 100%; }
-.model-select-wrap select:disabled { background-color: var(--surface-03); color: var(--text-tertiary); cursor: not-allowed; opacity: 0.6; }
-.model-custom-input { grid-column: 1 / -1; }
-.form-actions { display: flex; gap: 10px; margin-top: 4px; }
+    input[type="text"],
+    input[type="tel"],
+    input[type="date"],
+    select,
+    textarea {
+      width: 100%;
+      background: #12121c;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      padding: 10px 13px;
+      outline: none;
+      transition: border-color .2s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
 
-.btn-primary {
-  flex: 1; padding: 13px 24px; background: #111; color: #fff; border: none;
-  border-radius: var(--radius-sm); font-size: 0.9rem; font-weight: 700; cursor: pointer;
-  letter-spacing: 0.02em; transition: all var(--transition); box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-}
-.btn-primary:hover { background: var(--blue); transform: translateY(-1px); box-shadow: var(--shadow-blue); }
-.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-.btn-secondary {
-  padding: 13px 20px; background: none; color: var(--text-secondary);
-  border: 1.5px solid var(--border-soft); border-radius: var(--radius-sm);
-  font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all var(--transition);
-}
-.btn-secondary:hover { border-color: #111; color: #111; background: var(--surface-03); }
-.btn-danger {
-  padding: 10px 20px; background: none; color: var(--red);
-  border: 1.5px solid rgba(220,38,38,0.3); border-radius: var(--radius-sm);
-  font-size: 0.88rem; font-weight: 700; cursor: pointer; transition: all var(--transition);
-}
-.btn-danger:hover { background: var(--red); color: #fff; border-color: var(--red); }
-.form-alert {
-  margin-top: 14px; padding: 12px 16px; border-radius: var(--radius-sm);
-  font-size: 0.86rem; font-weight: 600; text-align: center; animation: alertSlide 0.25s ease;
-}
-@keyframes alertSlide { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-.form-alert.success { background: var(--green-dim); color: var(--green); border: 1.5px solid rgba(5,150,105,0.25); }
-.form-alert.error   { background: var(--red-dim);   color: var(--red);   border: 1.5px solid rgba(220,38,38,0.25); }
-.form-alert.info    { background: var(--blue-dim);  color: var(--blue);  border: 1.5px solid rgba(0,114,206,0.25); }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--gold);
+      background: #14141f;
+    }
 
-/* ── 필터 바 ── */
-.filter-bar { display: flex; gap: 10px; margin-bottom: 12px; }
-.search-wrap { flex: 1; position: relative; }
-.search-wrap::before { content: '🔍'; position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 0.85rem; pointer-events: none; opacity: 0.45; }
-.search-wrap input[type="search"] { padding-left: 36px; width: 100%; }
-.filter-bar select { width: 150px; flex-shrink: 0; }
+    select {
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238888aa' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 13px center;
+      padding-right: 36px;
+    }
 
-/* ── 퀵필터 ── */
-.quick-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-.qbtn {
-  padding: 6px 16px; background: var(--surface-01); border: 1.5px solid var(--border-dim);
-  border-radius: 40px; font-size: 0.76rem; font-weight: 700; cursor: pointer;
-  color: var(--text-secondary); transition: all var(--transition); letter-spacing: 0.02em; box-shadow: var(--shadow-sm);
-}
-.qbtn:hover { border-color: #111; color: #111; }
-.qbtn.active { background: #111; color: #fff; border-color: #111; }
+    textarea {
+      resize: vertical;
+      min-height: 88px;
+    }
 
-/* ── 태그 필터 ── */
-.tag-filter-section { margin-bottom: 18px; }
-.tag-filter-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 8px; display: block; }
-.tag-filter-row { display: flex; gap: 5px; flex-wrap: wrap; }
-.tag-filter-btn {
-  padding: 5px 13px; background: var(--surface-01); border: 1.5px solid var(--border-dim);
-  border-radius: 40px; font-size: 0.73rem; font-weight: 700; cursor: pointer;
-  color: var(--text-secondary); transition: all var(--transition); white-space: nowrap; box-shadow: var(--shadow-sm);
-}
-.tag-filter-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
-.tag-filter-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-.tag-filter-btn.all-btn.active { background: #111; border-color: #111; }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.5);
+      cursor: pointer;
+    }
 
-/* ── 태그 선택기 ── */
-.tag-picker {
-  display: flex; flex-wrap: wrap; gap: 7px; padding: 12px 14px;
-  background: var(--surface-02); border: 1.5px solid var(--border-dim);
-  border-radius: var(--radius-sm); transition: border-color var(--transition), box-shadow var(--transition);
-}
-.tag-picker:focus-within { border-color: var(--blue); box-shadow: var(--blue-glow); background: #fff; }
-.tag-btn {
-  display: inline-flex; align-items: center; padding: 5px 13px;
-  border: 1.5px solid var(--border-soft); border-radius: 40px; background: #fff;
-  color: var(--text-secondary); font-size: 0.76rem; font-weight: 600; cursor: pointer;
-  transition: all var(--transition); user-select: none; letter-spacing: 0.01em; white-space: nowrap;
-}
-.tag-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
-.tag-btn.selected { background: #111; color: #fff; border-color: #111; }
-.tag-btn.selected:hover { background: var(--blue); border-color: var(--blue); }
+    /* ── 버튼 ────────────────────────────────────────────── */
+    .btn-submit {
+      width: 100%;
+      margin-top: 28px;
+      padding: 15px;
+      border: none;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--gold) 0%, #b8873a 100%);
+      color: #0f0f14;
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+    }
 
-/* ── 모달 오버레이 ── */
-.modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(4px); z-index: 200;
-  display: flex; align-items: flex-end; justify-content: center; padding: 0;
-  animation: overlayFade 0.2s ease;
-}
-@keyframes overlayFade { from { opacity: 0; } to { opacity: 1; } }
-@media (min-width: 600px) { .modal-overlay { align-items: center; padding: 20px; } }
-.modal-box {
-  background: var(--surface-01); border: 1px solid var(--border-soft);
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  width: 100%; max-width: 520px; max-height: 85vh; overflow-y: auto;
-  padding: 28px 24px 24px; position: relative;
-  animation: modalSlide 0.25s cubic-bezier(0.2,0,0,1); box-shadow: var(--shadow-lg);
-}
-@keyframes modalSlide { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-@media (min-width: 600px) { .modal-box { border-radius: var(--radius-xl); max-height: 85vh; } }
-.modal-close {
-  position: absolute; top: 16px; right: 18px;
-  background: var(--surface-03); border: 1px solid var(--border-dim); border-radius: 50%;
-  width: 32px; height: 32px; font-size: 0.9rem; cursor: pointer; color: var(--text-secondary);
-  display: flex; align-items: center; justify-content: center; transition: all var(--transition);
-}
-.modal-close:hover { background: #111; color: #fff; border-color: #111; }
-.modal-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 18px; }
-.modal-actions { display: flex; gap: 10px; margin-top: 20px; }
-.modal-actions .btn-primary { flex: 1; }
-.modal-form-group { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
-.modal-form-group label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; color: var(--text-secondary); text-transform: uppercase; }
+    .btn-submit:hover  { opacity: .9; }
+    .btn-submit:active { transform: scale(.99); }
+    .btn-submit:disabled { opacity: .5; cursor: not-allowed; transform: none; }
 
-/* confirm 다이얼로그 */
-.confirm-box {
-  background: var(--surface-01); border-radius: var(--radius-lg);
-  padding: 28px 24px 24px; max-width: 340px; width: 90%;
-  box-shadow: var(--shadow-lg); border: 1px solid var(--border-soft); text-align: center;
-}
-.confirm-box p { font-size: 0.95rem; font-weight: 600; margin-bottom: 20px; white-space: pre-line; }
-.confirm-actions { display: flex; gap: 10px; justify-content: center; }
+    /* ── 상태 메시지 ─────────────────────────────────────── */
+    #status-msg {
+      display: none;
+      margin-top: 16px;
+      padding: 13px 16px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      animation: fadeIn .25s ease;
+    }
 
-/* 디테일 관련 */
-.detail-item { display: flex; flex-direction: column; gap: 3px; }
-.detail-key { font-size: 0.68rem; font-weight: 700; color: var(--text-tertiary); letter-spacing: 0.06em; text-transform: uppercase; }
-.detail-val { font-size: 0.88rem; color: var(--text-primary); font-weight: 500; }
-.detail-page-header {
-  display: flex; align-items: center; gap: 14px; margin-bottom: 24px;
-  background: var(--surface-01); border: 1px solid var(--border-dim);
-  border-radius: var(--radius-lg); padding: 20px 24px;
-  box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
-}
-.detail-page-header::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-  background: linear-gradient(90deg, #111, var(--blue), var(--gold), var(--blue), #111);
-  background-size: 200% 100%; animation: shimmer 4s linear infinite;
-}
-.back-btn {
-  background: var(--surface-03); border: 1px solid var(--border-dim);
-  border-radius: var(--radius-sm); padding: 8px 14px;
-  font-size: 0.82rem; font-weight: 700; cursor: pointer;
-  color: var(--text-secondary); transition: all var(--transition);
-  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
-}
-.back-btn:hover { background: #111; color: #fff; border-color: #111; }
-.detail-page-name { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; color: var(--text-primary); flex: 1; }
-.detail-page-status { flex-shrink: 0; }
-.detail-edit-form {
-  background: var(--surface-01); border: 1px solid var(--border-dim);
-  border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-sm);
-  display: flex; flex-direction: column; gap: 20px;
-}
-.detail-section-title {
-  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--text-tertiary); padding-bottom: 12px; border-bottom: 1px solid var(--border-dim);
-  display: flex; align-items: center; gap: 8px;
-}
-.detail-fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
-.detail-field { display: flex; flex-direction: column; gap: 7px; }
-.detail-field.full { grid-column: 1 / -1; }
-.detail-field label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; color: var(--text-secondary); text-transform: uppercase; }
-.memo-history-wrap { display: flex; flex-direction: column; gap: 0; }
-.memo-history-box {
-  background: var(--surface-02); border: 1.5px solid var(--border-dim);
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  padding: 12px 14px; font-size: 0.82rem; line-height: 1.8;
-  color: var(--text-secondary); white-space: pre-wrap; max-height: 200px; overflow-y: auto; border-bottom: none;
-}
-.memo-new-textarea { border-radius: 0 0 var(--radius-sm) var(--radius-sm) !important; border-top: 1.5px solid var(--border-soft) !important; }
-.detail-save-actions { display: flex; gap: 10px; padding-top: 4px; }
-.btn-delete-outline {
-  padding: 13px 20px; background: none; color: var(--red);
-  border: 1.5px solid rgba(220,38,38,0.3); border-radius: var(--radius-sm);
-  font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all var(--transition);
-}
-.btn-delete-outline:hover { background: var(--red); color: #fff; border-color: var(--red); }
+    #status-msg.success {
+      display: block;
+      background: rgba(76,175,125,.15);
+      border: 1px solid var(--success);
+      color: var(--success);
+    }
 
-/* ════════════════════════════════════════
-   칸반보드
-════════════════════════════════════════ */
-#view-kanban .main-wrap { max-width: 1200px; }
-.kanban-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 24px; gap: 14px; flex-wrap: wrap;
-}
-.kanban-header-title { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; color: var(--text-primary); }
-.kanban-header-sub { font-size: 0.8rem; color: var(--text-secondary); margin-top: 3px; }
-.kanban-board {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 16px; align-items: start;
-}
-.kanban-col {
-  background: var(--surface-02); border: 1px solid var(--border-dim);
-  border-radius: var(--radius-lg); padding: 0;
-  min-height: 300px; display: flex; flex-direction: column;
-  transition: background var(--transition);
-}
-.kanban-col.drag-over { background: rgba(0,114,206,0.06); border-color: rgba(0,114,206,0.3); }
-.kanban-col-header {
-  padding: 14px 16px 12px;
-  border-bottom: 2px solid var(--border-dim);
-  display: flex; align-items: center; justify-content: space-between;
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  position: sticky; top: 64px; background: var(--surface-02); z-index: 5;
-}
-.kanban-col-title { font-size: 0.82rem; font-weight: 800; letter-spacing: 0.02em; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
-.kanban-col-dot { width: 8px; height: 8px; border-radius: 50%; }
-.kanban-col-count {
-  font-size: 0.72rem; font-weight: 700;
-  background: var(--surface-04); color: var(--text-secondary);
-  border-radius: 40px; padding: 2px 9px; border: 1px solid var(--border-dim);
-}
-.kanban-cards { padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 200px; }
-.kanban-cards.drag-over { background: rgba(0,114,206,0.04); border-radius: var(--radius-md); }
+    #status-msg.error {
+      display: block;
+      background: rgba(224,80,80,.15);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+    }
 
-/* 칸반 카드 */
-.kanban-card {
-  background: var(--surface-01); border: 1px solid var(--border-dim);
-  border-radius: var(--radius-sm); padding: 12px 14px;
-  cursor: grab; transition: all var(--transition); box-shadow: var(--shadow-sm);
-  user-select: none; position: relative;
-}
-.kanban-card::before {
-  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-  width: 3px; border-radius: 2px 0 0 2px;
-}
-.kanban-card:active { cursor: grabbing; }
-.kanban-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--border-soft); }
-.kanban-card.dragging{opacity:0.35;transform:scale(0.97);}
-.kanban-card.touch-dragging{box-shadow:0 12px 40px rgba(0,0,0,0.3);transform:scale(1.04);border-color:var(--blue);}
-.kc-name{font-size:0.92rem;font-weight:700;color:var(--text-primary);margin-bottom:5px;letter-spacing:-0.01em;cursor:pointer;}
-.kc-name:hover { color: var(--blue); }
-.kc-phone { font-size: 0.78rem; color: var(--blue); font-weight: 600; margin-bottom: 4px; }
-.kc-phone a { color: inherit; }
-.kc-model { font-size: 0.76rem; color: var(--text-secondary); margin-bottom: 4px; }
-.kc-contract-date { font-size: 0.71rem; color: var(--gold); font-weight: 700; margin-bottom: 4px; }
-.kc-dates { font-size: 0.71rem; color: var(--text-tertiary); display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
-.kc-date-row { display: flex; align-items: center; gap: 4px; }
-.kc-date-row.overdue { color: var(--red); font-weight: 700; }
-.kc-date-row.today-date { color: var(--blue); font-weight: 700; }
-.kc-tags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
-.kc-tag { font-size: 0.62rem; font-weight: 700; padding: 1px 6px; border-radius: 40px; background: var(--surface-03); color: var(--text-secondary); border: 1px solid var(--border-dim); }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
 
-/* 칸반 컬럼 색상 */
-.kanban-col:nth-child(1) .kanban-col-dot { background: #f59e0b; }
-.kanban-col:nth-child(1) .kanban-col-header { border-bottom-color: #f59e0b40; }
-.kanban-col:nth-child(1) .kanban-card::before { background: #f59e0b; }
-.kanban-col:nth-child(2) .kanban-col-dot { background: var(--blue); }
-.kanban-col:nth-child(2) .kanban-col-header { border-bottom-color: rgba(0,114,206,0.25); }
-.kanban-col:nth-child(2) .kanban-card::before { background: var(--blue); }
-.kanban-col:nth-child(3) .kanban-col-dot { background: var(--green); }
-.kanban-col:nth-child(3) .kanban-col-header { border-bottom-color: rgba(5,150,105,0.25); }
-.kanban-col:nth-child(3) .kanban-card::before { background: var(--green); }
-.kanban-col:nth-child(4) .kanban-col-dot { background: #111318; }
-.kanban-col:nth-child(4) .kanban-col-header { border-bottom-color: rgba(17,19,24,0.2); }
-.kanban-col:nth-child(4) .kanban-card::before { background: #111318; }
-
-/* 드롭 플레이스홀더 */
-.drop-placeholder {
-  height: 80px; border: 2px dashed var(--blue); border-radius: var(--radius-sm);
-  background: var(--blue-dim); opacity: 0.6;
-}
-
-/* ════════════════════════════════════════
-   달력 (FullCalendar 커스터마이징)
-════════════════════════════════════════ */
-.cal-wrap {
-  background: var(--surface-01); border: 1px solid var(--border-dim);
-  border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-sm);
-}
-.fc { font-family: var(--font-body) !important; }
-.fc .fc-toolbar-title { font-size: 1.1rem !important; font-weight: 800 !important; color: var(--text-primary) !important; }
-.fc .fc-button-primary {
-  background: #111 !important; border-color: #111 !important;
-  font-family: var(--font-body) !important; font-size: 0.8rem !important;
-  font-weight: 700 !important; border-radius: var(--radius-xs) !important;
-  padding: 6px 14px !important;
-}
-.fc .fc-button-primary:hover { background: var(--blue) !important; border-color: var(--blue) !important; }
-.fc .fc-button-primary:not(:disabled).fc-button-active { background: var(--blue) !important; border-color: var(--blue) !important; }
-.fc .fc-daygrid-day-number { font-size: 0.82rem !important; font-weight: 600 !important; color: var(--text-secondary) !important; }
-.fc .fc-day-today { background: rgba(0,114,206,0.05) !important; }
-.fc .fc-day-today .fc-daygrid-day-number { color: var(--blue) !important; font-weight: 800 !important; }
-.fc .fc-col-header-cell-cushion { font-size: 0.78rem !important; font-weight: 700 !important; color: var(--text-tertiary) !important; text-transform: uppercase !important; }
-.fc-event {
-  border-radius: 4px !important; font-size: 0.73rem !important;
-  font-weight: 700 !important; padding: 2px 5px !important; border: none !important;
-  cursor: pointer !important;
-}
-.fc-event-consult   { background: var(--blue) !important; }
-.fc-event-testdrive { background: var(--purple) !important; }
-.fc-event-delivery  { background: var(--green) !important; }
-.fc-event-contact   { background: var(--hot) !important; }
-.fc-event-contract  { background: var(--gold) !important; }
-.fc-event-manual    { background: #374151 !important; }
-.fc-daygrid-event-dot { display: none !important; }
-.fc .fc-toolbar { gap: 10px; flex-wrap: wrap; }
-
-/* 일정 범례 */
-.cal-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
-.cal-legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.74rem; font-weight: 600; color: var(--text-secondary); }
-.cal-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
-
-/* 일정 추가/수정 모달 */
-.event-form-group { display: flex; flex-direction: column; gap: 7px; margin-bottom: 12px; }
-.event-type-btns { display: flex; gap: 6px; flex-wrap: wrap; }
-.event-type-btn {
-  padding: 6px 12px; border: 1.5px solid var(--border-dim); border-radius: 40px;
-  font-size: 0.76rem; font-weight: 700; cursor: pointer; background: var(--surface-01);
-  color: var(--text-secondary); transition: all var(--transition);
-}
-.event-type-btn.active { background: #111; color: #fff; border-color: #111; }
-
-/* ────────────────────────────────────────
-   일정 추가 버튼 — 가로 텍스트 강제
-──────────────────────────────────────── */
-.calendar-add-btn {
-  flex: 0 0 auto !important;
-  width: auto !important;
-  min-width: 110px;
-  white-space: nowrap !important;
-  writing-mode: horizontal-tb !important;
-  text-orientation: mixed !important;
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 20px !important;
-  font-size: 0.85rem;
-}
-@media (max-width: 600px) {
-  .calendar-add-btn {
-    width: auto !important;
-    min-width: 110px;
-    white-space: nowrap !important;
-  }
-}
-
-/* ────────────────────────────────────────
-   반응형
-──────────────────────────────────────── */
-/* 유틸 */
-.hidden { display: none !important; }
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-soft); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--border-med); }
-
-/* 상세 페이지 반응형 */
-@media (max-width: 520px) {
-  .detail-fields-grid { grid-template-columns: 1fr; }
-  .detail-field.full  { grid-column: 1; }
-  .detail-page-header { padding: 16px 18px; }
-  .detail-page-name   { font-size: 1.1rem; }
-  .detail-edit-form   { padding: 18px; }
-}
-
-/* 헤더/메인 반응형 */
-@media (max-width: 600px) {
-  :root { --header-h: 100px; }
-
-  /* 헤더: 2줄 구조로 변경 */
-  .site-header { height: var(--header-h); }
-  .header-inner {
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: center;
-    padding: 10px 14px 8px;
-    gap: 6px;
-    height: 100%;
-  }
-  /* 1줄: 로고 + 타이틀 */
-  .logo-wrap {
-    justify-content: flex-start;
-    gap: 9px;
-  }
-  .mb-star  { width: 26px; height: 26px; }
-  .site-title { font-size: 0.88rem; }
-  .site-sub   { display: none; }
-  /* 2줄: 네비 */
-  .top-nav {
-    display: flex;
-    flex-direction: row;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    gap: 3px;
-    padding: 3px 2px;
-    background: var(--surface-03);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-dim);
-    scrollbar-width: none;
-  }
-  .top-nav::-webkit-scrollbar { display: none; }
-  .nav-btn {
-    padding: 7px 11px;
-    font-size: 0.73rem;
-    white-space: nowrap;
-    flex-shrink: 0;
-    min-height: 34px;
-  }
-
-  .main-wrap  { padding: 18px 14px 70px; }
-  .dashboard-hero { padding: 22px 18px 20px; border-radius: var(--radius-lg); }
-  .hero-title { font-size: 1.35rem; }
-  .stat-grid  { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .stat-num   { font-size: 1.7rem; }
-  .stat-icon  { font-size: 1.1rem; }
-  .crm-form   { grid-template-columns: 1fr; padding: 18px; }
-  .form-group.full { grid-column: 1; }
-  .form-actions { flex-direction: column; }
-  .btn-secondary { width: 100%; text-align: center; }
-  .model-select-wrap { grid-template-columns: 1fr; }
-  .model-custom-input { grid-column: 1; }
-  .filter-bar { flex-direction: column; }
-  .filter-bar select { width: 100%; }
-  .card-memo  { max-width: 180px; }
-  .form-header { padding: 18px 16px 16px; border-radius: var(--radius-md); }
-  .form-title  { font-size: 1.2rem; }
-  input[type="text"], input[type="tel"], input[type="date"], input[type="datetime-local"],
-  input[type="search"], select, textarea { font-size: 16px; }
-  .today-schedule-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  /* 버튼 터치 영역 최소 44px */
-  .nav-btn, .qbtn, .tag-filter-btn, .tag-btn, .today-action-btn,
-  .btn-primary, .btn-secondary, .btn-danger, .btn-delete-outline,
-  .back-btn, .modal-close { min-height: 44px; }
-  .nav-btn { min-height: 34px; } /* nav는 내부 공간이 작으므로 별도 */
-  /* 모달이 화면 밖으로 나가지 않도록 */
-  .modal-box { max-height: 88vh; padding: 22px 18px 20px; }
-  /* 달력 */
-  .cal-wrap { padding: 12px 10px; }
-  .fc .fc-toolbar { flex-direction: column; gap: 8px; }
-}
-/* 칸반 반응형 */
-@media (max-width: 900px) {
-  .kanban-board { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 540px) {
-  .kanban-board { grid-template-columns: 1fr; }
-  .kanban-col-header { position: relative; top: auto; }
-  /* 모바일 칸반 카드 최적화 */
-  .kanban-cards { gap: 14px; padding: 10px; }
-  .kanban-card { padding: 9px 12px; }
-  .kc-name { font-size: 0.86rem; margin-bottom: 4px; }
-  .kc-phone { font-size: 0.74rem; }
-  .kc-model { font-size: 0.72rem; }
-  .kc-dates { font-size: 0.69rem; }
-  .kc-contract-date { font-size: 0.69rem; }
-}
-
-</style>
-
+    /* ── 모바일 반응형 ───────────────────────────────────── */
+    @media (max-width: 560px) {
+      .card-header, .card-body { padding-left: 20px; padding-right: 20px; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .field.full { grid-column: 1; }
+    }
+  </style>
 </head>
 <body>
+<div class="page-wrap">
+  <div class="card">
 
-  <!-- ===== 헤더 ===== -->
-  <header class="site-header">
-    <div class="header-inner">
-      <div class="logo-wrap">
-        <svg class="mb-star" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" aria-label="Mercedes-Benz star">
-          <circle cx="30" cy="30" r="28" fill="none" stroke="currentColor" stroke-width="1.5"/>
-          <line x1="30" y1="2"  x2="30" y2="30" stroke="currentColor" stroke-width="1.5"/>
-          <line x1="30" y1="30" x2="54.6" y2="44" stroke="currentColor" stroke-width="1.5"/>
-          <line x1="30" y1="30" x2="5.4"  y2="44" stroke="currentColor" stroke-width="1.5"/>
-        </svg>
-        <div class="header-text">
-          <span class="site-title">빈센노의 MB CRM</span>
-          <span class="site-sub">Mercedes-Benz 고객 관리 &amp; 세일즈 CRM</span>
+    <!-- 헤더 -->
+    <div class="card-header">
+      <div class="header-brand">
+        <div class="header-logo">NJ</div>
+        <div>
+          <div class="header-title">노진규 고객관리 시스템</div>
+          <div class="header-sub">Mercedes-Benz 의정부 전시장</div>
         </div>
       </div>
-      <nav class="top-nav">
-        <button class="nav-btn active" data-view="dashboard" onclick="showView('dashboard')">대시보드</button>
-        <button class="nav-btn" data-view="register" onclick="showView('register')">고객등록</button>
-        <button class="nav-btn" data-view="list" onclick="clearStatFilter();showView('list')">고객목록</button>
-        <button class="nav-btn" data-view="kanban" onclick="showView('kanban')">칸반보드</button>
-        <button class="nav-btn" data-view="calendar" onclick="showView('calendar')">일정관리</button>
-      </nav>
     </div>
-  </header>
 
-  <main class="main-wrap" id="main-wrap">
+    <!-- 폼 -->
+    <div class="card-body">
+      <div id="customer-form">
 
-    <!-- ══════════════════════════════════════════
-         뷰 1: 대시보드
-    ══════════════════════════════════════════ -->
-    <section id="view-dashboard" class="view active">
-      <div class="dashboard-hero">
-        <div class="hero-greeting">WELCOME BACK</div>
-        <div class="hero-title">안녕하세요, 노진규 부장님 👋</div>
-        <div class="hero-sub">오늘의 고객관리 현황입니다.</div>
-        <div class="hero-meta">
-          <span class="hero-chip"><span class="hero-chip-dot"></span><span id="hero-date-text">—</span></span>
-          <span class="hero-chip"><span class="hero-chip-dot"></span><span id="hero-today-text">오늘 연락 0명</span></span>
-          <span class="hero-chip"><span class="hero-chip-dot hot"></span><span id="hero-hot-text">계약유력 0명</span></span>
-          <span class="hero-chip"><span class="hero-chip-dot done"></span><span id="hero-done-text">출고완료 0명</span></span>
-        </div>
-      </div>
+        <!-- ① 고객 기본 정보 -->
+        <div class="section-label">고객 기본 정보</div>
+        <div class="grid-2">
 
-      <!-- 현황 요약 -->
-      <div class="section-label">현황 요약</div>
-      <div class="stat-grid">
-        <div class="stat-card clickable" onclick="statCardFilter('all')"><div class="stat-icon">👥</div><span class="stat-num" id="stat-total">0</span><span class="stat-label">전체 고객</span></div>
-        <div class="stat-card accent clickable" onclick="statCardFilter('계약유력')"><div class="stat-icon">🔥</div><span class="stat-num" id="stat-hot">0</span><span class="stat-label">계약유력</span></div>
-        <div class="stat-card clickable" style="background:linear-gradient(135deg,rgba(5,150,105,0.08) 0%,rgba(5,150,105,0.02) 100%);border-color:rgba(5,150,105,0.25);" onclick="statCardFilter('계약')"><div class="stat-icon">✅</div><span class="stat-num" id="stat-contract" style="color:var(--green)">0</span><span class="stat-label">계약</span></div>
-        <div class="stat-card clickable" onclick="statCardFilter('today')"><div class="stat-icon">📞</div><span class="stat-num" id="stat-today">0</span><span class="stat-label">오늘 연락</span></div>
-        <div class="stat-card clickable" onclick="statCardFilter('출고완료')"><div class="stat-icon">🚗</div><span class="stat-num" id="stat-done">0</span><span class="stat-label">출고완료</span></div>
-        <div class="stat-card clickable" style="background:linear-gradient(135deg,rgba(0,114,206,0.08) 0%,rgba(0,114,206,0.02) 100%);border-color:rgba(0,114,206,0.25);" onclick="statCardFilter('6월출고')"><div class="stat-icon">📅</div><span class="stat-num" id="stat-june" style="color:var(--blue)">0</span><span class="stat-label">6월 출고</span></div>
-      </div>
+          <div class="field">
+            <label>고객명 <span class="req">*</span></label>
+            <input type="text" id="customerName" placeholder="홍길동" />
+          </div>
 
-      <!-- 오늘 일정 -->
-      <div class="section-label mt">📋 오늘 일정</div>
-      <div class="today-schedule-grid">
-        <div class="sched-mini-card consult" onclick="showTodayScheduleModal('consult')">
-          <div class="sched-mini-num" id="sched-consult-count">0</div>
-          <div class="sched-mini-label">오늘 상담</div>
-        </div>
-        <div class="sched-mini-card test-drive" onclick="showTodayScheduleModal('testdrive')">
-          <div class="sched-mini-num" id="sched-testdrive-count">0</div>
-          <div class="sched-mini-label">오늘 시승</div>
-        </div>
-        <div class="sched-mini-card delivery" onclick="showTodayScheduleModal('delivery')">
-          <div class="sched-mini-num" id="sched-delivery-count">0</div>
-          <div class="sched-mini-label">오늘 출고</div>
-        </div>
-      </div>
+          <div class="field">
+            <label>휴대폰번호 <span class="req">*</span></label>
+            <input type="tel" id="phone" placeholder="010-0000-0000" maxlength="13" />
+          </div>
 
-      <!-- 오늘 연락 예정 -->
-      <div class="section-label mt">📞 오늘 연락 예정</div>
-      <div id="today-contacts" class="today-section">
-        <p class="empty-msg" id="today-empty">오늘 연락 예정 고객이 없습니다.</p>
-      </div>
+        </div>
 
-      <!-- 최근 수정 고객 -->
-      <div class="section-label mt">최근 수정 고객</div>
-      <div id="recent-list" class="card-grid">
-        <p class="empty-msg">등록된 고객이 없습니다.</p>
-      </div>
+        <!-- ② 차량 & 구매 정보 -->
+        <div class="section-label">차량 & 구매 정보</div>
+        <div class="grid-2">
 
-      <!-- 데이터 복구 버튼 (긴급용) -->
-      <div style="margin-top:32px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;">
-        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
-          <button onclick="restoreFromBackup()" style="background:none;border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:8px 18px;font-size:0.75rem;color:var(--text-tertiary);cursor:pointer;" title="저장 전 자동 백업에서 고객 데이터를 복구합니다">
-            🔄 백업에서 데이터 복구
-          </button>
-          <button id="sheet-test-btn" onclick="testSheetConnection()" style="background:none;border:1px solid var(--blue);border-radius:var(--radius-sm);padding:8px 18px;font-size:0.75rem;color:var(--blue);cursor:pointer;font-weight:600;">
-            🔗 구글시트 연결 테스트
-          </button>
-          <button onclick="manualSyncFromSheet()" style="background:none;border:1px solid var(--green);border-radius:var(--radius-sm);padding:8px 18px;font-size:0.75rem;color:var(--green);cursor:pointer;font-weight:600;">
-            ☁️ 구글시트에서 지금 동기화
-          </button>
-          <button onclick="syncLocalToSheet()" style="background:none;border:1px solid var(--gold);border-radius:var(--radius-sm);padding:8px 18px;font-size:0.75rem;color:var(--gold);cursor:pointer;font-weight:600;">
-            ⬆️ 로컬 34명 구글시트로 업로드
-          </button>
-        </div>
-        <div id="sheet-test-result" style="font-size:0.78rem;margin-top:4px;min-height:20px;"></div>
-      </div>
-    </section>
-
-    <!-- ══════════════════════════════════════════
-         뷰 2: 고객 등록
-    ══════════════════════════════════════════ -->
-    <section id="view-register" class="view">
-      <div class="form-header">
-        <h2 class="form-title">고객 등록</h2>
-        <p class="form-desc">신규 고객 정보를 등록하세요. 저장 즉시 Google Sheets에 기록됩니다.<br><span style="font-size:0.75rem;color:var(--blue)">※ 기존 고객 수정은 고객목록에서 카드를 클릭하세요.</span></p>
-      </div>
-      <form id="customer-form" class="crm-form" onsubmit="handleFormSubmit(event)">
-        <div class="form-group">
-          <label for="f-name">고객명 <span class="req">*</span></label>
-          <input type="text" id="f-name" placeholder="홍길동" required />
-        </div>
-        <div class="form-group">
-          <label for="f-company">법인명</label>
-          <input type="text" id="f-company" placeholder="법인 고객일 경우 입력" />
-        </div>
-        <div class="form-group">
-          <label for="f-phone">연락처 <span class="req">*</span></label>
-          <input type="tel" id="f-phone" placeholder="010-0000-0000" required />
-        </div>
-        <div class="form-group">
-          <label for="f-region">거주지역</label>
-          <input type="text" id="f-region" placeholder="서울 강남구" />
-        </div>
-        <div class="form-group">
-          <label for="f-source">유입경로</label>
-          <select id="f-source">
-            <option value="">선택하세요</option>
-            <option value="지인소개">지인소개</option>
-            <option value="기존고객 재구매">기존고객 재구매</option>
-            <option value="SNS">SNS</option>
-            <option value="GETCHA">GETCHA</option>
-            <option value="홈페이지">홈페이지</option>
-            <option value="전시장방문">전시장 직접방문</option>
-            <option value="이벤트">이벤트/프로모션</option>
-            <option value="기타">기타</option>
-          </select>
-        </div>
-        <div class="form-group full">
-          <label>관심차종</label>
-          <div class="model-select-wrap">
-            <select id="f-model-category" onchange="onModelCategoryChange()">
-              <option value="">대분류 선택</option>
-              <option value="E-Class">E-Class</option>
-              <option value="S-Class">S-Class</option>
-              <option value="C-Class">C-Class</option>
-              <option value="GLC">GLC</option>
-              <option value="GLE">GLE</option>
-              <option value="GLS">GLS</option>
-              <option value="CLA">CLA</option>
-              <option value="A-Class">A-Class</option>
-              <option value="EQ">EQ (전기)</option>
-              <option value="기타">기타</option>
+          <div class="field">
+            <label>관심차종</label>
+            <select id="carModel">
+              <option value="">— 선택 —</option>
+              <optgroup label="S-Class">
+                <option>S 450 4MATIC</option>
+                <option>S 580 4MATIC</option>
+                <option>S 580 4MATIC L</option>
+                <option>AMG S 63 E PERFORMANCE</option>
+                <option>Maybach S 580 4MATIC</option>
+                <option>Maybach S 680 4MATIC</option>
+              </optgroup>
+              <optgroup label="E-Class">
+                <option>E 220 d</option>
+                <option>E 300</option>
+                <option>E 450 4MATIC</option>
+                <option>AMG E 53</option>
+              </optgroup>
+              <optgroup label="GLE / GLS">
+                <option>GLE 300 d 4MATIC</option>
+                <option>GLE 450 4MATIC</option>
+                <option>GLS 450 4MATIC</option>
+                <option>Maybach GLS 600 4MATIC</option>
+              </optgroup>
+              <optgroup label="기타">
+                <option>C-Class</option>
+                <option>CLE</option>
+                <option>EQS</option>
+                <option>EQE</option>
+                <option>기타 문의</option>
+              </optgroup>
             </select>
-            <select id="f-model-detail" disabled onchange="onModelDetailChange()">
-              <option value="">세부모델 선택</option>
+          </div>
+
+          <div class="field">
+            <label>구매방식</label>
+            <select id="purchaseType">
+              <option value="">— 선택 —</option>
+              <option>일시불</option>
+              <option>할부</option>
+              <option>리스</option>
+              <option>장기렌트</option>
+              <option>미정</option>
             </select>
-            <input type="text" id="f-model-custom" class="model-custom-input hidden" placeholder="차종을 직접 입력하세요" />
           </div>
-        </div>
-        <div class="form-group">
-          <label for="f-budget">구매예산</label>
-          <input type="text" id="f-budget" placeholder="예: 8,000만원 ~ 1억" />
-        </div>
-        <div class="form-group">
-          <label for="f-timing">구매예정시기</label>
-          <input type="text" id="f-timing" placeholder="예: 2025년 3분기" />
-        </div>
-        <div class="form-group">
-          <label for="f-status">현재상태 <span class="req">*</span></label>
-          <select id="f-status" required>
-            <option value="">선택하세요</option>
-            <option value="신규문의">신규문의</option>
-            <option value="상담중">상담중</option>
-            <option value="계약유력">계약유력</option>
-            <option value="계약">계약</option>
-            <option value="보류">보류</option>
-            <option value="타딜러구매">타딜러구매</option>
-            <option value="타브랜드구매">타브랜드구매</option>
-            <option value="해약">해약</option>
-            <option value="출고완료">출고완료</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="f-nextdate">다음 연락일</label>
-          <input type="date" id="f-nextdate" />
-        </div>
-        <div class="form-group">
-          <label for="f-consult-date">상담 일시</label>
-          <input type="date" id="f-consult-date" />
-        </div>
-        <div class="form-group">
-          <label for="f-testdrive-date">시승 일정</label>
-          <input type="date" id="f-testdrive-date" />
-        </div>
-        <div class="form-group">
-          <label for="f-delivery-date">출고 일정</label>
-          <input type="date" id="f-delivery-date" />
-        </div>
-        <div class="form-group">
-          <label for="f-contract-date">계약일 🤝</label>
-          <input type="date" id="f-contract-date" />
-        </div>
-        <div class="form-group" id="tag-picker-group">
-          <label>태그 선택</label>
-          <div class="tag-picker" id="tag-picker"></div>
-        </div>
-        <div class="form-group full">
-          <label for="f-memo">상담내용</label>
-          <textarea id="f-memo" rows="4" placeholder="상담 내용, 특이사항, 고객 선호도 등을 기록하세요."></textarea>
-        </div>
-        <div class="form-actions full">
-          <button type="submit" class="btn-primary" id="submit-btn">
-            <span id="submit-text">저장하기</span>
-            <span id="submit-loading" class="hidden">저장 중...</span>
-          </button>
-          <button type="button" class="btn-secondary" onclick="resetForm()">초기화</button>
-        </div>
-      </form>
-      <div id="form-alert" class="form-alert hidden"></div>
-    </section>
 
-    <!-- ══════════════════════════════════════════
-         뷰 3: 고객 목록
-    ══════════════════════════════════════════ -->
-    <section id="view-list" class="view">
-      <div class="filter-banner" id="filter-banner">
-        <span id="filter-banner-text">전체 고객</span>
-        <button class="filter-banner-close" onclick="clearStatFilter()">✕ 필터 해제</button>
-      </div>
-      <div class="filter-bar">
-        <div class="search-wrap">
-          <input type="search" id="search-input" placeholder="고객명, 차종, 연락처 검색..." oninput="filterCustomers()" />
         </div>
-        <select id="filter-status" onchange="filterCustomers()">
-          <option value="">전체 상태</option>
-          <option value="신규문의">신규문의</option>
-          <option value="상담중">상담중</option>
-          <option value="계약유력">🔥 계약유력</option>
-          <option value="계약">✅ 계약</option>
-          <option value="보류">보류</option>
-          <option value="타딜러구매">타딜러구매</option>
-          <option value="타브랜드구매">타브랜드구매</option>
-          <option value="해약">해약</option>
-          <option value="출고완료">출고완료</option>
-        </select>
-      </div>
-      <div class="quick-filters">
-        <button class="qbtn active" onclick="quickStatusFilter('all', this)">전체</button>
-        <button class="qbtn" onclick="quickStatusFilter('계약유력', this)">🔥 계약유력</button>
-        <button class="qbtn" onclick="quickStatusFilter('상담중', this)">상담중</button>
-        <button class="qbtn" onclick="quickStatusFilter('계약', this)">✅ 계약</button>
-        <button class="qbtn" onclick="quickStatusFilter('출고완료', this)">출고완료</button>
-      </div>
-      <div class="tag-filter-section">
-        <span class="tag-filter-label">태그 필터</span>
-        <div class="tag-filter-row" id="tag-filter-row"></div>
-      </div>
-      <div id="customer-list" class="card-grid">
-        <p class="empty-msg">등록된 고객이 없습니다.</p>
-      </div>
-    </section>
 
-    <!-- ══════════════════════════════════════════
-         뷰 4: 고객 상세
-    ══════════════════════════════════════════ -->
-    <section id="view-detail" class="view">
-      <div class="detail-page-header">
-        <button class="back-btn" onclick="goBackFromDetail()">← 목록</button>
-        <div class="detail-page-name" id="dp-name">—</div>
-        <div class="detail-page-status" id="dp-status-wrap"></div>
-      </div>
-      <div class="detail-edit-form">
-        <div>
-          <div class="detail-section-title">📋 기본 정보</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;margin-top:14px;" id="dp-info-grid"></div>
-        </div>
-        <div>
-          <div class="detail-section-title">✏️ 수정 가능 항목</div>
-          <div class="detail-fields-grid" style="margin-top:14px;">
-            <div class="detail-field">
-              <label for="dp-f-name">고객명 <span class="req">*</span></label>
-              <input type="text" id="dp-f-name" placeholder="홍길동" required />
-            </div>
-            <div class="detail-field">
-              <label for="dp-f-phone">연락처 <span class="req">*</span></label>
-              <input type="tel" id="dp-f-phone" placeholder="010-0000-0000" required />
-            </div>
-            <div class="detail-field full">
-              <label>관심차종</label>
-              <div class="model-select-wrap">
-                <select id="dp-model-category" onchange="dpOnModelCategoryChange()">
-                  <option value="">대분류 선택</option>
-                  <option value="E-Class">E-Class</option>
-                  <option value="S-Class">S-Class</option>
-                  <option value="C-Class">C-Class</option>
-                  <option value="GLC">GLC</option>
-                  <option value="GLE">GLE</option>
-                  <option value="GLS">GLS</option>
-                  <option value="CLA">CLA</option>
-                  <option value="A-Class">A-Class</option>
-                  <option value="EQ">EQ (전기)</option>
-                  <option value="기타">기타</option>
-                </select>
-                <select id="dp-model-detail" disabled onchange="dpOnModelDetailChange()">
-                  <option value="">세부모델 선택</option>
-                </select>
-                <input type="text" id="dp-model-custom" class="model-custom-input hidden" placeholder="차종을 직접 입력하세요" />
-              </div>
-            </div>
-            <div class="detail-field">
-              <label for="dp-f-status">현재상태 <span class="req">*</span></label>
-              <select id="dp-f-status" required onchange="onDetailStatusChange()">
-                <option value="">선택하세요</option>
-                <option value="신규문의">신규문의</option>
-                <option value="상담중">상담중</option>
-                <option value="계약유력">계약유력</option>
-                <option value="계약">계약</option>
-                <option value="보류">보류</option>
-                <option value="타딜러구매">타딜러구매</option>
-                <option value="타브랜드구매">타브랜드구매</option>
-                <option value="해약">해약</option>
-                <option value="출고완료">출고완료</option>
-              </select>
-            </div>
-            <div class="detail-field">
-              <label for="dp-f-nextdate">다음 연락일</label>
-              <input type="date" id="dp-f-nextdate" />
-            </div>
-            <div class="detail-field">
-              <label for="dp-f-consult-date">상담 일시</label>
-              <input type="date" id="dp-f-consult-date" />
-            </div>
-            <div class="detail-field">
-              <label for="dp-f-testdrive-date">시승 일정</label>
-              <input type="date" id="dp-f-testdrive-date" />
-            </div>
-            <div class="detail-field">
-              <label for="dp-f-delivery-date">출고 일정</label>
-              <input type="date" id="dp-f-delivery-date" />
-            </div>
-            <div class="detail-field">
-              <label for="dp-f-contract-date">계약일 🤝</label>
-              <input type="date" id="dp-f-contract-date" />
-            </div>
-            <div class="detail-field full">
-              <label>태그</label>
-              <div class="tag-picker" id="dp-tag-picker"></div>
-            </div>
-            <div class="detail-field full">
-              <label>상담이력 (누적)</label>
-              <div class="memo-history-wrap">
-                <div class="memo-history-box" id="dp-memo-history">—</div>
-                <div id="dp-memo-date-label" style="background:var(--surface-03);border:1.5px solid var(--border-dim);border-top:none;border-bottom:none;padding:5px 14px;font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-tertiary);">▼ 새 상담내용 추가 (오늘 날짜로 자동 기록)</div>
-                <textarea id="dp-f-memo-new" rows="3" class="memo-new-textarea" placeholder="새 상담 내용을 입력하세요. 저장 시 날짜와 함께 기존 이력에 누적됩니다."></textarea>
-              </div>
-            </div>
+        <!-- ③ 상담 & 상태 정보 -->
+        <div class="section-label">상담 & 상태 정보</div>
+        <div class="grid-2">
+
+          <div class="field">
+            <label>현재상태</label>
+            <select id="status">
+              <option value="">— 선택 —</option>
+              <option>신규 문의</option>
+              <option>상담 진행 중</option>
+              <option>견적 발송</option>
+              <option>시승 예정</option>
+              <option>시승 완료</option>
+              <option>계약 진행 중</option>
+              <option>계약 완료</option>
+              <option>출고 완료</option>
+              <option>장기 보류</option>
+              <option>취소 / 이탈</option>
+            </select>
           </div>
-        </div>
-        <div class="detail-save-actions">
-          <button class="btn-primary" id="dp-save-btn" onclick="saveDetailChanges()">
-            <span id="dp-save-text">변경사항 저장</span>
-            <span id="dp-save-loading" class="hidden">저장 중...</span>
-          </button>
-          <button class="btn-delete-outline" onclick="deleteFromDetail()">삭제</button>
-        </div>
-        <div id="dp-alert" class="form-alert hidden"></div>
-      </div>
-    </section>
 
-    <!-- ══════════════════════════════════════════
-         뷰 5: 칸반보드
-    ══════════════════════════════════════════ -->
-    <section id="view-kanban" class="view">
-      <div class="kanban-header">
-        <div>
-          <div class="kanban-header-title">📌 세일즈 파이프라인</div>
-          <div class="kanban-header-sub">고객카드를 드래그하여 단계를 이동하세요. 상태가 자동으로 저장됩니다.</div>
-        </div>
-      </div>
-      <div class="kanban-board" id="kanban-board">
-        <div class="kanban-col" id="kb-col-A급가망" data-status="A급가망">
-          <div class="kanban-col-header">
-            <span class="kanban-col-title"><span class="kanban-col-dot"></span>A급 가망</span>
-            <span class="kanban-col-count" id="kb-count-A급가망">0</span>
+          <div class="field">
+            <label>유입경로</label>
+            <select id="leadSource">
+              <option value="">— 선택 —</option>
+              <option>전시장 방문</option>
+              <option>전화 문의</option>
+              <option>카카오톡</option>
+              <option>홈페이지</option>
+              <option>인스타그램</option>
+              <option>유튜브</option>
+              <option>네이버 블로그</option>
+              <option>지인 소개</option>
+              <option>기존 고객</option>
+              <option>기타</option>
+            </select>
           </div>
-          <div class="kanban-cards" id="kb-cards-A급가망" data-status="A급가망"></div>
-        </div>
-        <div class="kanban-col" id="kb-col-상담중" data-status="상담중">
-          <div class="kanban-col-header">
-            <span class="kanban-col-title"><span class="kanban-col-dot"></span>상담 중</span>
-            <span class="kanban-col-count" id="kb-count-상담중">0</span>
+
+          <div class="field full">
+            <label>상담내용</label>
+            <textarea id="consultation" placeholder="상담 내용을 간략히 입력하세요."></textarea>
           </div>
-          <div class="kanban-cards" id="kb-cards-상담중" data-status="상담중"></div>
-        </div>
-        <div class="kanban-col" id="kb-col-계약" data-status="계약">
-          <div class="kanban-col-header">
-            <span class="kanban-col-title"><span class="kanban-col-dot"></span>계약</span>
-            <span class="kanban-col-count" id="kb-count-계약">0</span>
+
+          <div class="field">
+            <label>다음연락일</label>
+            <input type="date" id="nextContact" />
           </div>
-          <div class="kanban-cards" id="kb-cards-계약" data-status="계약"></div>
-        </div>
-        <div class="kanban-col" id="kb-col-출고" data-status="출고">
-          <div class="kanban-col-header">
-            <span class="kanban-col-title"><span class="kanban-col-dot"></span>출고</span>
-            <span class="kanban-col-count" id="kb-count-출고">0</span>
+
+          <div class="field">
+            <label>메모</label>
+            <input type="text" id="memo" placeholder="기타 특이사항" />
           </div>
-          <div class="kanban-cards" id="kb-cards-출고" data-status="출고"></div>
+
         </div>
-      </div>
-    </section>
 
-    <!-- ══════════════════════════════════════════
-         뷰 6: 일정관리 (FullCalendar)
-    ══════════════════════════════════════════ -->
-    <section id="view-calendar" class="view">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
-        <div>
-          <div style="font-size:1.35rem;font-weight:800;letter-spacing:-0.02em;color:var(--text-primary);">📅 일정 관리</div>
-          <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:3px;">날짜를 클릭하여 일정을 추가하거나 이벤트를 클릭하여 수정하세요.</div>
-        </div>
-        <button class="btn-primary calendar-add-btn" onclick="openEventModal()">+ 일정 추가</button>
-      </div>
-      <div class="cal-legend">
-        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--hot)"></div>연락 예정</div>
-        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--blue)"></div>상담</div>
-        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--purple)"></div>시승</div>
-        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--gold)"></div>계약</div>
-        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--green)"></div>출고</div>
-        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#374151"></div>기타</div>
-      </div>
-      <div class="cal-wrap">
-        <div id="full-calendar"></div>
-      </div>
-    </section>
+        <!-- 저장 버튼 -->
+        <button class="btn-submit" id="submitBtn" onclick="submitForm()">
+          고객 정보 저장
+        </button>
 
-  </main>
+        <!-- 상태 메시지 -->
+        <div id="status-msg"></div>
 
-  <!-- ── 확인 다이얼로그 ── -->
-  <div id="confirm-dialog" class="modal-overlay hidden">
-    <div class="confirm-box">
-      <p id="confirm-msg">정말 삭제하시겠습니까?</p>
-      <div class="confirm-actions">
-        <button class="btn-danger" id="confirm-ok">삭제</button>
-        <button class="btn-secondary" onclick="closeConfirm()">취소</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── 일정 추가/수정 모달 ── -->
-  <div id="event-modal" class="modal-overlay hidden">
-    <div class="modal-box">
-      <button class="modal-close" onclick="closeEventModal()">✕</button>
-      <div class="modal-title" id="event-modal-title">일정 추가</div>
-      <div class="event-form-group">
-        <label>일정 종류</label>
-        <div class="event-type-btns">
-          <button class="event-type-btn active" data-type="manual" onclick="selectEventType(this)">📝 일반</button>
-          <button class="event-type-btn" data-type="consult" onclick="selectEventType(this)">💼 상담</button>
-          <button class="event-type-btn" data-type="testdrive" onclick="selectEventType(this)">🚘 시승</button>
-          <button class="event-type-btn" data-type="delivery" onclick="selectEventType(this)">🚗 출고</button>
-        </div>
-      </div>
-      <div class="event-form-group">
-        <label for="ev-title">제목</label>
-        <input type="text" id="ev-title" placeholder="일정 제목" />
-      </div>
-      <div class="event-form-group">
-        <label for="ev-date">날짜</label>
-        <input type="date" id="ev-date" />
-      </div>
-      <div class="event-form-group">
-        <label for="ev-memo">메모</label>
-        <textarea id="ev-memo" rows="2" placeholder="메모 (선택)"></textarea>
-      </div>
-      <div class="modal-actions">
-        <button class="btn-primary" onclick="saveEventModal()">저장</button>
-        <button class="btn-secondary" onclick="closeEventModal()">취소</button>
-        <button class="btn-danger hidden" id="ev-delete-btn" onclick="deleteCurrentEvent()">삭제</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── 오늘 일정 상세 모달 ── -->
-  <div id="today-sched-modal" class="modal-overlay hidden">
-    <div class="modal-box">
-      <button class="modal-close" onclick="closeTodaySchedModal()">✕</button>
-      <div class="modal-title" id="today-sched-modal-title">오늘 일정</div>
-      <div id="today-sched-modal-list" style="display:flex;flex-direction:column;gap:10px;"></div>
-    </div>
-  </div>
+      </div><!-- /#customer-form -->
+    </div><!-- /.card-body -->
+  </div><!-- /.card -->
+</div><!-- /.page-wrap -->
 
 <script>
-/* =====================================================
-   노진규 고객관리 시스템 — v20 (2026-06) PC/모바일 구글시트 완전 동기화 패치
-   ✅ STORAGE_KEY 통합 ('mb_crm_customers')
-   ✅ 레거시 키 마이그레이션
-   ✅ 빈 배열 저장 차단 (데이터 보호)
-   ✅ 구글시트 응답이 비어있어도 로컬 데이터 유지
-   ✅ 뷰 전환 시 즉시 렌더링 후 백그라운드 동기화
-   ✅ 저장 전 자동 백업 (mb_crm_customers_backup)
-   ✅ refreshAllViews() 통합 갱신 함수
-===================================================== */
-
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzgUk3sBYz-nMpYXTk6k9CoCUOB5eYXt76C_DdxxrcFEK9AK8fdIckR0dI6ruZf1ZXsRA/exec";
-
-/* ── 상태 배지 색상 ── */
-const STATUS_COLORS = {
-  '신규문의':     { bg: '#dbeafe', text: '#1d4ed8' },
-  '상담중':       { bg: '#fef3c7', text: '#92400e' },
-  '계약유력':     { bg: '#fef9c3', text: '#a16207' },
-  '계약':         { bg: '#d1fae5', text: '#065f46' },
-  '보류':         { bg: '#f3f4f6', text: '#6b7280' },
-  '타딜러구매':   { bg: '#e5e7eb', text: '#4b5563' },
-  '타브랜드구매': { bg: '#d1d5db', text: '#374151' },
-  '해약':         { bg: '#fee2e2', text: '#991b1b' },
-  '출고완료':     { bg: '#111318', text: '#ffffff' },
-  'A급가망':      { bg: '#fef3c7', text: '#d97706' },
-  '출고':         { bg: '#111318', text: '#ffffff' },
-};
-
-/* 칸반 컬럼 매핑: 태그 'A급가망' 또는 상태 기준 */
-const KANBAN_COLS = ['A급가망', '상담중', '계약', '출고'];
-
-/* 칸반에서 고객을 어느 컬럼에 배치할지 결정 */
-function getKanbanCol(c) {
-  const tags = (c.tags || '').split(',').map(t => t.trim());
-  if (tags.includes('A급가망')) return 'A급가망';
-  if (c.status === '계약유력' || c.status === '상담중') return '상담중';
-  if (c.status === '계약') return '계약';
-  if (c.status === '출고완료') return '출고';
-  return null; // 칸반에 표시 안 함
+// ============================================================
+// 유틸: 현재 날짜시간 (한국 형식)
+// ============================================================
+function getNowKST() {
+  return new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
 }
 
-/* ── 태그 목록 ── */
-const TAGS = [
-  'VIP', '법인', '개인', '재구매', '트레이드인',
-  'MBF', '에이전시', '수출', '당직고객',
-  'A급가망', 'MBMK', '계약', '출고',
-  '현금', '할부', '리스',
-];
-
-/* ── 관심차종 세부모델 ── */
-const MODEL_DETAILS = {
-  'E-Class': [
-    'E 200 exclusive','E 200 AMG Line',
-    'E 220 d 4MATIC exclusive','E 300 4MATIC exclusive',
-    'E 300 4MATIC AMG Line','E 350 e 4MATIC',
-    'E 450 4MATIC AMG Line','E 450 4MATIC exclusive',
-  ],
-  'S-Class': [
-    'S 350 d 4MATIC SWB','S 450 4MATIC SWB',
-    'S 450 4MATIC Long','S 450 4MATIC Long AMG Line',
-    'S 500 4MATIC Long','S 580 4MATIC Long',
-    'Mercedes-Maybach S 580 4MATIC',
-  ],
-  'C-Class': ['C 200','C 200 AMG Line','C 220 d AMG Line','C 300 4MATIC AMG Line'],
-  'GLC': ['GLC 300 4MATIC','GLC 300 4MATIC AMG Line','GLC 300 4MATIC Coupé','GLC 300 4MATIC Coupé AMG Line'],
-  'GLE': ['GLE 300 d 4MATIC','GLE 350 4MATIC','GLE 450 4MATIC','GLE 450 d 4MATIC','GLE 53 4MATIC+','GLE 450 4MATIC Coupé','GLE 53 4MATIC+ Coupé'],
-  'GLS': ['GLS 450 4MATIC','GLS 600 4MATIC Maybach'],
-  'CLA': ['CLA 200','CLA 200 AMG Line','CLA 250 4MATIC AMG Line','CLA 35 AMG 4MATIC'],
-  'A-Class': ['A 200','A 200 AMG Line','A 35 AMG 4MATIC'],
-  'EQ': ['EQA 250 progressive','EQA 250 AMG Line','EQB 300 4M progressive','EQB 300 4M AMG Line','EQE 350+SUV','EQE 350+','EQE 500 4M SUV','EQS 450 4M SUV','EQS 580 4M SUV','G 580 with EQ Technology'],
-};
-
-/* ── 필터 상태 ── */
-let currentStatusFilter = 'all';
-let currentTagFilter    = 'all';
-let currentStatFilter   = 'all';
-
-/* ── 상세 페이지 상태 ── */
-let detailCustomerId = null;
-let detailPrevView   = 'list';
-
-/* ── 드래그 상태 ── */
-let dragCustomerId   = null;
-let dragSourceCol    = null;
-let placeholder      = null;
-
-/* ── 달력 인스턴스 ── */
-let calendarInstance = null;
-let calendarEvents   = [];   // { id, type, title, date, memo, customerId? }
-let currentEventId   = null; // 현재 수정 중인 이벤트
-let currentEventType = 'manual';
-
-/* =============================================
-   구글시트 API
-============================================= */
-
-/**
- * 쓰기 요청 (save/update/delete).
- *
- * ★ v19 수정: no-cors 방식으로 Apps Script에 전송.
- *   Apps Script는 doGet으로 동작하므로 GET 파라미터로 전달.
- *   응답 읽기는 opaque라 불가 → 전송 후 2초 대기 후 getAll로 검증.
- *
- * @returns {Promise<'ok'|'network-error'>}
- */
-function jsonpRequest(params, timeoutMs = 15000) {
-  return new Promise((resolve, reject) => {
-    if (!SCRIPT_URL) return reject(new Error('SCRIPT_URL이 비어있습니다.'));
-    const callbackName = 'mbcrm_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-    const cleanup = () => {
-      try { delete window[callbackName]; } catch(e) { window[callbackName] = undefined; }
-      if (script && script.parentNode) script.parentNode.removeChild(script);
-      if (timer) clearTimeout(timer);
-    };
-    window[callbackName] = (data) => { cleanup(); resolve(data); };
-    const query = new URLSearchParams({ ...params, callback: callbackName, _t: Date.now().toString() }).toString();
-    const script = document.createElement('script');
-    script.src = SCRIPT_URL + '?' + query;
-    script.async = true;
-    script.onerror = () => { cleanup(); reject(new Error('Apps Script 호출 실패')); };
-    const timer = setTimeout(() => { cleanup(); reject(new Error('Apps Script 응답 시간 초과')); }, timeoutMs);
-    document.head.appendChild(script);
-  });
-}
-
-/**
- * 쓰기 요청 (save/update/delete)
- * ✅ v20: no-cors 제거, JSONP로 실제 성공/실패 응답 확인
- */
-async function sheetRequest(params) {
-  console.log('[sheetRequest] 전송 시작:', params.action, params.name || params.id || '');
-  try {
-    const res = await jsonpRequest(params, 20000);
-    console.log('[sheetRequest] 응답:', res);
-    if (res && res.result === 'success') return 'ok';
-    console.error('[sheetRequest] Apps Script 오류:', res);
-    return 'network-error';
-  } catch(e) {
-    console.error('[sheetRequest] ❌ 오류:', e.message);
-    return 'network-error';
-  }
-}
-
-/**
- * 읽기 요청 (getAll/test)
- * ✅ v20: PC/모바일 동일하게 JSONP 사용
- */
-async function sheetFetch(params) {
-  console.log('[sheetFetch] 읽기 요청:', params.action);
-  try {
-    const res = await jsonpRequest(params, 20000);
-    console.log('[sheetFetch] 응답:', JSON.stringify(res).substring(0, 200));
-    return res;
-  } catch(e) {
-    console.error('[sheetFetch] ❌ 오류:', e.message);
-    return null;
-  }
-}
-
-/**
- * 구글시트 연결 테스트
- */
-async function testSheetConnection() {
-  const btn = document.getElementById('sheet-test-btn');
-  const result = document.getElementById('sheet-test-result');
-  if (btn) btn.disabled = true;
-  result.textContent = '연결 테스트 중...';
-  result.style.color = '#6b7280';
-
-  if (!SCRIPT_URL) {
-    result.textContent = '❌ SCRIPT_URL이 설정되지 않았습니다. HTML 코드에서 SCRIPT_URL을 확인하세요.';
-    result.style.color = 'var(--red)';
-    if (btn) btn.disabled = false;
-    return;
-  }
-  try {
-    const res = await sheetFetch({ action: 'test' });
-    if (res && res.result === 'success') {
-      result.textContent = '✅ 구글시트 연결 정상 — ' + (res.message || '연결 성공');
-      result.style.color = 'var(--green)';
-    } else {
-      result.textContent = '❌ 구글시트 응답 오류 — Apps Script 배포 상태를 확인하세요. (응답: ' + JSON.stringify(res) + ')';
-      result.style.color = 'var(--red)';
-    }
-  } catch(e) {
-    result.textContent = '❌ 구글시트 연결 실패 / SCRIPT_URL 또는 Apps Script 배포 확인 필요 (' + e.message + ')';
-    result.style.color = 'var(--red)';
-  }
-  if (btn) btn.disabled = false;
-}
-
-/* =============================================
-   로컬 캐시 — 통합 STORAGE_KEY 관리
-   ⚠️  이 키만 사용. 절대 다른 키로 저장 금지.
-============================================= */
-const STORAGE_KEY = 'mb_crm_customers';
-const STORAGE_KEY_BACKUP = 'mb_crm_customers_backup';
-const STORAGE_KEY_CAL   = 'crm_cal_events';
-
-/* 과거에 사용했을 수 있는 키 후보 목록 */
-const LEGACY_KEYS = [
-  'crm_customers',
-  'customers',
-  'crmCustomers',
-  'mbCustomers',
-  'mb_customers',
-  'customerData',
-  'mb_crm_customers',
-];
-
-/**
- * 여러 키에서 고객 데이터 읽기.
- * 전화번호 기준 중복 제거 후 반환.
- */
-function migrateAndGetCustomers() {
-  let merged = [];
-  const seenPhone = new Set();
-  const seenNameDate = new Set();
-
-  LEGACY_KEYS.forEach(key => {
-    try {
-      const raw = localStorage.getItem(key);
-      if (!raw) return;
-      const arr = JSON.parse(raw);
-      if (!Array.isArray(arr) || arr.length === 0) return;
-      arr.forEach(c => {
-        if (!c || typeof c !== 'object') return;
-        const phone = (c.phone || '').replace(/[^0-9]/g, '');
-        if (phone) {
-          if (seenPhone.has(phone)) return;
-          seenPhone.add(phone);
-        } else {
-          const key2 = (c.name || '') + '|' + (c.createdAt || '');
-          if (seenNameDate.has(key2)) return;
-          seenNameDate.add(key2);
-        }
-        merged.push(c);
-      });
-      console.log(`[마이그레이션] ${key}에서 ${arr.length}명 발견`);
-    } catch(e) { /* 무시 */ }
-  });
-
-  if (merged.length > 0) {
-    /* 마이그레이션 완료 → STORAGE_KEY에 통합 저장 */
-    _saveToStorage(merged);
-    console.log(`✅ [마이그레이션] 총 ${merged.length}명을 '${STORAGE_KEY}'로 통합 저장 완료`);
-  }
-  return merged;
-}
-
-/** 실제 localStorage 쓰기 (내부용) */
-function _saveToStorage(arr) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-  } catch(e) {
-    console.error('[저장 오류]', e);
-  }
-}
-
-/** 고객 목록 읽기 */
-function getCustomers() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const arr = JSON.parse(raw);
-      if (Array.isArray(arr) && arr.length > 0) {
-        console.log(`[getCustomers] '${STORAGE_KEY}' 에서 ${arr.length}명 로드`);
-        return arr;
-      }
-    }
-    /* STORAGE_KEY가 비어있으면 레거시 키 마이그레이션 시도 */
-    const migrated = migrateAndGetCustomers();
-    return migrated;
-  } catch(e) {
-    console.error('[getCustomers 오류]', e);
-    return [];
-  }
-}
-
-/**
- * 고객 목록 저장 (안전 버전)
- * ⚠️  반드시 전체 배열을 전달해야 함. 빈 배열 보호.
- */
-function saveLocalCustomers(arr) {
-  if (!Array.isArray(arr)) {
-    console.error('[saveLocalCustomers] 배열이 아닌 값 저장 시도 차단:', arr);
-    return;
-  }
-  /* 빈 배열 저장 시도 시 기존 데이터 확인 */
-  if (arr.length === 0) {
-    const existing = (() => {
-      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch(e) { return []; }
-    })();
-    if (existing.length > 0) {
-      console.warn(`[saveLocalCustomers] ⚠️ 빈 배열 저장 시도 차단! 기존 ${existing.length}명 데이터 보호.`);
-      return; /* 기존 데이터 보호 — 저장 안 함 */
-    }
-  }
-  /* 저장 전 백업 */
-  try {
-    const existing = localStorage.getItem(STORAGE_KEY);
-    if (existing) localStorage.setItem(STORAGE_KEY_BACKUP, existing);
-  } catch(e) { /* 백업 실패는 무시 */ }
-
-  _saveToStorage(arr);
-  console.log(`[saveLocalCustomers] ${arr.length}명 저장 완료`);
-}
-
-/** 백업에서 복구 */
-function restoreFromBackup() {
-  try {
-    const backup = localStorage.getItem(STORAGE_KEY_BACKUP);
-    if (!backup) { alert('백업 데이터가 없습니다.'); return; }
-    const arr = JSON.parse(backup);
-    if (!Array.isArray(arr) || arr.length === 0) { alert('백업 데이터가 비어있습니다.'); return; }
-    _saveToStorage(arr);
-    refreshAllViews();
-    alert(`백업에서 ${arr.length}명 복구 완료!`);
-  } catch(e) {
-    alert('백업 복구 오류: ' + e.message);
-  }
-}
-
-function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
-
-function getCalEvents() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY_CAL) || '[]'); }
-  catch(e) { return []; }
-}
-function saveCalEvents(ev) { localStorage.setItem(STORAGE_KEY_CAL, JSON.stringify(ev)); }
-
-/* =============================================
-   날짜 정규화
-============================================= */
-function normalizeDateStr(val) {
-  if (!val) return '';
-  if (val instanceof Date) {
-    if (isNaN(val.getTime())) return '';
-    return val.toISOString().split('T')[0];
-  }
-  const s = String(val).trim();
-  if (!s) return '';
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  if (/^\d{4}\.\d{2}\.\d{2}$/.test(s)) return s.replace(/\./g, '-');
-  if (/^\d{4}\/\d{2}\/\d{2}$/.test(s)) return s.replace(/\//g, '-');
-  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return s.split('T')[0];
-  const num = Number(s);
-  if (!isNaN(num) && num > 1000) {
-    const d = new Date((num - 25569) * 86400 * 1000);
-    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
-  }
-  return s;
-}
-
-/* =============================================
-   구글시트 rows → 고객 객체
-============================================= */
-function rowsToCustomers(result) {
-  if (result.customers && Array.isArray(result.customers) && result.customers.length > 0) {
-    const first = result.customers[0];
-    if (first && typeof first === 'object' && !Array.isArray(first)) {
-      return result.customers.map(row => normalizeCustomerObj(row));
-    }
-  }
-  const rawRows = result.rows || result.data || result.customers;
-  if (!Array.isArray(rawRows) || rawRows.length < 2) return null;
-  const headers = rawRows[0].map(h => String(h).trim());
-  const dataRows = rawRows.slice(1);
-  return dataRows.map(row => {
-    const obj = {};
-    headers.forEach((h, i) => { obj[h] = row[i] !== undefined ? row[i] : ''; });
-    return normalizeCustomerObj(obj);
-  });
-}
-function normalizeCustomerObj(obj) {
-  const get = (...keys) => {
-    for (const k of keys) {
-      if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') return obj[k];
-    }
-    return '';
-  };
-  return {
-    id:            get('고객ID', 'id'),
-    name:          get('고객명', 'name'),
-    companyName:   get('법인명', 'companyName', 'company'),
-    phone:         get('연락처', 'phone'),
-    region:        get('거주지역', 'region'),
-    model:         get('관심차종', 'model'),
-    modelCategory: get('modelCategory', '차종대분류'),
-    modelDetail:   get('modelDetail', '차종세부'),
-    budget:        get('구매예산', 'budget'),
-    timing:        get('구매예정시기', 'timing'),
-    source:        get('유입경로', 'source'),
-    status:        get('현재상태', 'status'),
-    memo:          get('상담내용', 'memo'),
-    nextDate:      normalizeDateStr(get('다음연락일', 'nextDate', '다음 연락일')),
-    consultDate:   normalizeDateStr(get('상담일시', 'consultDate')),
-    testDriveDate: normalizeDateStr(get('시승일정', 'testDriveDate')),
-    deliveryDate:  normalizeDateStr(get('출고일정', 'deliveryDate')),
-    contractDate:  normalizeDateStr(get('계약일', 'contractDate')),
-    createdAt:     get('등록일시', 'createdAt'),
-    updatedAt:     get('수정일시', 'updatedAt'),
-    releaseDate:   get('출고일', 'releaseDate'),
-    releaseMonth:  get('출고월', 'releaseMonth'),
-    tags:          get('태그', 'tags'),
-  };
-}
-
-/* =============================================
-   구글시트 불러오기 (원본 데이터 기준)
-============================================= */
-function mergeCustomers(local, remote) {
-  const map = new Map();
-  const keyOf = (c) => {
-    const phone = normalizePhone(c.phone || '');
-    return phone ? 'p:' + phone : 'i:' + (c.id || (c.name || '') + '|' + (c.createdAt || ''));
-  };
-  [...(local || []), ...(remote || [])].forEach(c => {
-    if (!c || typeof c !== 'object') return;
-    const key = keyOf(c);
-    const prev = map.get(key);
-    if (!prev) { map.set(key, c); return; }
-    const prevTime = prev.updatedAt || prev.createdAt || '';
-    const curTime = c.updatedAt || c.createdAt || '';
-    map.set(key, curTime >= prevTime ? { ...prev, ...c } : { ...c, ...prev });
-  });
-  return Array.from(map.values()).filter(c => c.name || c.phone);
-}
-
-async function loadFromSheets(silent) {
-  if (!SCRIPT_URL) {
-    console.warn('[loadFromSheets] SCRIPT_URL 없음. 로컬 캐시로 렌더링.');
-    renderDashboard();
-    return;
-  }
-  if (!silent) showLoadingBanner(true);
-  try {
-    console.log('[loadFromSheets] 구글시트 getAll 요청...');
-    const result = await sheetFetch({ action: 'getAll' });
-    if (!result) {
-      console.warn('[loadFromSheets] ❌ 응답 없음 — 로컬 캐시 사용');
-    } else if (result.result === 'success') {
-      const mapped = rowsToCustomers(result) || [];
-      if (mapped.length > 0) {
-        const local = getCustomers();
-        const merged = mergeCustomers(local, mapped);
-        saveLocalCustomers(merged);
-        console.log('[loadFromSheets] ✅ 구글시트 ' + mapped.length + '명 + 로컬 ' + local.length + '명 → 통합 ' + merged.length + '명');
-      } else {
-        const local = getCustomers();
-        console.warn('[loadFromSheets] ⚠️ 구글시트 응답이 비어있음. 로컬 캐시 ' + local.length + '명 유지.');
-      }
-    } else {
-      console.warn('[loadFromSheets] ❌ Apps Script 오류 응답:', JSON.stringify(result));
-    }
-  } catch(e) {
-    console.error('[loadFromSheets] ❌ 네트워크 오류:', e.message);
-  } finally {
-    if (!silent) showLoadingBanner(false);
-  }
-  renderDashboard();
-}
-
-async function syncLocalToSheet() {
-  const resultEl = document.getElementById('sheet-test-result');
-  const customers = getCustomers();
-  if (!customers.length) { alert('로컬에 동기화할 고객 데이터가 없습니다.'); return; }
-  if (!confirm('현재 브라우저에 저장된 고객 ' + customers.length + '명을 구글시트로 동기화합니다.\n이미 있는 고객은 연락처/ID 기준으로 업데이트됩니다. 진행할까요?')) return;
-  if (resultEl) { resultEl.textContent = '로컬 고객을 구글시트로 업로드 중... 0/' + customers.length; resultEl.style.color = 'var(--blue)'; }
-  let ok = 0, fail = 0;
-  for (let i = 0; i < customers.length; i++) {
-    const c = customers[i];
-    const r = await sheetRequest({ action: 'upsert', ...c });
-    if (r === 'ok') ok++; else fail++;
-    if (resultEl) resultEl.textContent = '로컬 고객을 구글시트로 업로드 중... ' + (i+1) + '/' + customers.length + ' (성공 ' + ok + ', 실패 ' + fail + ')';
-  }
-  await loadFromSheets(true);
-  refreshAllViews();
-  if (resultEl) { resultEl.textContent = '✅ 업로드 완료 — 성공 ' + ok + '명, 실패 ' + fail + '명 / 현재 화면 ' + getCustomers().length + '명'; resultEl.style.color = fail ? 'var(--red)' : 'var(--green)'; }
-}
-
-/* 수동 동기화 버튼용 */
-async function manualSyncFromSheet() {
-  const resultEl = document.getElementById('sheet-test-result');
-  if (resultEl) {
-    resultEl.textContent = '구글시트에서 고객 데이터를 불러오는 중...';
-    resultEl.style.color = 'var(--blue)';
-  }
-  await loadFromSheets(false);
-  refreshAllViews();
-  const customers = getCustomers();
-  if (resultEl) {
-    resultEl.textContent = '✅ 동기화 완료 — 총 ' + customers.length + '명 로드됨';
-    resultEl.style.color = 'var(--green)';
-  }
-}
-
-/* 모든 UI 갱신 — 통합 함수 */
-function refreshAllViews() {
-  const customers = getCustomers();
-  console.log('[refreshAllViews] 렌더링 고객 수:', customers.length);
-  renderDashboard();
-  const activeView = document.querySelector('.view.active');
-  if (!activeView) return;
-  const id = activeView.id;
-  if (id === 'view-list') renderCustomerList(getFilteredCustomers());
-  if (id === 'view-kanban') renderKanban();
-  if (id === 'view-calendar') refreshCalendarEvents();
-}
-
-/* 하위 호환 별칭 */
-function renderAll() { refreshAllViews(); }
-
-/* 30초 자동 새로고침 */
-let _autoRefreshTimer = null;
-function startAutoRefresh() {
-  if (_autoRefreshTimer) clearInterval(_autoRefreshTimer);
-  _autoRefreshTimer = setInterval(() => {
-    loadFromSheets(true).then(() => renderAll());
-  }, 30000);
-}
-function showLoadingBanner(show) {
-  let el = document.getElementById('loading-banner');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'loading-banner';
-    el.style.cssText = 'position:fixed;top:64px;left:0;right:0;background:#0072CE;color:white;text-align:center;padding:9px;font-size:0.8rem;font-weight:600;z-index:150;';
-    document.body.appendChild(el);
-  }
-  el.textContent = '구글시트에서 고객 정보를 불러오는 중...';
-  el.style.display = show ? 'block' : 'none';
-}
-
-/* =============================================
-   정렬
-============================================= */
-function sortByRecent(list) {
-  return [...list].sort((a, b) => {
-    const ta = a.updatedAt || a.createdAt || '';
-    const tb = b.updatedAt || b.createdAt || '';
-    return ta > tb ? -1 : ta < tb ? 1 : 0;
-  });
-}
-
-/* =============================================
-   뷰 전환 — 진입마다 최신 데이터 조회
-============================================= */
-function showView(viewName) {
-  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-  document.getElementById('view-' + viewName).classList.add('active');
-  const navTarget = viewName === 'detail' ? detailPrevView : viewName;
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.view === navTarget);
-  });
-  const wrap = document.getElementById('main-wrap');
-  if (viewName === 'kanban' || viewName === 'calendar') {
-    wrap.classList.add('wide');
+// ============================================================
+// 유틸: 전화번호 자동 하이픈
+// ============================================================
+document.getElementById("phone").addEventListener("input", function () {
+  var v = this.value.replace(/\D/g, "");
+  if (v.length <= 3) {
+    this.value = v;
+  } else if (v.length <= 7) {
+    this.value = v.slice(0,3) + "-" + v.slice(3);
   } else {
-    wrap.classList.remove('wide');
+    this.value = v.slice(0,3) + "-" + v.slice(3,7) + "-" + v.slice(7,11);
   }
-  if (viewName === 'register' && !detailCustomerId) resetForm();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  /* 뷰 전환 시: 로컬 데이터로 즉시 렌더링 후 백그라운드 동기화 */
-  if (viewName === 'dashboard') renderDashboard();
-  if (viewName === 'list') renderCustomerList(getFilteredCustomers());
-  if (viewName === 'kanban') renderKanban();
-  if (viewName === 'calendar') {
-    setTimeout(() => {
-      if (!calendarInstance) initCalendar();
-      else { calendarInstance.render(); refreshCalendarEvents(); }
-    }, 50);
-  }
-
-  /* 백그라운드 구글시트 동기화 (화면은 먼저 표시, 결과는 나중에 반영) */
-  if (['dashboard','list','kanban','calendar'].includes(viewName)) {
-    loadFromSheets(true).then(() => refreshAllViews());
-  }
-}
-
-/* =============================================
-   대시보드
-============================================= */
-function renderDashboard() {
-  const customers = getCustomers();
-  const today = todayStr();
-  const juneStr = '2026-06';
-
-  document.getElementById('stat-total').textContent    = customers.length;
-  document.getElementById('stat-hot').textContent      = customers.filter(c => c.status === '계약유력').length;
-  document.getElementById('stat-contract').textContent = customers.filter(c => c.status === '계약').length;
-  document.getElementById('stat-today').textContent    = customers.filter(c => c.nextDate === today).length;
-  document.getElementById('stat-done').textContent     = customers.filter(c => c.status === '출고완료').length;
-  document.getElementById('stat-june').textContent     = customers.filter(c => (c.releaseMonth || '').startsWith(juneStr)).length;
-
-  const todayTxt = document.getElementById('hero-today-text');
-  const hotTxt   = document.getElementById('hero-hot-text');
-  const doneTxt  = document.getElementById('hero-done-text');
-  if (todayTxt) todayTxt.textContent = '오늘 연락 ' + document.getElementById('stat-today').textContent + '명';
-  if (hotTxt)   hotTxt.textContent   = '계약유력 ' + document.getElementById('stat-hot').textContent + '명';
-  if (doneTxt)  doneTxt.textContent  = '출고완료 ' + document.getElementById('stat-done').textContent + '명';
-
-  /* 오늘 일정 카운트 (고객 데이터 기반) */
-  const consultToday   = customers.filter(c => c.consultDate   === today).length;
-  const testDriveToday = customers.filter(c => c.testDriveDate === today).length;
-  const deliveryToday  = customers.filter(c => c.deliveryDate  === today).length;
-  document.getElementById('sched-consult-count').textContent   = consultToday;
-  document.getElementById('sched-testdrive-count').textContent = testDriveToday;
-  document.getElementById('sched-delivery-count').textContent  = deliveryToday;
-
-  /* 오늘 연락 예정 */
-  const todayCustomers = customers.filter(c => c.nextDate === today);
-  const todayEl    = document.getElementById('today-contacts');
-  const todayEmpty = document.getElementById('today-empty');
-  todayEl.querySelectorAll('.today-card').forEach(el => el.remove());
-  if (todayCustomers.length === 0) {
-    todayEmpty.classList.remove('hidden');
-  } else {
-    todayEmpty.classList.add('hidden');
-    todayCustomers.forEach(c => {
-      const phoneRaw = (c.phone || '').replace(/[^0-9+]/g, '');
-      const card = document.createElement('div');
-      card.className = 'today-card';
-      card.innerHTML = `
-        <div style="flex:1;cursor:pointer;" onclick="openDetailPage('${c.id}','dashboard')">
-          <div class="today-name">${escHtml(c.name)}</div>
-          <div class="today-model">${escHtml(getModelDisplay(c) || '차종 미정')} · ${escHtml(c.status)}</div>
-        </div>
-        <div class="today-actions">
-          <button class="today-action-btn today-call" onclick="event.stopPropagation();window.location.href='tel:${phoneRaw}'">📞 전화</button>
-          <button class="today-action-btn today-sms"  onclick="event.stopPropagation();window.location.href='sms:${phoneRaw}'">💬 문자</button>
-          <button class="today-action-btn today-detail" onclick="event.stopPropagation();openDetailPage('${c.id}','dashboard')">👤 상세</button>
-        </div>
-      `;
-      todayEl.appendChild(card);
-    });
-  }
-
-  /* 최근 수정 고객 */
-  const recentEl = document.getElementById('recent-list');
-  recentEl.innerHTML = '';
-  const recent = sortByRecent(customers).slice(0, 5);
-  if (recent.length === 0) {
-    recentEl.innerHTML = '<p class="empty-msg">등록된 고객이 없습니다.</p>';
-  } else {
-    recent.forEach(c => recentEl.appendChild(buildCard(c, 'dashboard')));
-  }
-}
-
-/* =============================================
-   오늘 일정 모달 (상담/시승/출고)
-============================================= */
-function showTodayScheduleModal(type) {
-  const today = todayStr();
-  const customers = getCustomers();
-  const typeMap = {
-    consult:   { field: 'consultDate',   label: '오늘 상담', prefix: '[상담]' },
-    testdrive: { field: 'testDriveDate', label: '오늘 시승', prefix: '[시승]' },
-    delivery:  { field: 'deliveryDate',  label: '오늘 출고', prefix: '[출고]' },
-  };
-  const conf = typeMap[type];
-  if (!conf) return;
-  const list = customers.filter(c => c[conf.field] === today);
-  document.getElementById('today-sched-modal-title').textContent = conf.label + ' (' + list.length + '명)';
-  const listEl = document.getElementById('today-sched-modal-list');
-  listEl.innerHTML = '';
-  if (list.length === 0) {
-    listEl.innerHTML = '<p class="empty-msg">오늘 해당 일정이 없습니다.</p>';
-  } else {
-    list.forEach(c => {
-      const phoneRaw = (c.phone || '').replace(/[^0-9+]/g, '');
-      const div = document.createElement('div');
-      div.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border-dim);gap:10px;';
-      div.innerHTML = `
-        <div style="cursor:pointer;flex:1;" onclick="closeTodaySchedModal();openDetailPage('${c.id}','dashboard')">
-          <div style="font-weight:700;font-size:0.95rem;">${escHtml(c.name)}</div>
-          <div style="font-size:0.78rem;color:var(--text-secondary);">${escHtml(getModelDisplay(c)||'차종미정')}</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0;">
-          <a href="tel:${phoneRaw}" class="today-action-btn today-call" style="display:inline-flex;align-items:center;color:#fff;">📞</a>
-        </div>
-      `;
-      listEl.appendChild(div);
-    });
-  }
-  document.getElementById('today-sched-modal').classList.remove('hidden');
-}
-function closeTodaySchedModal() { document.getElementById('today-sched-modal').classList.add('hidden'); }
-
-/* =============================================
-   고객 카드 빌드
-============================================= */
-function buildCard(c, fromView) {
-  const card = document.createElement('div');
-  card.className = 'customer-card' + (c.status === '계약유력' || c.status === '계약' ? ' hot' : '');
-  card.onclick = () => openDetailPage(c.id, fromView || 'list');
-  const sc = STATUS_COLORS[c.status] || { bg: '#f3f4f6', text: '#374151' };
-  const today = todayStr();
-  let dateClass = 'card-date', dateLabel = c.nextDate ? formatDate(c.nextDate) : '';
-  if (c.nextDate) {
-    if (c.nextDate < today) dateClass += ' overdue';
-    else if (c.nextDate === today) { dateClass += ' today'; dateLabel = '오늘'; }
-  }
-  const modelDisplay = getModelDisplay(c);
-  const phoneRaw = (c.phone || '').replace(/[^0-9+]/g, '');
-  const phoneHtml = c.phone ? `<div class="card-phone"><a href="tel:${phoneRaw}" onclick="event.stopPropagation()" class="card-phone-link">📞 ${escHtml(c.phone)}</a></div>` : '';
-  let createdStr = '';
-  if (c.createdAt) {
-    try {
-      const d = new Date(c.createdAt);
-      if (!isNaN(d.getTime())) createdStr = `등록일 : ${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    } catch(e) {}
-  }
-  const createdHtml = createdStr ? `<div class="card-created">${createdStr}</div>` : '';
-  const contractHtml = c.contractDate ? `<div class="card-contract-date">🤝 계약 ${c.contractDate}</div>` : '';
-  const tagsHtml = c.tags
-    ? '<div class="card-tags">' + c.tags.split(',').map(t => t.trim()).filter(Boolean).map(t => '<span class="card-tag">' + escHtml(t) + '</span>').join('') + '</div>'
-    : '';
-  card.innerHTML = `
-    <div class="card-main">
-      <div class="card-name">${escHtml(c.name)}</div>
-      ${phoneHtml}
-      ${createdHtml}
-      <div class="card-model">${escHtml(modelDisplay || '—')} ${c.budget ? '· ' + escHtml(c.budget) : ''}</div>
-      ${contractHtml}
-      <div class="card-memo">${escHtml(c.memo || '상담 내용 없음')}</div>
-      ${tagsHtml}
-    </div>
-    <div class="card-right">
-      <span class="status-badge" style="background:${sc.bg};color:${sc.text}">${escHtml(c.status)}</span>
-      ${dateLabel ? `<span class="${dateClass}">${dateLabel}</span>` : ''}
-    </div>
-  `;
-  return card;
-}
-
-function getModelDisplay(c) {
-  if (c.modelCategory) return c.modelDetail ? `${c.modelCategory} / ${c.modelDetail}` : c.modelCategory;
-  return c.model || '';
-}
-
-/* =============================================
-   고객 목록
-============================================= */
-function renderCustomerList(customers) {
-  const el = document.getElementById('customer-list');
-  el.innerHTML = '';
-  const sorted = sortByRecent(customers);
-  if (sorted.length === 0) { el.innerHTML = '<p class="empty-msg">조건에 맞는 고객이 없습니다.</p>'; return; }
-  sorted.forEach(c => el.appendChild(buildCard(c)));
-}
-
-function getFilteredCustomers() {
-  const keyword = (document.getElementById('search-input')?.value || '').trim().toLowerCase();
-  const statusSel = document.getElementById('filter-status')?.value || '';
-  let list = getCustomers();
-  if (keyword) {
-    list = list.filter(c => {
-      const modelStr = getModelDisplay(c).toLowerCase();
-      return (c.name||'').toLowerCase().includes(keyword) || modelStr.includes(keyword) ||
-             (c.modelCategory||'').toLowerCase().includes(keyword) ||
-             (c.modelDetail||'').toLowerCase().includes(keyword) ||
-             (c.phone||'').includes(keyword);
-    });
-  }
-  if (statusSel) list = list.filter(c => c.status === statusSel);
-  if (currentStatusFilter !== 'all') list = list.filter(c => c.status === currentStatusFilter);
-  if (currentTagFilter !== 'all') {
-    list = list.filter(c => {
-      if (!c.tags) return false;
-      return c.tags.split(',').map(t => t.trim()).includes(currentTagFilter);
-    });
-  }
-  if (currentStatFilter !== 'all') {
-    const today = todayStr();
-    if (currentStatFilter === 'today') list = list.filter(c => c.nextDate === today);
-    else if (currentStatFilter === '6월출고') list = list.filter(c => (c.releaseMonth||'').startsWith('2026-06'));
-    else list = list.filter(c => c.status === currentStatFilter);
-  }
-  return list;
-}
-function filterCustomers() { renderCustomerList(getFilteredCustomers()); }
-function quickStatusFilter(value, btn) {
-  currentStatusFilter = value;
-  document.querySelectorAll('.qbtn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('filter-status').value = '';
-  filterCustomers();
-}
-
-/* 통계카드 클릭 */
-function statCardFilter(type) {
-  currentStatFilter = type;
-  currentStatusFilter = 'all';
-  currentTagFilter = 'all';
-  document.querySelectorAll('.qbtn').forEach(b => b.classList.remove('active'));
-  const allQbtn = document.querySelector('.qbtn');
-  if (allQbtn) allQbtn.classList.add('active');
-  if (document.getElementById('filter-status')) document.getElementById('filter-status').value = '';
-  document.querySelectorAll('.tag-filter-btn').forEach(b => b.classList.remove('active'));
-  const allTagBtn = document.querySelector('.tag-filter-btn.all-btn');
-  if (allTagBtn) allTagBtn.classList.add('active');
-  const labels = { all:'전체 고객', '계약유력':'계약유력 고객', '계약':'계약 고객', today:'오늘 연락 예정 고객', '출고완료':'출고완료 고객', '6월출고':'6월 출고 고객' };
-  showView('list');
-  const banner = document.getElementById('filter-banner');
-  const bannerText = document.getElementById('filter-banner-text');
-  if (banner && bannerText) {
-    const filtered = getFilteredCustomers();
-    bannerText.textContent = (labels[type] || type) + ' ' + filtered.length + '명';
-    banner.classList.toggle('show', type !== 'all');
-  }
-  renderCustomerList(getFilteredCustomers());
-}
-function clearStatFilter() {
-  currentStatFilter = 'all';
-  const banner = document.getElementById('filter-banner');
-  if (banner) banner.classList.remove('show');
-  filterCustomers();
-}
-
-/* =============================================
-   태그 필터/선택기 초기화
-============================================= */
-function initTagFilterRow() {
-  const row = document.getElementById('tag-filter-row');
-  if (!row) return;
-  row.innerHTML = '';
-  const allBtn = document.createElement('button');
-  allBtn.className = 'tag-filter-btn all-btn active';
-  allBtn.textContent = '전체'; allBtn.dataset.tag = 'all';
-  allBtn.onclick = () => setTagFilter('all', allBtn);
-  row.appendChild(allBtn);
-  TAGS.forEach(tag => {
-    const btn = document.createElement('button');
-    btn.className = 'tag-filter-btn'; btn.textContent = tag; btn.dataset.tag = tag;
-    btn.onclick = () => setTagFilter(tag, btn);
-    row.appendChild(btn);
-  });
-}
-function setTagFilter(tag, clickedBtn) {
-  currentTagFilter = tag;
-  document.querySelectorAll('.tag-filter-btn').forEach(b => b.classList.remove('active'));
-  clickedBtn.classList.add('active');
-  filterCustomers();
-}
-function initTagPicker() {
-  const picker = document.getElementById('tag-picker');
-  if (!picker) return;
-  picker.innerHTML = '';
-  TAGS.forEach(tag => {
-    const btn = document.createElement('button');
-    btn.type = 'button'; btn.className = 'tag-btn'; btn.textContent = tag; btn.dataset.tag = tag;
-    btn.onclick = () => btn.classList.toggle('selected');
-    picker.appendChild(btn);
-  });
-}
-function getSelectedTags() { return Array.from(document.querySelectorAll('#tag-picker .tag-btn.selected')).map(b => b.dataset.tag); }
-function clearSelectedTags() { document.querySelectorAll('#tag-picker .tag-btn').forEach(btn => btn.classList.remove('selected')); }
-
-/* =============================================
-   관심차종 2단계 선택 (등록 폼)
-============================================= */
-function onModelCategoryChange() {
-  const cat = document.getElementById('f-model-category').value;
-  const detailSel = document.getElementById('f-model-detail');
-  const customInput = document.getElementById('f-model-custom');
-  detailSel.innerHTML = '<option value="">세부모델 선택</option>';
-  customInput.classList.add('hidden'); customInput.value = '';
-  if (!cat) { detailSel.setAttribute('disabled',''); return; }
-  if (cat === '기타') { detailSel.setAttribute('disabled',''); customInput.classList.remove('hidden'); return; }
-  detailSel.removeAttribute('disabled');
-  (MODEL_DETAILS[cat] || []).forEach(m => {
-    const opt = document.createElement('option'); opt.value = m; opt.textContent = m; detailSel.appendChild(opt);
-  });
-  const cOpt = document.createElement('option'); cOpt.value = '__custom__'; cOpt.textContent = '직접 입력';
-  detailSel.appendChild(cOpt);
-}
-function onModelDetailChange() {
-  const detailSel = document.getElementById('f-model-detail');
-  const customInput = document.getElementById('f-model-custom');
-  if (detailSel.value === '__custom__') { customInput.classList.remove('hidden'); customInput.placeholder = '세부모델을 직접 입력하세요'; }
-  else { customInput.classList.add('hidden'); customInput.value = ''; }
-}
-function getModelFromForm() {
-  const cat = (document.getElementById('f-model-category').value || '').trim();
-  const detailSel = document.getElementById('f-model-detail');
-  const customVal = (document.getElementById('f-model-custom').value || '').trim();
-  let detail = '';
-  if (cat === '기타') detail = customVal;
-  else if (detailSel.value === '__custom__') detail = customVal;
-  else detail = (detailSel.value || '').trim();
-  const display = cat && detail ? `${cat} / ${detail}` : (cat || detail || '');
-  return { modelCategory: cat, modelDetail: detail, model: display };
-}
-
-/* =============================================
-   폼 등록 (신규 고객)
-============================================= */
-async function handleFormSubmit(event) {
-  event.preventDefault();
-  const phone = v('f-phone'), name = v('f-name');
-  const customers = getCustomers();
-  const duplicate = customers.find(c => normalizePhone(c.phone) === normalizePhone(phone));
-  if (duplicate) {
-    showAlert(`이미 등록된 고객입니다.\n(등록명: ${duplicate.name})`, 'error'); return;
-  }
-  const { modelCategory, modelDetail, model } = getModelFromForm();
-  const now = new Date().toISOString();
-  const statusVal = v('f-status');
-  let contractDate = v('f-contract-date');
-  if (statusVal === '계약' && !contractDate) contractDate = todayStr();
-  const customer = {
-    id: genId(), name, companyName: v('f-company'), phone,
-    region: v('f-region'), modelCategory, modelDetail, model,
-    budget: v('f-budget'), timing: v('f-timing'), source: v('f-source'),
-    status: statusVal, memo: v('f-memo'), nextDate: v('f-nextdate'),
-    consultDate:   v('f-consult-date'),
-    testDriveDate: v('f-testdrive-date'),
-    deliveryDate:  v('f-delivery-date'),
-    contractDate,
-    tags: getSelectedTags().join(', '),
-    createdAt: now, updatedAt: now, releaseDate: '', releaseMonth: '',
-  };
-
-  const submitBtn = document.getElementById('submit-btn');
-  const submitText = document.getElementById('submit-text');
-  const submitLoad = document.getElementById('submit-loading');
-  submitBtn.disabled = true;
-  submitText.classList.add('hidden');
-  submitLoad.classList.remove('hidden');
-  showAlert('구글시트에 저장 중... 잠시 기다려주세요.', 'info');
-
-  /* ① 구글시트에 먼저 저장 시도 */
-  console.log('[handleFormSubmit] 구글시트 save 요청 시작:', customer.name, customer.phone);
-  const sheetResult = await sheetRequest({ action: 'save', ...customer });
-
-  if (sheetResult === 'ok') {
-    /* ② 구글시트 저장 성공 → localStorage에도 저장 */
-    customers.push(customer);
-    saveLocalCustomers(customers);
-    refreshAllViews();
-    showAlert('✅ 고객정보가 구글시트에 정상 저장되었습니다.', 'success');
-    resetForm();
-    refreshCalendarEvents();
-    /* ③ getAll로 재동기화 */
-    loadFromSheets(true).then(() => refreshAllViews());
-  } else {
-    /* ④ 구글시트 저장 실패 → localStorage에만 임시 저장하고 명확하게 경고 */
-    customers.push(customer);
-    saveLocalCustomers(customers);
-    refreshAllViews();
-    console.error('[handleFormSubmit] ❌ 구글시트 저장 실패. localStorage에만 임시 저장됨.');
-    showAlert(
-      '⚠️ 구글시트 저장 실패!\n' +
-      '로컬(브라우저)에만 임시 저장되었습니다.\n' +
-      '아래 [구글시트 연결 테스트] 버튼으로 원인을 확인하세요.',
-      'error'
-    );
-  }
-
-  submitBtn.disabled = false;
-  submitText.classList.remove('hidden');
-  submitLoad.classList.add('hidden');
-}
-function normalizePhone(p) { return (p||'').replace(/[^0-9]/g,''); }
-function v(id) { return (document.getElementById(id)?.value || '').trim(); }
-function resetForm() {
-  document.getElementById('customer-form').reset();
-  const detailSel = document.getElementById('f-model-detail');
-  const customInput = document.getElementById('f-model-custom');
-  detailSel.innerHTML = '<option value="">세부모델 선택</option>';
-  detailSel.setAttribute('disabled',''); customInput.classList.add('hidden'); customInput.value = '';
-  document.getElementById('f-company').value = '';
-  clearSelectedTags(); hideAlert();
-}
-function showAlert(msg, type) {
-  const el = document.getElementById('form-alert');
-  el.textContent = msg; el.className = 'form-alert ' + type; el.classList.remove('hidden');
-  setTimeout(hideAlert, 6000);
-}
-function hideAlert() { const el = document.getElementById('form-alert'); if (el) el.classList.add('hidden'); }
-
-/* =============================================
-   상세 페이지
-============================================= */
-/* 계약 상태 변경 시 계약일 자동 입력 */
-function onDetailStatusChange() {
-  const statusVal = document.getElementById('dp-f-status').value;
-  const contractDateEl = document.getElementById('dp-f-contract-date');
-  if (statusVal === '계약' && contractDateEl && !contractDateEl.value) {
-    contractDateEl.value = todayStr();
-  }
-}
-
-function openDetailPage(id, fromView) {
-  const customers = getCustomers();
-  const c = customers.find(x => x.id === id);
-  if (!c) return;
-  detailCustomerId = id; detailPrevView = fromView || 'list';
-  document.getElementById('dp-name').textContent = c.name;
-  const sc = STATUS_COLORS[c.status] || { bg:'#f3f4f6', text:'#374151' };
-  document.getElementById('dp-status-wrap').innerHTML =
-    `<span class="status-badge" style="background:${sc.bg};color:${sc.text}">${escHtml(c.status)}</span>`;
-  const infoItems = [
-    ['연락처', c.phone ? `<a href="tel:${escHtml(c.phone)}" style="color:var(--blue);font-weight:600">${escHtml(c.phone)}</a>` : '—'],
-    ['법인명', escHtml(c.companyName||'—')],
-    ['거주지역', escHtml(c.region||'—')],
-    ['유입경로', escHtml(c.source||'—')],
-    ['구매예산', escHtml(c.budget||'—')],
-    ['구매예정', escHtml(c.timing||'—')],
-    ['계약일', c.contractDate ? `<span style="color:var(--gold);font-weight:700">🤝 ${c.contractDate}</span>` : '—'],
-    ['등록일', c.createdAt ? new Date(c.createdAt).toLocaleDateString('ko-KR') : '—'],
-    ['최종수정', c.updatedAt ? new Date(c.updatedAt).toLocaleDateString('ko-KR') : '—'],
-  ];
-  document.getElementById('dp-info-grid').innerHTML = infoItems.map(([k,val]) =>
-    `<div class="detail-item"><span class="detail-key">${k}</span><span class="detail-val">${val}</span></div>`
-  ).join('');
-  document.getElementById('dp-f-name').value     = c.name    || '';
-  document.getElementById('dp-f-phone').value    = c.phone   || '';
-  document.getElementById('dp-f-status').value   = c.status  || '';
-  document.getElementById('dp-f-nextdate').value = c.nextDate || '';
-  document.getElementById('dp-f-consult-date').value   = c.consultDate   || '';
-  document.getElementById('dp-f-testdrive-date').value = c.testDriveDate || '';
-  document.getElementById('dp-f-delivery-date').value  = c.deliveryDate  || '';
-  if (document.getElementById('dp-f-contract-date')) document.getElementById('dp-f-contract-date').value = c.contractDate || '';
-  dpSetModelForEdit(c);
-  dpInitTagPicker(); dpSetSelectedTags(c.tags || '');
-  document.getElementById('dp-memo-history').textContent = c.memo || '상담 내용 없음';
-  document.getElementById('dp-f-memo-new').value = '';
-  const today = new Date();
-  document.getElementById('dp-memo-date-label').textContent =
-    `▼ 새 상담내용 추가 — ${today.getMonth()+1}/${today.getDate()} 기록으로 자동 저장됩니다`;
-  document.getElementById('dp-alert').classList.add('hidden');
-  showView('detail');
-}
-function goBackFromDetail() { detailCustomerId = null; showView(detailPrevView); }
-
-async function saveDetailChanges() {
-  if (!detailCustomerId) return;
-  const nameVal   = (document.getElementById('dp-f-name').value||'').trim();
-  const phoneVal  = (document.getElementById('dp-f-phone').value||'').trim();
-  const statusVal = (document.getElementById('dp-f-status').value||'').trim();
-  if (!nameVal || !phoneVal || !statusVal) {
-    dpShowAlert('고객명, 연락처, 현재상태는 필수 항목입니다.', 'error'); return;
-  }
-  const customers = getCustomers();
-  const idx = customers.findIndex(c => c.id === detailCustomerId);
-  if (idx === -1) { dpShowAlert('고객을 찾을 수 없습니다.', 'error'); return; }
-  const old = customers[idx];
-  const newMemoRaw = (document.getElementById('dp-f-memo-new').value||'').trim();
-  let memoFinal = old.memo || '';
-  if (newMemoRaw) {
-    const today = new Date();
-    const datePrefix = `[${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}]`;
-    const appendedMemo = `${datePrefix}\n${newMemoRaw}`;
-    memoFinal = memoFinal ? memoFinal + '\n-------------------\n' + appendedMemo : appendedMemo;
-  }
-  const { modelCategory, modelDetail, model } = dpGetModelFromForm();
-  const tags = dpGetSelectedTags().join(', ');
-  let contractDate = (document.getElementById('dp-f-contract-date')?.value || '').trim();
-  /* 계약 상태로 변경 시 계약일 자동 입력 */
-  if (statusVal === '계약' && !contractDate) contractDate = todayStr();
-  const updated = {
-    ...old, name: nameVal, phone: phoneVal, status: statusVal,
-    nextDate:      (document.getElementById('dp-f-nextdate').value||'').trim(),
-    consultDate:   (document.getElementById('dp-f-consult-date').value||'').trim(),
-    testDriveDate: (document.getElementById('dp-f-testdrive-date').value||'').trim(),
-    deliveryDate:  (document.getElementById('dp-f-delivery-date').value||'').trim(),
-    contractDate,
-    modelCategory, modelDetail, model, tags, memo: memoFinal,
-    updatedAt: new Date().toISOString(),
-  };
-  customers[idx] = updated; saveLocalCustomers(customers);
-  /* 즉시 전체 뷰 갱신 */
-  refreshAllViews();
-  document.getElementById('dp-name').textContent = updated.name;
-  const sc = STATUS_COLORS[updated.status] || { bg:'#f3f4f6', text:'#374151' };
-  document.getElementById('dp-status-wrap').innerHTML =
-    `<span class="status-badge" style="background:${sc.bg};color:${sc.text}">${escHtml(updated.status)}</span>`;
-  document.getElementById('dp-memo-history').textContent = updated.memo || '상담 내용 없음';
-  document.getElementById('dp-f-memo-new').value = '';
-  const saveBtn = document.getElementById('dp-save-btn');
-  const saveText = document.getElementById('dp-save-text');
-  const saveLoad = document.getElementById('dp-save-loading');
-  saveBtn.disabled = true; saveText.classList.add('hidden'); saveLoad.classList.remove('hidden');
-  try {
-    /* no-cors 전송 (아이패드 Safari 호환) */
-    const sendResult = await sheetRequest({ action:'update', id:updated.id,
-      name:updated.name, companyName:updated.companyName||'', phone:updated.phone,
-      region:updated.region||'', model:updated.model||'', budget:updated.budget||'',
-      timing:updated.timing||'', source:updated.source||'', status:updated.status,
-      memo:updated.memo||'', nextDate:updated.nextDate||'',
-      consultDate:updated.consultDate||'', testDriveDate:updated.testDriveDate||'',
-      deliveryDate:updated.deliveryDate||'', contractDate:updated.contractDate||'',
-      createdAt:updated.createdAt||'', updatedAt:updated.updatedAt||'',
-      releaseDate:updated.releaseDate||'', releaseMonth:updated.releaseMonth||'',
-      tags:updated.tags||'', modelCategory:updated.modelCategory||'', modelDetail:updated.modelDetail||'',
-    });
-    if (sendResult === 'network-error') {
-      dpShowAlert('⚠️ 구글시트 저장 실패. 로컬에는 저장됨. 연결 테스트를 확인하세요.', 'error');
-    } else {
-      dpShowAlert('저장되었습니다. ✓', 'success');
-      /* 백그라운드 구글시트 동기화 */
-      loadFromSheets(true).then(() => refreshAllViews());
-    }
-    refreshCalendarEvents();
-  } catch(e) {
-    console.error('[상세저장] 오류:', e);
-    dpShowAlert('오류가 발생했습니다: ' + e.message, 'error');
-  } finally {
-    saveBtn.disabled = false; saveText.classList.remove('hidden'); saveLoad.classList.add('hidden');
-  }
-}
-function deleteFromDetail() {
-  document.getElementById('confirm-msg').textContent = '이 고객 정보를 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.';
-  document.getElementById('confirm-dialog').classList.remove('hidden');
-  document.getElementById('confirm-ok').onclick = async () => {
-    const customers = getCustomers().filter(c => c.id !== detailCustomerId);
-    saveLocalCustomers(customers);
-    await sheetRequest({ action:'delete', id:detailCustomerId });
-    closeConfirm(); goBackFromDetail(); refreshAllViews();
-  };
-}
-function dpShowAlert(msg, type) {
-  const el = document.getElementById('dp-alert');
-  el.textContent = msg; el.className = 'form-alert ' + type; el.classList.remove('hidden');
-  setTimeout(() => el.classList.add('hidden'), 6000);
-}
-function closeConfirm() { document.getElementById('confirm-dialog').classList.add('hidden'); }
-
-/* 상세 태그 피커 */
-function dpInitTagPicker() {
-  const picker = document.getElementById('dp-tag-picker');
-  if (!picker) return;
-  picker.innerHTML = '';
-  TAGS.forEach(tag => {
-    const btn = document.createElement('button');
-    btn.type = 'button'; btn.className = 'tag-btn'; btn.textContent = tag; btn.dataset.tag = tag;
-    btn.onclick = () => btn.classList.toggle('selected');
-    picker.appendChild(btn);
-  });
-}
-function dpGetSelectedTags() { return Array.from(document.querySelectorAll('#dp-tag-picker .tag-btn.selected')).map(b => b.dataset.tag); }
-function dpSetSelectedTags(tagStr) {
-  const tags = (tagStr||'').split(',').map(t=>t.trim()).filter(Boolean);
-  document.querySelectorAll('#dp-tag-picker .tag-btn').forEach(btn => btn.classList.toggle('selected', tags.includes(btn.dataset.tag)));
-}
-
-/* 상세 차종 드롭다운 */
-function dpOnModelCategoryChange() {
-  const cat = document.getElementById('dp-model-category').value;
-  const detailSel = document.getElementById('dp-model-detail');
-  const customInp = document.getElementById('dp-model-custom');
-  detailSel.innerHTML = '<option value="">세부모델 선택</option>';
-  customInp.classList.add('hidden'); customInp.value = '';
-  if (!cat) { detailSel.setAttribute('disabled',''); return; }
-  if (cat === '기타') { detailSel.setAttribute('disabled',''); customInp.classList.remove('hidden'); return; }
-  detailSel.removeAttribute('disabled');
-  (MODEL_DETAILS[cat] || []).forEach(m => {
-    const opt = document.createElement('option'); opt.value = m; opt.textContent = m; detailSel.appendChild(opt);
-  });
-  const cOpt = document.createElement('option'); cOpt.value = '__custom__'; cOpt.textContent = '직접 입력';
-  detailSel.appendChild(cOpt);
-}
-function dpOnModelDetailChange() {
-  const detailSel = document.getElementById('dp-model-detail');
-  const customInp = document.getElementById('dp-model-custom');
-  if (detailSel.value === '__custom__') { customInp.classList.remove('hidden'); customInp.placeholder = '세부모델을 직접 입력하세요'; }
-  else { customInp.classList.add('hidden'); customInp.value = ''; }
-}
-function dpGetModelFromForm() {
-  const cat = (document.getElementById('dp-model-category').value||'').trim();
-  const detailSel = document.getElementById('dp-model-detail');
-  const customVal = (document.getElementById('dp-model-custom').value||'').trim();
-  let detail = '';
-  if (cat === '기타') detail = customVal;
-  else if (detailSel.value === '__custom__') detail = customVal;
-  else detail = (detailSel.value||'').trim();
-  const display = cat && detail ? `${cat} / ${detail}` : (cat || detail || '');
-  return { modelCategory: cat, modelDetail: detail, model: display };
-}
-function dpSetModelForEdit(c) {
-  let cat = c.modelCategory || '', detail = c.modelDetail || '';
-  if (!cat && c.model) {
-    const parts = c.model.split(' / ');
-    cat = parts[0] ? parts[0].trim() : ''; detail = parts[1] ? parts[1].trim() : '';
-  }
-  document.getElementById('dp-model-category').value = cat;
-  dpOnModelCategoryChange();
-  if (!cat || cat === '기타') { document.getElementById('dp-model-custom').value = detail; return; }
-  if (detail) {
-    const detailSel = document.getElementById('dp-model-detail');
-    const inList = Array.from(detailSel.options).some(o => o.value === detail);
-    if (inList) detailSel.value = detail;
-    else {
-      detailSel.value = '__custom__';
-      const ci = document.getElementById('dp-model-custom'); ci.value = detail; ci.classList.remove('hidden');
-    }
-  }
-}
-
-/* 하위 호환 래퍼 */
-function openDetailModal(id) { openDetailPage(id, 'list'); }
-function closeDetailModal() {}
-function editFromModal() {}
-
-/* ════════════════════════════════════════════════════
-   칸반보드
-════════════════════════════════════════════════════ */
-
-/* 칸반 렌더링 */
-function renderKanban() {
-  const customers = getCustomers();
-  /* 컬럼 클리어 */
-  KANBAN_COLS.forEach(col => {
-    const el = document.getElementById('kb-cards-' + col);
-    if (el) el.innerHTML = '';
-    const countEl = document.getElementById('kb-count-' + col);
-    if (countEl) countEl.textContent = '0';
-  });
-
-  /* 고객을 칸반 컬럼에 배치: 태그 기준 우선 */
-  const colCounts = {};
-  KANBAN_COLS.forEach(c => colCounts[c] = 0);
-
-  sortByRecent(customers).forEach(c => {
-    let col = getKanbanCol(c);
-    if (!col) return; /* 칸반에 표시 안 함 */
-    const cardsEl = document.getElementById('kb-cards-' + col);
-    if (!cardsEl) return;
-    cardsEl.appendChild(buildKanbanCard(c));
-    colCounts[col]++;
-  });
-
-  KANBAN_COLS.forEach(col => {
-    const countEl = document.getElementById('kb-count-' + col);
-    if (countEl) countEl.textContent = colCounts[col];
-    const cardsEl = document.getElementById('kb-cards-' + col);
-    if (cardsEl && colCounts[col] === 0) {
-      cardsEl.innerHTML = '<div style="text-align:center;color:var(--text-tertiary);font-size:0.8rem;padding:24px 0;">고객 없음</div>';
-    }
-  });
-
-  setupKanbanDnD();
-}
-
-function buildKanbanCard(c) {
-  const card = document.createElement('div');
-  card.className = 'kanban-card';
-  card.draggable = true;
-  card.dataset.id = c.id;
-  const phoneRaw = (c.phone||'').replace(/[^0-9+]/g,'');
-  const today = todayStr();
-  let nextDateHtml = '';
-  if (c.nextDate) {
-    let cls = 'kc-date-row';
-    if (c.nextDate < today) cls += ' overdue';
-    else if (c.nextDate === today) cls += ' today-date';
-    nextDateHtml = `<div class="${cls}">📞 ${c.nextDate}</div>`;
-  }
-  let consultHtml = c.consultDate ? `<div class="kc-date-row">💼 ${c.consultDate}</div>` : '';
-  let testDriveHtml = c.testDriveDate ? `<div class="kc-date-row">🚘 ${c.testDriveDate}</div>` : '';
-  let deliveryHtml  = c.deliveryDate  ? `<div class="kc-date-row">🚗 ${c.deliveryDate}</div>`  : '';
-  const contractKcHtml = c.contractDate ? `<div class="kc-contract-date">🤝 계약 ${c.contractDate}</div>` : '';
-  let createdHtml = '';
-  if (c.createdAt) {
-    try {
-      const d = new Date(c.createdAt);
-      if (!isNaN(d.getTime())) createdHtml = `<div class="kc-date-row">📅 등록 ${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}</div>`;
-    } catch(e){}
-  }
-  const tagsHtml = c.tags
-    ? '<div class="kc-tags">' + c.tags.split(',').map(t=>t.trim()).filter(Boolean).map(t=>`<span class="kc-tag">${escHtml(t)}</span>`).join('') + '</div>'
-    : '';
-  card.innerHTML = `
-    <div class="kc-name" onclick="event.stopPropagation();openDetailPage('${c.id}','kanban')">${escHtml(c.name)}</div>
-    ${c.phone ? `<div class="kc-phone"><a href="tel:${phoneRaw}" onclick="event.stopPropagation()">📞 ${escHtml(c.phone)}</a></div>` : ''}
-    ${c.model || c.modelCategory ? `<div class="kc-model">🚘 ${escHtml(getModelDisplay(c))}</div>` : ''}
-    ${contractKcHtml}
-    <div class="kc-dates">${nextDateHtml}${consultHtml}${testDriveHtml}${deliveryHtml}${createdHtml}</div>
-    ${tagsHtml}
-  `;
-  return card;
-}
-
-/* ── 드래그앤드롭 (PC) + 터치 (모바일) + 자동스크롤 ── */
-
-/* 자동스크롤 상태 */
-let _autoScrollRAF = null;
-let _touchDragId = null;
-let _touchDragSource = null;
-let _touchClone = null;
-
-function _stopAutoScroll() {
-  if (_autoScrollRAF) { cancelAnimationFrame(_autoScrollRAF); _autoScrollRAF = null; }
-}
-function _startAutoScroll(clientY) {
-  _stopAutoScroll();
-  const ZONE = 80, SPEED = 8;
-  function tick() {
-    const vH = window.innerHeight;
-    if (clientY < ZONE) {
-      window.scrollBy(0, -SPEED);
-    } else if (clientY > vH - ZONE) {
-      window.scrollBy(0, SPEED);
-    }
-    _autoScrollRAF = requestAnimationFrame(tick);
-  }
-  _autoScrollRAF = requestAnimationFrame(tick);
-}
-
-function setupKanbanDnD() {
-  const cards = document.querySelectorAll('.kanban-card');
-  const zones = document.querySelectorAll('.kanban-cards');
-
-  /* ── PC 드래그앤드롭 ── */
-  cards.forEach(card => {
-    card.addEventListener('dragstart', e => {
-      dragCustomerId = card.dataset.id;
-      dragSourceCol  = card.closest('.kanban-cards')?.dataset.status;
-      card.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', card.dataset.id);
-    });
-    card.addEventListener('dragend', () => {
-      card.classList.remove('dragging');
-      document.querySelectorAll('.drop-placeholder').forEach(p => p.remove());
-      document.querySelectorAll('.kanban-cards').forEach(z => z.classList.remove('drag-over'));
-      /* dragCustomerId / dragSourceCol 은 drop 이후에 정리 — drop에서 직접 초기화함 */
-    });
-  });
-
-  zones.forEach(zone => {
-    zone.addEventListener('dragover', e => {
-      e.preventDefault(); e.dataTransfer.dropEffect = 'move';
-      zone.classList.add('drag-over');
-      if (!placeholder) {
-        placeholder = document.createElement('div');
-        placeholder.className = 'drop-placeholder';
-      }
-      const afterEl = getDragAfterElement(zone, e.clientY);
-      if (afterEl) zone.insertBefore(placeholder, afterEl);
-      else zone.appendChild(placeholder);
-    });
-    zone.addEventListener('dragleave', e => {
-      if (!zone.contains(e.relatedTarget)) zone.classList.remove('drag-over');
-    });
-    zone.addEventListener('drop', async e => {
-      e.preventDefault();
-      zone.classList.remove('drag-over');
-      document.querySelectorAll('.drop-placeholder').forEach(p => p.remove());
-
-      /* drop 시점에 로컬 변수로 캡처 — dragend가 나중에 와도 안전 */
-      const id        = e.dataTransfer.getData('text/plain') || dragCustomerId;
-      const sourceCol = dragSourceCol;
-      const targetCol = zone.dataset.status;
-
-      /* 상태 초기화 */
-      dragCustomerId = null; dragSourceCol = null; placeholder = null;
-
-      if (!id || !targetCol || targetCol === sourceCol) { renderKanban(); return; }
-      await updateKanbanStatus(id, targetCol);
-    });
-  });
-
-  /* ── 모바일 터치 드래그 ── */
-  cards.forEach(card => {
-    card.addEventListener('touchstart', e => {
-      if (e.touches.length !== 1) return;
-      _touchDragId = card.dataset.id;
-      _touchDragSource = card.closest('.kanban-cards')?.dataset.status;
-
-      /* 반투명 클론 생성 */
-      const rect = card.getBoundingClientRect();
-      _touchClone = card.cloneNode(true);
-      _touchClone.style.cssText = `
-        position:fixed; top:${rect.top}px; left:${rect.left}px;
-        width:${rect.width}px; opacity:0.7; pointer-events:none;
-        z-index:999; box-shadow:0 8px 32px rgba(0,0,0,0.25);
-        transform:scale(1.03); transition:none;
-      `;
-      document.body.appendChild(_touchClone);
-      card.style.opacity = '0.3';
-    }, { passive: true });
-
-    card.addEventListener('touchmove', e => {
-      if (!_touchDragId) return;
-      e.preventDefault();
-      const touch = e.touches[0];
-      const clientX = touch.clientX, clientY = touch.clientY;
-
-      if (_touchClone) {
-        _touchClone.style.left = (clientX - _touchClone.offsetWidth / 2) + 'px';
-        _touchClone.style.top  = (clientY - _touchClone.offsetHeight / 2) + 'px';
-      }
-
-      _startAutoScroll(clientY);
-
-      document.querySelectorAll('.kanban-cards').forEach(z => z.classList.remove('drag-over'));
-      const el = document.elementFromPoint(clientX, clientY);
-      const zone = el?.closest('.kanban-cards');
-      if (zone) zone.classList.add('drag-over');
-    }, { passive: false });
-
-    card.addEventListener('touchend', async e => {
-      _stopAutoScroll();
-      document.querySelectorAll('.kanban-cards').forEach(z => z.classList.remove('drag-over'));
-      if (_touchClone) { _touchClone.remove(); _touchClone = null; }
-      card.style.opacity = '';
-
-      if (!_touchDragId) return;
-      const touch = e.changedTouches[0];
-      const el = document.elementFromPoint(touch.clientX, touch.clientY);
-      const zone = el?.closest('.kanban-cards');
-      const targetCol = zone?.dataset.status;
-      const fromId = _touchDragId, fromCol = _touchDragSource;
-      _touchDragId = null; _touchDragSource = null;
-
-      if (!targetCol || targetCol === fromCol) { renderKanban(); return; }
-      await updateKanbanStatus(fromId, targetCol);
-    });
-
-    card.addEventListener('touchcancel', () => {
-      _stopAutoScroll();
-      if (_touchClone) { _touchClone.remove(); _touchClone = null; }
-      card.style.opacity = '';
-      _touchDragId = null; _touchDragSource = null;
-      document.querySelectorAll('.kanban-cards').forEach(z => z.classList.remove('drag-over'));
-    });
-  });
-}
-
-function getDragAfterElement(container, y) {
-  const draggableEls = [...container.querySelectorAll('.kanban-card:not(.dragging)')];
-  return draggableEls.reduce((closest, child) => {
-    const box = child.getBoundingClientRect();
-    const offset = y - box.top - box.height / 2;
-    if (offset < 0 && offset > closest.offset) return { offset, element: child };
-    return closest;
-  }, { offset: Number.NEGATIVE_INFINITY }).element;
-}
-
-async function updateKanbanStatus(customerId, targetCol) {
-  const customers = getCustomers();
-  const idx = customers.findIndex(c => c.id === customerId);
-  if (idx === -1) return;
-
-  const c = customers[idx];
-  // A급가망은 status가 아니라 tags에 저장되는 파이프라인 태그입니다.
-  let newStatus = c.status;
-  let newTags = (c.tags || '').split(',').map(t => t.trim()).filter(Boolean);
-  let contractDate = c.contractDate || '';
-
-  if (targetCol === 'A급가망') {
-    if (!newTags.includes('A급가망')) newTags.push('A급가망');
-    if (newStatus !== '상담중' && newStatus !== '계약유력') newStatus = '계약유력';
-  } else if (targetCol === '상담중') {
-    newTags = newTags.filter(t => t !== 'A급가망');
-    newStatus = '상담중';
-  } else if (targetCol === '계약') {
-    newTags = newTags.filter(t => t !== 'A급가망');
-    newStatus = '계약';
-    if (!contractDate) contractDate = todayStr();
-  } else if (targetCol === '출고') {
-    newTags = newTags.filter(t => t !== 'A급가망');
-    newStatus = '출고완료';
-  }
-
-  const tagsStr = newTags.join(', ');
-  const updatedAt = new Date().toISOString();
-  const snapshot = JSON.stringify(customers); // 롤백용
-
-  /* ① 먼저 구글시트에 전송 (no-cors) */
-  const sendResult = await sheetRequest({
-    action:'update', id:customerId,
-    status:newStatus, tags:tagsStr, contractDate, updatedAt,
-    name:c.name, phone:c.phone, companyName:c.companyName||'', region:c.region||'',
-    model:c.model||'', budget:c.budget||'', timing:c.timing||'', source:c.source||'',
-    memo:c.memo||'', nextDate:c.nextDate||'', consultDate:c.consultDate||'',
-    testDriveDate:c.testDriveDate||'', deliveryDate:c.deliveryDate||'',
-    createdAt:c.createdAt||'', releaseDate:c.releaseDate||'', releaseMonth:c.releaseMonth||'',
-    modelCategory:c.modelCategory||'', modelDetail:c.modelDetail||'',
-  });
-
-  if (sendResult === null) {
-    /* 네트워크 오류 — 로컬도 그대로 유지, 화면 복구 */
-    console.error('[칸반] 네트워크 오류로 전송 실패');
-    renderKanban();
-    alert('네트워크 오류로 저장하지 못했습니다.\n인터넷 연결을 확인하고 다시 시도해주세요.');
-    return;
-  }
-
-  /* ② 전송 후 구글시트에서 최신 데이터 재조회 (검증 겸 동기화) */
-  /* 먼저 로컬에 낙관적 업데이트 적용 */
-  const localCustomers = getCustomers();
-  const localIdx = localCustomers.findIndex(x => x.id === customerId);
-  if (localIdx !== -1) {
-    localCustomers[localIdx] = { ...localCustomers[localIdx], status: newStatus, tags: tagsStr, contractDate, updatedAt };
-    saveLocalCustomers(localCustomers);
-  }
-  refreshAllViews();
-
-  try {
-    await loadFromSheets(true);
-    /* 재조회 후 해당 고객 상태 검증 */
-    const refreshed = getCustomers().find(x => x.id === customerId);
-    if (refreshed && refreshed.status !== newStatus) {
-      console.warn('[칸반] 저장 후 상태 불일치 — sheets:', refreshed.status, '기대:', newStatus);
-      /* 불일치 → 로컬에 직접 반영 */
-      const cur = getCustomers();
-      const ci = cur.findIndex(x => x.id === customerId);
-      if (ci !== -1) {
-        cur[ci] = { ...cur[ci], status: newStatus, tags: tagsStr, contractDate, updatedAt };
-        saveLocalCustomers(cur);
-      }
-    }
-    refreshAllViews();
-  } catch(e) {
-    console.error('[칸반] 재조회 오류:', e);
-    refreshAllViews();
-  }
-}
-
-/* ════════════════════════════════════════════════════
-   달력 (FullCalendar)
-════════════════════════════════════════════════════ */
-
-function buildCalendarEvents() {
-  const customers = getCustomers();
-  const today = todayStr();
-  const events = [];
-
-  customers.forEach(c => {
-    const name = c.name || '이름없음';
-    /* 연락 예정 */
-    if (c.nextDate) events.push({
-      id: 'contact-' + c.id, title: '[연락] ' + name,
-      date: c.nextDate, classNames: ['fc-event-contact'],
-      extendedProps: { type:'contact', customerId: c.id }
-    });
-    /* 상담 */
-    if (c.consultDate) events.push({
-      id: 'consult-' + c.id, title: '[상담] ' + name,
-      date: c.consultDate, classNames: ['fc-event-consult'],
-      extendedProps: { type:'consult', customerId: c.id }
-    });
-    /* 시승 */
-    if (c.testDriveDate) events.push({
-      id: 'testdrive-' + c.id, title: '[시승] ' + name,
-      date: c.testDriveDate, classNames: ['fc-event-testdrive'],
-      extendedProps: { type:'testdrive', customerId: c.id }
-    });
-    /* 출고 */
-    if (c.deliveryDate) events.push({
-      id: 'delivery-' + c.id, title: '[출고] ' + name,
-      date: c.deliveryDate, classNames: ['fc-event-delivery'],
-      extendedProps: { type:'delivery', customerId: c.id }
-    });
-    /* 계약 */
-    if (c.contractDate) events.push({
-      id: 'contract-' + c.id, title: '[계약] ' + name,
-      date: c.contractDate, classNames: ['fc-event-contract'],
-      extendedProps: { type:'contract', customerId: c.id }
-    });
-  });
-
-  /* 수동 일정 */
-  getCalEvents().forEach(ev => {
-    events.push({
-      id: 'manual-' + ev.id, title: ev.title, date: ev.date,
-      classNames: ['fc-event-' + (ev.type || 'manual')],
-      extendedProps: { type: ev.type || 'manual', manualId: ev.id, memo: ev.memo }
-    });
-  });
-
-  return events;
-}
-
-function initCalendar() {
-  const calEl = document.getElementById('full-calendar');
-  if (!calEl) return;
-  calendarInstance = new FullCalendar.Calendar(calEl, {
-    locale: 'ko',
-    initialView: 'dayGridMonth',
-    headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listWeek' },
-    buttonText: { today:'오늘', month:'월간', list:'목록' },
-    height: 'auto',
-    events: buildCalendarEvents(),
-    dateClick(info) { openEventModal(info.dateStr); },
-    eventClick(info) { onCalEventClick(info.event); },
-    eventDidMount(info) {
-      if (info.event.extendedProps.memo) {
-        info.el.title = info.event.extendedProps.memo;
-      }
-    },
-  });
-  calendarInstance.render();
-}
-
-function refreshCalendarEvents() {
-  if (!calendarInstance) return;
-  calendarInstance.removeAllEvents();
-  buildCalendarEvents().forEach(ev => calendarInstance.addEvent(ev));
-}
-
-function onCalEventClick(event) {
-  const props = event.extendedProps;
-  if (props.customerId) {
-    openDetailPage(props.customerId, 'calendar');
-    return;
-  }
-  if (props.manualId) {
-    /* 수동 일정 수정 */
-    const ev = getCalEvents().find(e => e.id === props.manualId);
-    if (!ev) return;
-    openEventModal(ev.date, ev);
-  }
-}
-
-/* 일정 모달 */
-function openEventModal(date, existingEvent) {
-  currentEventId = existingEvent ? existingEvent.id : null;
-  currentEventType = existingEvent ? (existingEvent.type || 'manual') : 'manual';
-  document.getElementById('event-modal-title').textContent = existingEvent ? '일정 수정' : '일정 추가';
-  document.getElementById('ev-title').value = existingEvent ? existingEvent.title : '';
-  document.getElementById('ev-date').value  = date || todayStr();
-  document.getElementById('ev-memo').value  = existingEvent ? (existingEvent.memo || '') : '';
-  document.querySelectorAll('.event-type-btn').forEach(btn => btn.classList.remove('active'));
-  const activeTypeBtn = document.querySelector(`.event-type-btn[data-type="${currentEventType}"]`);
-  if (activeTypeBtn) activeTypeBtn.classList.add('active');
-  const delBtn = document.getElementById('ev-delete-btn');
-  if (delBtn) delBtn.classList.toggle('hidden', !existingEvent);
-  document.getElementById('event-modal').classList.remove('hidden');
-}
-function closeEventModal() { document.getElementById('event-modal').classList.add('hidden'); currentEventId = null; }
-
-function selectEventType(btn) {
-  document.querySelectorAll('.event-type-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  currentEventType = btn.dataset.type;
-}
-
-function saveEventModal() {
-  const title = document.getElementById('ev-title').value.trim();
-  const date  = document.getElementById('ev-date').value;
-  const memo  = document.getElementById('ev-memo').value.trim();
-  if (!title || !date) { alert('제목과 날짜를 입력해주세요.'); return; }
-  const events = getCalEvents();
-  if (currentEventId) {
-    const idx = events.findIndex(e => e.id === currentEventId);
-    if (idx !== -1) events[idx] = { ...events[idx], title, date, memo, type: currentEventType };
-  } else {
-    events.push({ id: genId(), title, date, memo, type: currentEventType });
-  }
-  saveCalEvents(events);
-  refreshCalendarEvents();
-  closeEventModal();
-}
-
-function deleteCurrentEvent() {
-  if (!currentEventId) return;
-  const events = getCalEvents().filter(e => e.id !== currentEventId);
-  saveCalEvents(events);
-  refreshCalendarEvents();
-  closeEventModal();
-}
-
-/* =============================================
-   유틸
-============================================= */
-function todayStr() { return new Date().toISOString().split('T')[0]; }
-function formatDate(str) {
-  const normalized = normalizeDateStr(str);
-  if (!normalized) return '';
-  const parts = normalized.split('-');
-  if (parts.length < 3) return '';
-  const m = parseInt(parts[1],10), d = parseInt(parts[2],10);
-  if (isNaN(m) || isNaN(d)) return '';
-  return m + '월 ' + d + '일';
-}
-function escHtml(str) {
-  if (!str) return '';
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function callCustomer(phone) { window.location.href = 'tel:' + phone.replace(/[^0-9+]/g,''); }
-
-/* Hero 날짜 초기화 */
-(function() {
-  const dateEl = document.getElementById('hero-date-text');
-  if (dateEl) {
-    const now = new Date();
-    const days = ['일','월','화','수','목','금','토'];
-    dateEl.textContent = now.getFullYear() + '년 ' + (now.getMonth()+1) + '월 ' + now.getDate() + '일 (' + days[now.getDay()] + ')';
-  }
-})();
-
-/* 초기 실행 */
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('[CRM 초기화] 시작');
-  console.log('[CRM] 사용 중인 STORAGE_KEY:', STORAGE_KEY);
-
-  /* ① 기존 키 마이그레이션 및 고객 데이터 복구 */
-  const customers = getCustomers();
-  console.log('[CRM 초기화] 복구된 고객 수:', customers.length);
-
-  /* ② UI 초기화 */
-  initTagPicker();
-  initTagFilterRow();
-
-  /* ③ 전체 뷰 렌더링 (로컬 데이터 우선) */
-  refreshAllViews();
-
-  /* ④ 구글시트 동기화 (로컬 데이터를 덮어쓰지 않는 안전한 버전) */
-  loadFromSheets(false);
-
-  /* ⑤ 자동 새로고침 시작 */
-  startAutoRefresh();
 });
-</script>
 
+// ============================================================
+// 메시지 표시 헬퍼
+// ============================================================
+function showMsg(type, text) {
+  var el = document.getElementById("status-msg");
+  el.className = type;   // "success" or "error"
+  el.textContent = text;
+  el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function hideMsg() {
+  var el = document.getElementById("status-msg");
+  el.className = "";
+  el.textContent = "";
+}
+
+// ============================================================
+// 폼 데이터 수집 & 유효성 검사
+// ============================================================
+function getFormData() {
+  return {
+    registeredAt:  getNowKST(),
+    customerName:  document.getElementById("customerName").value.trim(),
+    phone:         document.getElementById("phone").value.trim(),
+    carModel:      document.getElementById("carModel").value,
+    purchaseType:  document.getElementById("purchaseType").value,
+    status:        document.getElementById("status").value,
+    leadSource:    document.getElementById("leadSource").value,
+    consultation:  document.getElementById("consultation").value.trim(),
+    nextContact:   document.getElementById("nextContact").value,
+    memo:          document.getElementById("memo").value.trim()
+  };
+}
+
+function validate(data) {
+  if (!data.customerName) { showMsg("error", "⚠ 고객명을 입력해주세요."); return false; }
+  if (!data.phone)         { showMsg("error", "⚠ 휴대폰번호를 입력해주세요."); return false; }
+  return true;
+}
+
+// ============================================================
+// 폼 초기화
+// ============================================================
+function resetForm() {
+  ["customerName","phone","carModel","purchaseType","status",
+   "leadSource","consultation","nextContact","memo"].forEach(function(id) {
+    var el = document.getElementById(id);
+    el.value = "";
+  });
+}
+
+// ============================================================
+// 저장 실행
+// - no-cors fetch로 전송 → 응답 본문을 읽을 수 없으므로
+//   성공 여부는 네트워크 오류 여부로만 판단합니다.
+//
+//   ※ Apps Script 측에서 오류가 발생해도 클라이언트에는
+//     "저장되었습니다"로 표시됩니다.
+//   ※ 정확한 성공/실패 확인이 필요하면 cors 방식 + Apps Script의
+//     응답 JSON을 읽는 방식으로 전환하세요.
+// ============================================================
+function submitForm() {
+  hideMsg();
+
+  var data = getFormData();
+  if (!validate(data)) return;
+
+  var btn = document.getElementById("submitBtn");
+  btn.disabled = true;
+  btn.textContent = "저장 중…";
+
+  // ── no-cors fetch 전송 ──────────────────────────────────
+  // no-cors 모드: CORS 오류 없이 전송되지만 응답 본문은 opaque(비공개)
+  // → 전송 성공 여부를 네트워크 단에서만 확인 가능
+  fetch(SCRIPT_URL, {
+    method:  "POST",
+    mode:    "no-cors",                          // CORS 우회
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify(data)
+  })
+  .then(function() {
+    // no-cors에서는 응답이 항상 opaque이므로 여기에 도달 = 네트워크 전송 성공
+    showMsg("success", "✅ 저장되었습니다. 고객 정보가 구글시트에 기록되었습니다.");
+    resetForm();
+  })
+  .catch(function(err) {
+    // 네트워크 오류 (오프라인, URL 오타 등)
+    showMsg("error", "❌ 저장에 실패했습니다. 인터넷 연결 또는 URL을 확인 후 다시 시도해주세요.");
+    console.error("전송 오류:", err);
+  })
+  .finally(function() {
+    btn.disabled = false;
+    btn.textContent = "고객 정보 저장";
+  });
+}
+</script>
 </body>
 </html>
