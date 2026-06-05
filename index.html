@@ -8,7 +8,7 @@
   <script>
     // ============================================================
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwXxkNKI6sodPjx5JMc5HlV6SAA3ORqquOeAZ3EUV0Q6AF4lg7dG7PfhnKwYQk0gyC3g/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwGQHWxvIv_jmfP-VW84_YWJ4pD5we72f9ubTAuOX4da3kSw-9ct02JwyioHRcTNHwHNQ/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
     // ============================================================
   </script>
@@ -297,18 +297,26 @@
       display: inline-block;
       font-size: 11px;
       font-weight: 700;
-      padding: 2px 8px;
+      padding: 3px 9px;
       border-radius: 20px;
       white-space: nowrap;
+      letter-spacing: .1px;
     }
 
-    .status-badge.s0  { background:#f0f0f5; color:#555; }
-    .status-badge.s1  { background:#e8f4ff; color:#1a6fb8; }   /* 신규문의 */
-    .status-badge.s2  { background:#fff4e0; color:#c47a00; }   /* 상담중 */
-    .status-badge.s3  { background:#fdf0ff; color:#8a3db0; }   /* 구매보류 */
-    .status-badge.s4  { background:#e6fff2; color:#1a8a4a; }   /* 계약 */
-    .status-badge.s5  { background:#f3e8ff; color:#7a3db8; }   /* 출고 */
-    .status-badge.s6  { background:#ffe8e8; color:#b83030; }   /* 해약 */
+    @media (max-width: 640px) {
+      .status-badge { font-size: 12px; padding: 4px 11px; }
+    }
+
+    .status-badge.s0  { background:#ebebf0; color:#444455; }
+    .status-badge.s1  { background:#e6e6e8; color:#3a3a45; }                                         /* 신규문의 — 회색 */
+    .status-badge.s2  { background:#fff0e0; color:#c05800; border:1px solid #ffd8a8; }               /* A급가망 — 주황 */
+    .status-badge.s3  { background:#e3f0ff; color:#1055a8; border:1px solid #b0cef5; }               /* 상담중 — 파랑 */
+    .status-badge.s4  { background:#f0e5ff; color:#6020a0; border:1px solid #d5b8f5; }               /* 계약유력 — 보라 */
+    .status-badge.s5  { background:#fffbe0; color:#8a6b00; border:1px solid #ffe97a; }               /* 구매보류 — 노랑 */
+    .status-badge.s6  { background:#e3f7ec; color:#0f6e35; border:1px solid #90ddb0; }               /* 계약 — 초록 */
+    .status-badge.s7  { background:#d4f0e0; color:#0a5528; border:1px solid #5fc890; }               /* 출고 — 진초록 */
+    .status-badge.s8  { background:#ebebeb; color:#404040; border:1px solid #c8c8c8; }               /* 상담종료 — 진회색 */
+    .status-badge.s9  { background:#fde8e8; color:#a01515; border:1px solid #f0a0a0; }               /* 해약 — 빨강 */
 
     /* ── 고객목록 빈 상태 ──────────────────────────────────── */
     #list-empty {
@@ -418,10 +426,10 @@
     @media (max-width: 640px) {
       .page-wrap { padding: 14px 12px 60px; }
 
-      /* 대시보드: 모바일 3열 */
+      /* 대시보드: 모바일 4열 × 2행 */
       .dashboard {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 7px;
       }
 
       /* 폼 1열 */
@@ -434,14 +442,16 @@
       .customer-table-wrap { display: none; }
       .customer-cards { display: block; padding: 14px; }
 
-      .dash-card .dash-num { font-size: 22px; }
-      .dash-card .dash-label { font-size: 10px; }
+      .dash-card .dash-num { font-size: 20px; }
+      .dash-card { padding: 10px 6px 9px; }
+      .dash-card .dash-label { font-size: 9px; }
     }
 
     @media (max-width: 400px) {
-      /* 대시보드: 초소형 2열 */
-      .dashboard { grid-template-columns: repeat(2, 1fr); }
-      .dashboard .dash-card:first-child { grid-column: span 2; }
+      /* 초소형: 4열 유지, 숫자 크기 조정 */
+      .dashboard { gap: 5px; }
+      .dash-card .dash-num { font-size: 18px; }
+      .dash-card .dash-label { font-size: 8px; }
     }
   </style>
 </head>
@@ -459,36 +469,41 @@
 
   <!-- ── 대시보드 ──────────────────────────────────────────── -->
   <!--
-    대시보드 카드: 총 고객 / 신규문의 / 상담중 / 구매보류 / 계약 / 출고 / 해약
-    모바일: grid-template-columns repeat(3,1fr) → repeat(2,1fr) 자동 조정
+    카드 순서: 총고객 / 신규문의 / A급가망 / 상담중 / 계약유력 / 계약 / 출고 / 해약
+    구매보류·상담종료는 카드 없음 — 데이터는 저장되어 통계 계산 가능
+    모바일: 4열 × 2행 자동 정렬
   -->
   <div class="dashboard">
-    <div class="dash-card accent">
-      <div class="dash-num" id="d-total">0</div>
+    <div class="dash-card">
+      <div class="dash-num" id="d-total" style="color:var(--gold);">0</div>
       <div class="dash-label">총 고객</div>
     </div>
     <div class="dash-card">
-      <div class="dash-num accent-blue" id="d-new">0</div>
+      <div class="dash-num" id="d-new" style="color:#3a3a45;">0</div>
       <div class="dash-label">신규문의</div>
     </div>
     <div class="dash-card">
-      <div class="dash-num" id="d-consult" style="color:#c47a00;">0</div>
+      <div class="dash-num" id="d-agrade" style="color:#c05800;">0</div>
+      <div class="dash-label">A급가망</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-num" id="d-consult" style="color:#1055a8;">0</div>
       <div class="dash-label">상담중</div>
     </div>
     <div class="dash-card">
-      <div class="dash-num" id="d-hold" style="color:#8a3db0;">0</div>
-      <div class="dash-label">구매보류</div>
+      <div class="dash-num" id="d-likely" style="color:#6020a0;">0</div>
+      <div class="dash-label">계약유력</div>
     </div>
     <div class="dash-card">
-      <div class="dash-num" id="d-contract" style="color:#1a8a4a;">0</div>
+      <div class="dash-num" id="d-contract" style="color:#0f6e35;">0</div>
       <div class="dash-label">계약</div>
     </div>
     <div class="dash-card">
-      <div class="dash-num" id="d-delivery" style="color:#7a3db8;">0</div>
+      <div class="dash-num" id="d-delivery" style="color:#0a5528;">0</div>
       <div class="dash-label">출고</div>
     </div>
     <div class="dash-card">
-      <div class="dash-num" id="d-cancel" style="color:#b83030;">0</div>
+      <div class="dash-num" id="d-cancel" style="color:#a01515;">0</div>
       <div class="dash-label">해약</div>
     </div>
   </div>
@@ -611,10 +626,13 @@
             <select id="status">
               <option value="">— 선택 —</option>
               <option>신규문의</option>
+              <option>A급가망</option>
               <option>상담중</option>
+              <option>계약유력</option>
               <option>구매보류</option>
               <option>계약</option>
               <option>출고</option>
+              <option>상담종료</option>
               <option>해약</option>
             </select>
           </div>
@@ -899,22 +917,40 @@ function onCategoryChange() {
 }
 
 // ============================================================
-// 상태 뱃지 클래스 매핑 (새 상태값 기준)
+// 구형 상태값 → 신규 상태값 자동 변환 매핑
+// ============================================================
+var STATUS_MIGRATE = {
+  "신규 문의":    "신규문의",
+  "상담 진행 중": "상담중",
+  "견적 발송":    "상담중",
+  "시승 예정":    "상담중",
+  "시승 완료":    "상담중",
+  "계약 진행 중": "계약유력",
+  "계약 완료":    "계약",
+  "출고 완료":    "출고",
+  "장기 보류":    "구매보류",
+  "취소 / 이탈":  "해약"
+};
+
+function migrateStatus(s) {
+  if (!s) return s;
+  return STATUS_MIGRATE[s] || s;
+}
+
+// ============================================================
+// 상태 뱃지 클래스 매핑 (9개 상태 기준)
 // ============================================================
 function statusClass(s) {
-  if (!s) return "s0";
-  if (s === "신규문의")  return "s1";
-  if (s === "상담중")    return "s2";
-  if (s === "구매보류")  return "s3";
-  if (s === "계약")      return "s4";
-  if (s === "출고")      return "s5";
-  if (s === "해약")      return "s6";
-  // 구형 데이터 호환
-  if (s.indexOf("신규") !== -1)  return "s1";
-  if (s.indexOf("상담") !== -1)  return "s2";
-  if (s.indexOf("계약") !== -1)  return "s4";
-  if (s.indexOf("출고") !== -1)  return "s5";
-  if (s.indexOf("취소") !== -1 || s.indexOf("이탈") !== -1 || s.indexOf("해약") !== -1) return "s6";
+  var v = migrateStatus(s);
+  if (v === "신규문의")  return "s1";
+  if (v === "A급가망")   return "s2";
+  if (v === "상담중")    return "s3";
+  if (v === "계약유력")  return "s4";
+  if (v === "구매보류")  return "s5";
+  if (v === "계약")      return "s6";
+  if (v === "출고")      return "s7";
+  if (v === "상담종료")  return "s8";
+  if (v === "해약")      return "s9";
   return "s0";
 }
 
@@ -934,21 +970,34 @@ function saveCustomers(list) {
 }
 
 // ============================================================
-// 대시보드 업데이트 (새 상태값 기준)
+// 대시보드 업데이트 (8개 카드 기준)
+// 구매보류·상담종료는 카드 없음 — 데이터는 집계에 포함
 // ============================================================
 function updateDashboard(list) {
   var total    = list.length;
-  var newInq   = list.filter(function(c){ return c.status === "신규문의"  || c.status === "신규 문의"; }).length;
-  var consult  = list.filter(function(c){ return c.status === "상담중"    || c.status === "상담 진행 중"; }).length;
-  var hold     = list.filter(function(c){ return c.status === "구매보류"  || c.status === "장기 보류"; }).length;
-  var contract = list.filter(function(c){ return c.status === "계약"      || c.status === "계약 완료" || c.status === "계약 진행 중"; }).length;
-  var delivery = list.filter(function(c){ return c.status === "출고"      || c.status === "출고 완료"; }).length;
-  var cancel   = list.filter(function(c){ return c.status === "해약"      || c.status === "취소 / 이탈"; }).length;
+  var newInq   = 0, agrade  = 0, consult = 0, likely   = 0;
+  var contract = 0, delivery= 0, cancel  = 0;
+  // 구매보류·상담종료는 집계하되 카드 표시 안 함 (향후 통계용)
+  var hold = 0, endConsult = 0;
+
+  list.forEach(function(c) {
+    var v = migrateStatus(c.status);
+    if (v === "신규문의")  newInq++;
+    else if (v === "A급가망")   agrade++;
+    else if (v === "상담중")    consult++;
+    else if (v === "계약유력")  likely++;
+    else if (v === "구매보류")  hold++;
+    else if (v === "계약")      contract++;
+    else if (v === "출고")      delivery++;
+    else if (v === "상담종료")  endConsult++;
+    else if (v === "해약")      cancel++;
+  });
 
   document.getElementById("d-total").textContent    = total;
   document.getElementById("d-new").textContent      = newInq;
+  document.getElementById("d-agrade").textContent   = agrade;
   document.getElementById("d-consult").textContent  = consult;
-  document.getElementById("d-hold").textContent     = hold;
+  document.getElementById("d-likely").textContent   = likely;
   document.getElementById("d-contract").textContent = contract;
   document.getElementById("d-delivery").textContent = delivery;
   document.getElementById("d-cancel").textContent   = cancel;
@@ -987,7 +1036,7 @@ function renderTable(list) {
       '<td>' + esc(c.accidentHistory || "") + '</td>' +
       '<td>' + esc(c.carNumber || "") + '</td>' +
       '<td>' + esc(c.purchaseType || "") + '</td>' +
-      '<td><span class="status-badge ' + statusClass(c.status) + '">' + esc(c.status) + '</span></td>' +
+      '<td><span class="status-badge ' + statusClass(c.status) + '">' + esc(migrateStatus(c.status) || c.status) + '</span></td>' +
       '<td>' + esc(c.leadSource || "") + '</td>' +
       '<td>' + esc(c.nextContact || "") + '</td>' +
       '<td style="max-width:160px;white-space:pre-wrap;word-break:break-all;">' + esc(c.consultation || "") + '</td>' +
@@ -1026,7 +1075,7 @@ function renderCards(list) {
           '<div class="cust-name">' + esc(c.customerName) + '</div>' +
           '<div class="cust-date">' + esc(c.registeredAt || "") + '</div>' +
         '</div>' +
-        '<span class="status-badge ' + statusClass(c.status) + '">' + esc(c.status) + '</span>' +
+        '<span class="status-badge ' + statusClass(c.status) + '">' + esc(migrateStatus(c.status) || c.status) + '</span>' +
       '</div>';
 
     // 기본 정보
