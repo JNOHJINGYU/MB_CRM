@@ -7,7 +7,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_Wd7r7wmHIxFHYjEQNmJ9ixQ6NaXdt52LZq6b5_DacgQ3OTSGap7ewgmHIgceVTrDmQ/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyNjgE7-8IobMMeImaOFp8wwMNhqaKDg7M_beJ5K_0jI4OLUfEH9Y-FkQ8CSy_2eivuqA/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   </script>
 
@@ -542,7 +542,7 @@
         <div class="grid-2">
           <div class="field">
             <label>구매예산</label>
-            <!-- G열: 구매예산 -->
+            <!-- I열: 구매예산 -->
             <select id="budget">
               <option value="">— 선택 —</option>
               <option>1억이내</option>
@@ -552,13 +552,26 @@
               <option>2억이상</option>
               <option>한도달내구매</option>
               <option>이번달이내</option>
+              <option>미정</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>구매방식</label>
+            <!-- H열: 구매방식 -->
+            <select id="purchaseMethod">
+              <option value="">— 선택 —</option>
+              <option>일시불</option>
               <option>할부</option>
+              <option>리스</option>
+              <option>장기렌트</option>
+              <option>법인할부</option>
+              <option>법인리스</option>
               <option>미정</option>
             </select>
           </div>
           <div class="field">
             <label>구매예정시기</label>
-            <!-- H열: 구매예정시기 -->
+            <!-- J열: 구매예정시기 -->
             <input type="text" id="purchaseTiming" placeholder="예: 2026년 12월 이내"/>
           </div>
         </div>
@@ -1186,30 +1199,33 @@ function getFormData(){
   return {
     action:            "new",
     _savedAt:          getNow(),
-    customerName:      document.getElementById("customerName").value.trim(),      // A
-    companyName:       document.getElementById("companyName").value.trim(),       // B
-    phone:             document.getElementById("phone").value.trim(),             // C
-    region:            document.getElementById("region").value.trim(),            // D
-    modelName:         document.getElementById("modelName").value,               // E
-    detailModel:       document.getElementById("detailModel").value,             // F
-    budget:            document.getElementById("budget").value,                  // G
-    purchaseTiming:    document.getElementById("purchaseTiming").value.trim(),   // H
-    leadSource:        document.getElementById("leadSource").value,              // I
-    status:            document.getElementById("status").value,                  // J
-    consultation:      document.getElementById("consultation").value.trim(),     // K
-    nextContact:       document.getElementById("nextContact").value,             // L
-    consultDateTime:   document.getElementById("consultDateTime").value,         // M
-    testDriveSchedule: document.getElementById("testDriveSchedule").value,      // N
-    deliverySchedule:  document.getElementById("deliverySchedule").value,        // O
-    contractDate:      document.getElementById("contractDate").value,            // P
-    deliveryDate:      document.getElementById("deliveryDate").value,            // Q
-    deliveryMonth:     document.getElementById("deliveryMonth").value,           // R
-    tags:              document.getElementById("tags").value.trim()              // S
+    // ★ 실제 구글시트 컬럼 순서 (A~U)
+    // A: 고객ID (빈값 — 숨김 열)
+    customerName:      document.getElementById("customerName").value.trim(),      // B 고객명
+    companyName:       document.getElementById("companyName").value.trim(),       // C 법인명
+    phone:             document.getElementById("phone").value.trim(),             // D 연락처
+    region:            document.getElementById("region").value.trim(),            // E 거주지역
+    modelName:         document.getElementById("modelName").value,               // F 모델명
+    detailModel:       document.getElementById("detailModel").value,             // G 세부모델
+    purchaseMethod:    document.getElementById("purchaseMethod").value,          // H 구매방식
+    budget:            document.getElementById("budget").value,                  // I 구매예산
+    purchaseTiming:    document.getElementById("purchaseTiming").value.trim(),   // J 구매예정시기
+    leadSource:        document.getElementById("leadSource").value,              // K 유입경로
+    status:            document.getElementById("status").value,                  // L 현재상태
+    consultation:      document.getElementById("consultation").value.trim(),     // M 상담내용
+    nextContact:       document.getElementById("nextContact").value,             // N 다음연락일
+    consultDateTime:   document.getElementById("consultDateTime").value,         // O 상담일시
+    testDriveSchedule: document.getElementById("testDriveSchedule").value,      // P 시승일정
+    deliverySchedule:  document.getElementById("deliverySchedule").value,        // Q 출고일정
+    contractDate:      document.getElementById("contractDate").value,            // R 계약일
+    deliveryDate:      document.getElementById("deliveryDate").value,            // S 출고일
+    deliveryMonth:     document.getElementById("deliveryMonth").value,           // T 출고월
+    tags:              document.getElementById("tags").value.trim()              // U 태그
   };
 }
 
 function resetNewForm(){
-  var ids=["customerName","companyName","phone","region","purchaseTiming",
+  var ids=["customerName","companyName","phone","region","purchaseMethod","purchaseTiming",
     "budget","leadSource","status","consultation","nextContact","consultDateTime",
     "testDriveSchedule","deliverySchedule","contractDate","deliveryDate","deliveryMonth","tags"];
   ids.forEach(function(id){document.getElementById(id).value="";});
