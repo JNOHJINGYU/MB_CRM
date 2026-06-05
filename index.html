@@ -7,226 +7,185 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyTU4LmZJiEGRLyKX2iEvYbrrTAVeNp4oyGX28q30jNbuCYkcNBAuhEfpt4HeqI1LoAFQ/exec";
-    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_Wd7r7wmHIxFHYjEQNmJ9ixQ6NaXdt52LZq6b5_DacgQ3OTSGap7ewgmHIgceVTrDmQ/exec";
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   </script>
 
   <style>
-    /*━━━━━━━━━━━━━━━━━━━━━ BASE ━━━━━━━━━━━━━━━━━━━━━*/
+    /*━━━━━━━━━━━━━━━ BASE ━━━━━━━━━━━━━━━*/
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-
     :root{
-      --bg:       #f5f5f7;
-      --surface:  #ffffff;
-      --surface2: #fafafa;
-      --border:   #e4e4ea;
-      --border2:  #d0d0da;
-      --gold:     #b8963a;
-      --gold-dk:  #9a7a28;
-      --black:    #111111;
-      --text:     #1a1a1a;
-      --text-dim: #555566;
-      --text-lt:  #999aaa;
-      --danger:   #c0392b;
-      --success:  #1a8a4a;
-      --blue:     #1a6aa0;
-      --radius:   14px;
-      --shadow:   0 2px 16px rgba(0,0,0,.09);
-      --font:     'Noto Sans KR','Apple SD Gothic Neo',sans-serif;
-      --nav-h:    72px; /* 하단바 높이 */
+      --bg:#f5f5f7; --surface:#fff; --surface2:#fafafa;
+      --border:#e4e4ea; --border2:#d0d0da;
+      --gold:#b8963a; --gold-dk:#9a7a28;
+      --black:#111; --text:#1a1a1a;
+      --text-dim:#555566; --text-lt:#999aaa;
+      --danger:#c0392b; --success:#1a8a4a; --blue:#1a6aa0;
+      --radius:14px; --shadow:0 2px 16px rgba(0,0,0,.09);
+      --font:'Noto Sans KR','Apple SD Gothic Neo',sans-serif;
     }
-
     html,body{
       min-height:100%; background:var(--bg);
       color:var(--text); font-family:var(--font);
       font-size:15px; line-height:1.6; overflow-x:hidden;
     }
 
-    /*━━━━━━━━━━━━━━━━━━━━━ VIEWS ━━━━━━━━━━━━━━━━━━━━━*/
-    .view{display:none; animation:fadeIn .18s ease;}
+    /*━━━━━━━━━━━━━━━ VIEWS ━━━━━━━━━━━━━━━*/
+    .view{display:none; animation:vIn .18s ease;}
     .view.active{display:block;}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes vIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .page-wrap{max-width:780px;margin:0 auto;padding:0 14px 110px;}
 
-    .page-wrap{
-      max-width:780px; margin:0 auto;
-      padding:0 14px 100px; /* 하단바 여백 */
-    }
-
-    /*━━━━━━━━━━━━━━━━━━━━━ 상단 헤더 ━━━━━━━━━━━━━━━━━━━━━*/
+    /*━━━━━━━━━━━━━━━ 상단 헤더 ━━━━━━━━━━━━━━━*/
     .app-header{
-      position:sticky; top:0; z-index:100;
-      background:var(--black); padding:14px 20px 12px;
-      display:flex; align-items:center; justify-content:space-between;
-      box-shadow:0 2px 12px rgba(0,0,0,.18);
+      position:sticky;top:0;z-index:100;
+      background:var(--black);padding:13px 18px 11px;
+      display:flex;align-items:center;justify-content:space-between;
+      box-shadow:0 2px 12px rgba(0,0,0,.2);
     }
-    .app-header-left{display:flex;align-items:center;gap:12px;}
+    .app-header-left{display:flex;align-items:center;gap:11px;}
     .app-logo{
-      width:34px;height:34px;border-radius:50%;
+      width:32px;height:32px;border-radius:50%;
       border:1.5px solid var(--gold);
       display:flex;align-items:center;justify-content:center;
-      font-size:13px;font-weight:800;color:var(--gold);flex-shrink:0;
+      font-size:12px;font-weight:800;color:var(--gold);flex-shrink:0;
     }
-    .app-title{font-size:16px;font-weight:700;color:#fff;letter-spacing:-.3px;}
-    .app-sub{font-size:11px;color:#aaa;margin-top:1px;}
+    .app-title{font-size:15px;font-weight:700;color:#fff;letter-spacing:-.3px;}
+    .app-sub{font-size:10px;color:#aaa;margin-top:1px;}
     .view-badge{
       font-size:11px;font-weight:700;
-      background:rgba(184,150,58,.22);color:var(--gold);
+      background:rgba(184,150,58,.2);color:var(--gold);
       border-radius:20px;padding:3px 10px;
-      border:1px solid rgba(184,150,58,.3);
+      border:1px solid rgba(184,150,58,.28);
     }
 
-    /*━━━━━━━━━━━━━━━━━━━━━ 하단 네비 바 ━━━━━━━━━━━━━━━━━━━━━*/
+    /*━━━━━━━━━━━━━━━ 하단 네비 (모바일) ━━━━━━━━━━━━━━━*/
     .bottom-nav{
-      position:fixed; bottom:16px; left:50%; transform:translateX(-50%);
-      width:calc(100% - 28px); max-width:480px;
-      height:var(--nav-h);
-      background:#fff; border-radius:24px;
-      box-shadow:0 8px 32px rgba(0,0,0,.16), 0 2px 8px rgba(0,0,0,.08);
-      display:flex; align-items:center; justify-content:space-around;
-      padding:0 8px; z-index:200;
+      position:fixed;bottom:14px;left:50%;transform:translateX(-50%);
+      width:calc(100% - 24px);max-width:480px;height:68px;
+      background:#fff;border-radius:22px;
+      box-shadow:0 8px 32px rgba(0,0,0,.16),0 2px 8px rgba(0,0,0,.08);
+      display:flex;align-items:center;justify-content:space-around;
+      padding:0 8px;z-index:200;
     }
     .nav-btn{
-      display:flex; flex-direction:column; align-items:center;
-      gap:3px; flex:1; padding:10px 4px;
-      border:none; background:transparent; cursor:pointer;
-      font-family:var(--font); color:var(--text-lt); transition:color .15s;
+      display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;
+      padding:8px 4px;border:none;background:transparent;cursor:pointer;
+      font-family:var(--font);color:var(--text-lt);transition:color .15s;
     }
-    .nav-btn .nav-icon{font-size:22px;line-height:1;}
-    .nav-btn .nav-label{font-size:10px;font-weight:600;letter-spacing:-.2px;}
+    .nav-icon{font-size:22px;line-height:1;}
+    .nav-label{font-size:10px;font-weight:600;}
     .nav-btn.active{color:var(--black);}
-    .nav-btn.active .nav-icon{transform:scale(1.08); transition:transform .15s;}
-
-    /* 가운데 + 버튼 */
     .nav-btn-plus{
-      display:flex; align-items:center; justify-content:center;
-      width:52px; height:52px; border-radius:50%;
-      background:var(--black); border:none; cursor:pointer;
-      box-shadow:0 4px 16px rgba(0,0,0,.25);
-      flex-shrink:0; transition:background .15s, transform .12s;
-      margin:0 4px;
+      display:flex;align-items:center;justify-content:center;
+      width:52px;height:52px;border-radius:50%;
+      background:var(--black);border:none;cursor:pointer;
+      box-shadow:0 4px 16px rgba(0,0,0,.25);flex-shrink:0;
+      transition:background .15s,transform .12s;margin:0 4px;
     }
-    .nav-btn-plus:active{transform:scale(.94);}
-    .nav-btn-plus svg{width:24px;height:24px;fill:#fff;}
+    .nav-btn-plus:active{transform:scale(.93);}
     .nav-btn-plus.active{background:var(--gold);}
+    .nav-btn-plus svg{width:22px;height:22px;}
 
-    /* PC에서 하단바 숨김 */
-    @media (min-width:641px){
+    /* PC: 하단바 숨김, 상단 탭 표시 */
+    @media(min-width:641px){
       .bottom-nav{display:none;}
       .page-wrap{padding-bottom:40px;}
-      /* PC 탭 메뉴 */
       .pc-tabs{
-        display:flex; gap:4px; margin:16px 0;
-        background:var(--surface); border-radius:var(--radius);
-        padding:6px; box-shadow:var(--shadow); border:1px solid var(--border);
+        display:flex;gap:4px;margin:14px 0;
+        background:var(--surface);border-radius:var(--radius);
+        padding:6px;box-shadow:var(--shadow);border:1px solid var(--border);
       }
       .pc-tab-btn{
-        flex:1; padding:11px 8px; border:none; border-radius:10px;
-        background:transparent; cursor:pointer; font-family:var(--font);
-        font-size:13px; font-weight:600; color:var(--text-dim);
-        transition:background .15s, color .15s;
+        flex:1;padding:11px 8px;border:none;border-radius:10px;
+        background:transparent;cursor:pointer;font-family:var(--font);
+        font-size:13px;font-weight:600;color:var(--text-dim);
+        transition:background .15s,color .15s;
       }
-      .pc-tab-btn.active{background:var(--black); color:#fff;}
+      .pc-tab-btn.active{background:var(--black);color:#fff;}
     }
-    @media (max-width:640px){.pc-tabs{display:none;}}
+    @media(max-width:640px){.pc-tabs{display:none;}}
 
-    /*━━━━━━━━━━━━━━━━━━━━━ HOME / DASHBOARD ━━━━━━━━━━━━━━━━━━━━━*/
-    .home-greeting{
-      padding:22px 0 6px;
-    }
-    .home-greeting-title{font-size:22px;font-weight:800;color:var(--black);letter-spacing:-.5px;}
+    /*━━━━━━━━━━━━━━━ 대시보드 ━━━━━━━━━━━━━━━*/
+    .home-greeting{padding:20px 0 6px;}
+    .home-greeting-title{font-size:21px;font-weight:800;color:var(--black);letter-spacing:-.5px;}
     .home-greeting-sub{font-size:13px;color:var(--text-dim);margin-top:3px;}
 
-    /* 통계 카드 그리드 */
-    .stat-grid{
-      display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:14px 0;
+    .section-heading{
+      font-size:13px;font-weight:700;color:var(--text-dim);
+      letter-spacing:.3px;margin:18px 0 10px;
+      display:flex;align-items:center;gap:6px;
     }
+    .dot{width:6px;height:6px;border-radius:50%;background:var(--gold);}
+
+    .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:4px;}
     .stat-card{
-      background:var(--surface); border:1px solid var(--border);
-      border-radius:var(--radius); padding:14px 8px 12px;
-      text-align:center; box-shadow:var(--shadow);
-      cursor:pointer; transition:transform .12s, box-shadow .12s;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius);padding:13px 7px 11px;
+      text-align:center;box-shadow:var(--shadow);
+      cursor:pointer;transition:transform .12s,box-shadow .12s;
       -webkit-tap-highlight-color:transparent;
     }
-    .stat-card:active{transform:scale(.96); box-shadow:none;}
-    .stat-num{font-size:24px;font-weight:800;color:var(--black);line-height:1.1;}
+    .stat-card:active{transform:scale(.95);box-shadow:none;}
+    .stat-num{font-size:24px;font-weight:800;line-height:1.1;}
     .stat-label{font-size:10px;color:var(--text-dim);margin-top:5px;font-weight:600;}
 
-    /* 차량관리 알림 */
-    .section-title{
-      font-size:13px; font-weight:700; color:var(--text-dim);
-      letter-spacing:.3px; margin:20px 0 10px;
-      display:flex; align-items:center; gap:6px;
-    }
-    .section-title .badge-dot{
-      width:6px;height:6px;border-radius:50%;background:var(--gold);
-    }
-
-    .care-grid{
-      display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:20px;
-    }
+    .care-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px;}
     .care-card{
-      background:var(--surface); border:1px solid var(--border);
-      border-radius:12px; padding:12px 8px 10px;
-      text-align:center; box-shadow:0 1px 8px rgba(0,0,0,.06);
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:12px;padding:11px 7px 9px;text-align:center;
+      box-shadow:0 1px 8px rgba(0,0,0,.06);
     }
     .care-card.warn{border-top:3px solid #e07000;}
     .care-card.alert{border-top:3px solid #c0392b;}
     .care-card.info{border-top:3px solid var(--blue);}
-    .care-num{font-size:22px;font-weight:800;line-height:1.1;}
+    .care-num{font-size:21px;font-weight:800;line-height:1.1;}
     .care-label{font-size:9px;color:var(--text-dim);margin-top:4px;font-weight:600;}
 
-    /* 오늘/이번주 연락 */
-    .contact-section{margin-bottom:20px;}
-    .contact-list-empty{
-      background:var(--surface); border:1px solid var(--border);
-      border-radius:var(--radius); padding:20px; text-align:center;
-      color:var(--text-lt); font-size:13px;
+    /* 연락 고객 */
+    .contact-empty{
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius);padding:18px;text-align:center;
+      color:var(--text-lt);font-size:13px;
     }
     .contact-item{
-      background:var(--surface); border:1px solid var(--border);
-      border-radius:var(--radius); padding:14px 16px; margin-bottom:8px;
-      display:flex; align-items:center; justify-content:space-between;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius);padding:13px 15px;margin-bottom:8px;
+      display:flex;align-items:center;justify-content:space-between;
       box-shadow:0 1px 6px rgba(0,0,0,.05);
     }
-    .contact-item-left .c-name{font-size:15px;font-weight:700;color:var(--black);}
-    .contact-item-left .c-meta{font-size:12px;color:var(--text-dim);margin-top:2px;}
-    .contact-item-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+    .c-name{font-size:15px;font-weight:700;color:var(--black);}
+    .c-meta{font-size:12px;color:var(--text-dim);margin-top:2px;}
     .call-btn{
-      display:inline-flex; align-items:center; gap:4px;
-      padding:6px 12px; border-radius:20px;
-      background:var(--black); color:#fff;
-      font-size:12px;font-weight:700;text-decoration:none;
-      border:none; cursor:pointer;
+      padding:7px 13px;border-radius:20px;border:none;
+      background:var(--black);color:#fff;text-decoration:none;
+      font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:4px;
     }
 
-    /*━━━━━━━━━━━━━━━━━━━━━ 공통 카드/폼 ━━━━━━━━━━━━━━━━━━━━━*/
-    .view-header{
-      padding:18px 0 8px; display:flex; align-items:center; gap:10px;
-    }
-    .view-header-title{font-size:20px;font-weight:800;color:var(--black);}
-    .view-header-sub{font-size:12px;color:var(--text-dim);margin-top:2px;}
+    /*━━━━━━━━━━━━━━━ 폼 공통 ━━━━━━━━━━━━━━━*/
+    .view-header{padding:16px 0 6px;}
+    .view-title{font-size:20px;font-weight:800;color:var(--black);}
+    .view-sub{font-size:12px;color:var(--text-dim);margin-top:2px;}
 
     .form-card{
-      background:var(--surface); border:1px solid var(--border);
-      border-radius:var(--radius); overflow:hidden;
-      box-shadow:var(--shadow); margin-bottom:16px;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius);overflow:hidden;
+      box-shadow:var(--shadow);margin-bottom:14px;
     }
     .form-card-header{
-      padding:14px 18px; background:var(--surface2);
+      padding:13px 17px;background:var(--surface2);
       border-bottom:1px solid var(--border);
-      font-size:14px;font-weight:700;color:var(--black);
+      font-size:13px;font-weight:700;color:var(--black);
     }
-    .form-card-header.update{background:#edf5fc;border-bottom-color:#c5dff0;color:var(--blue);}
-    .form-body{padding:18px;}
+    .form-card-header.blue{background:#edf5fc;border-bottom-color:#c5dff0;color:var(--blue);}
+    .form-body{padding:16px;}
 
-    .section-label{
+    .sec-label{
       font-size:11px;font-weight:700;letter-spacing:1px;
       color:var(--gold);text-transform:uppercase;
-      margin:20px 0 10px;padding-bottom:5px;border-bottom:1px solid var(--border);
+      margin:18px 0 9px;padding-bottom:5px;border-bottom:1px solid var(--border);
     }
-    .section-label:first-child{margin-top:0;}
-    .section-label.care{color:var(--blue);border-bottom-color:#c5dff0;}
-    .section-label.update{color:var(--blue);}
+    .sec-label:first-child{margin-top:0;}
 
     .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
     .field{display:flex;flex-direction:column;gap:5px;}
@@ -234,7 +193,8 @@
     label{font-size:12px;font-weight:600;color:var(--text-dim);}
     label .req{color:var(--gold);margin-left:2px;}
 
-    input[type="text"],input[type="tel"],input[type="date"],select,textarea{
+    input[type="text"],input[type="tel"],input[type="date"],
+    input[type="datetime-local"],select,textarea{
       width:100%;background:#fff;border:1px solid var(--border2);
       border-radius:9px;color:var(--text);font-family:var(--font);
       font-size:15px;padding:12px 14px;outline:none;
@@ -251,16 +211,14 @@
     }
     select:disabled{background-color:#f5f5f8;color:var(--text-lt);cursor:not-allowed;}
     textarea{resize:vertical;min-height:90px;}
-    input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.6;font-size:16px;}
-
-    .care-input{background:#f8fbff!important;border-color:#b8d4ea!important;}
-    .care-input:focus{border-color:var(--blue)!important;box-shadow:0 0 0 3px rgba(26,106,160,.1)!important;}
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.6;}
 
     /* 저장 버튼 */
     .btn-submit{
-      width:100%;margin-top:20px;padding:16px;border:none;
+      width:100%;margin-top:18px;padding:16px;border:none;
       border-radius:var(--radius);background:var(--black);color:#fff;
-      font-family:var(--font);font-size:16px;font-weight:700;letter-spacing:.3px;
+      font-family:var(--font);font-size:16px;font-weight:700;
       cursor:pointer;transition:background .18s,transform .1s;
       position:relative;overflow:hidden;min-height:54px;
     }
@@ -272,78 +230,79 @@
     .btn-submit:hover{background:#2a2a2a;}
     .btn-submit:active{transform:scale(.99);}
     .btn-submit:disabled{opacity:.5;cursor:not-allowed;transform:none;}
-    .btn-submit.update-btn{background:var(--blue);}
-    .btn-submit.update-btn:hover{background:#155a8a;}
+    .btn-submit.blue-btn{background:var(--blue);}
+    .btn-submit.blue-btn:hover{background:#155a8a;}
 
     /* 상태 메시지 */
-    .status-msg{
-      display:none;margin-top:14px;padding:14px 16px;
+    .st-msg{
+      display:none;margin-top:13px;padding:14px 16px;
       border-radius:var(--radius);font-size:14px;font-weight:600;
-      text-align:center;animation:fadeIn .22s ease;
+      text-align:center;animation:vIn .2s ease;
     }
-    .status-msg.success{display:block;background:#edfaf3;border:1px solid #a8dfc0;color:var(--success);}
-    .status-msg.error{display:block;background:#fdf0ef;border:1px solid #f0b8b2;color:var(--danger);}
+    .st-msg.ok{display:block;background:#edfaf3;border:1px solid #a8dfc0;color:var(--success);}
+    .st-msg.err{display:block;background:#fdf0ef;border:1px solid #f0b8b2;color:var(--danger);}
 
-    /*━━━━━━━━━━━━━━━━━━━━━ 상태 뱃지 ━━━━━━━━━━━━━━━━━━━━━*/
-    .status-badge{
+    /*━━━━━━━━━━━━━━━ 상태 뱃지 ━━━━━━━━━━━━━━━*/
+    .badge{
       display:inline-block;font-size:11px;font-weight:700;
       padding:3px 9px;border-radius:20px;white-space:nowrap;
     }
-    .status-badge.s0{background:#ebebf0;color:#444;}
-    .status-badge.s1{background:#e8e8ea;color:#3a3a45;}
-    .status-badge.s2{background:#fff0e0;color:#c05800;border:1px solid #ffd8a8;}
-    .status-badge.s3{background:#e3f0ff;color:#1055a8;border:1px solid #b0cef5;}
-    .status-badge.s4{background:#f0e5ff;color:#6020a0;border:1px solid #d5b8f5;}
-    .status-badge.s5{background:#fffbe0;color:#8a6b00;border:1px solid #ffe97a;}
-    .status-badge.s6{background:#e3f7ec;color:#0f6e35;border:1px solid #90ddb0;}
-    .status-badge.s7{background:#d4f0e0;color:#0a5528;border:1px solid #5fc890;}
-    .status-badge.s8{background:#ebebeb;color:#404040;border:1px solid #c8c8c8;}
-    .status-badge.s9{background:#fde8e8;color:#a01515;border:1px solid #f0a0a0;}
+    .badge.s0{background:#ebebf0;color:#444;}
+    .badge.s1{background:#e8e8ea;color:#3a3a45;}
+    .badge.s2{background:#fff0e0;color:#c05800;border:1px solid #ffd8a8;}
+    .badge.s3{background:#e3f0ff;color:#1055a8;border:1px solid #b0cef5;}
+    .badge.s4{background:#f0e5ff;color:#6020a0;border:1px solid #d5b8f5;}
+    .badge.s5{background:#fffbe0;color:#8a6b00;border:1px solid #ffe97a;}
+    .badge.s6{background:#e3f7ec;color:#0f6e35;border:1px solid #90ddb0;}
+    .badge.s7{background:#d4f0e0;color:#0a5528;border:1px solid #5fc890;}
+    .badge.s8{background:#ebebeb;color:#404040;border:1px solid #c8c8c8;}
+    .badge.s9{background:#fde8e8;color:#a01515;border:1px solid #f0a0a0;}
 
-    /*━━━━━━━━━━━━━━━━━━━━━ 고객 확인 프리뷰 ━━━━━━━━━━━━━━━━━━━━━*/
-    .customer-preview{
+    /*━━━━━━━━━━━━━━━ 추가상담 프리뷰 ━━━━━━━━━━━━━━━*/
+    .preview-box{
       display:none;margin-top:10px;
-      background:#edf5fc;border:1px solid #b5d5f0;border-radius:var(--radius);padding:14px 16px;
+      background:#edf5fc;border:1px solid #b5d5f0;
+      border-radius:var(--radius);padding:13px 15px;
     }
-    .customer-preview.visible{display:block;animation:fadeIn .2s ease;}
-    .preview-name{font-size:16px;font-weight:800;color:var(--black);}
+    .preview-box.show{display:block;animation:vIn .2s ease;}
+    .preview-name{font-size:15px;font-weight:800;color:var(--black);}
     .preview-meta{font-size:12px;color:var(--text-dim);margin-top:3px;}
-    .preview-status{margin-top:8px;}
-    .customer-not-found{
+    .preview-status{margin-top:7px;}
+    .nofound{
       display:none;margin-top:10px;
-      background:#fff3f3;border:1px solid #f0b8b8;border-radius:var(--radius);
-      padding:12px 16px;color:var(--danger);font-size:13px;font-weight:600;text-align:center;
+      background:#fff3f3;border:1px solid #f0b8b8;
+      border-radius:var(--radius);padding:12px 15px;
+      color:var(--danger);font-size:13px;font-weight:600;text-align:center;
     }
-    .customer-not-found.visible{display:block;}
+    .nofound.show{display:block;}
 
-    /*━━━━━━━━━━━━━━━━━━━━━ 고객목록 ━━━━━━━━━━━━━━━━━━━━━*/
-    /* 필터 바 */
-    .filter-bar{
-      display:flex;align-items:center;gap:8px;
-      background:var(--surface);border:1px solid var(--border);
-      border-radius:var(--radius);padding:12px 16px;
-      margin:10px 0;box-shadow:0 1px 6px rgba(0,0,0,.05);
+    /*━━━━━━━━━━━━━━━ 고객목록 ━━━━━━━━━━━━━━━*/
+    .list-topbar{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px 0 4px;
     }
-    .filter-label{
-      font-size:13px;font-weight:700;color:var(--blue);flex:1;
+    .list-count-badge{
+      font-size:12px;font-weight:700;background:var(--gold);
+      color:#fff;border-radius:20px;padding:2px 10px;
     }
-    .filter-clear{
-      padding:5px 12px;border-radius:20px;border:1px solid var(--border2);
-      background:var(--surface);font-size:12px;font-weight:600;
-      color:var(--text-dim);cursor:pointer;font-family:var(--font);
-      white-space:nowrap;
-    }
-
-    /* 검색 */
-    .search-bar{
-      display:flex;gap:8px;margin:10px 0;
-    }
+    .search-bar{display:flex;gap:8px;margin:8px 0;}
     .search-bar input{
       flex:1;background:var(--surface);border:1px solid var(--border);
       border-radius:24px;padding:11px 18px;font-size:14px;
       box-shadow:0 1px 6px rgba(0,0,0,.05);
     }
-    .search-bar input:focus{border-color:var(--gold);}
+    .filter-bar{
+      display:none;align-items:center;gap:8px;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius);padding:11px 15px;margin:8px 0;
+      box-shadow:0 1px 6px rgba(0,0,0,.05);
+    }
+    .filter-label{font-size:13px;font-weight:700;color:var(--blue);flex:1;}
+    .filter-clear{
+      padding:5px 12px;border-radius:20px;border:1px solid var(--border2);
+      background:var(--surface);font-size:12px;font-weight:600;
+      color:var(--text-dim);cursor:pointer;font-family:var(--font);
+    }
 
     /* 고객 카드 */
     .cust-card{
@@ -352,111 +311,63 @@
       box-shadow:0 1px 8px rgba(0,0,0,.06);
     }
     .cust-card.updated{border-left:3px solid var(--gold);}
-    .cust-card-top{
-      display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;
-    }
+    .card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
     .cust-name{font-size:17px;font-weight:800;color:var(--black);}
-    .cust-date{font-size:11px;color:var(--text-lt);margin-top:2px;}
-
-    .cust-info-row{
-      display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;
-    }
-    .cust-chip{
+    .cust-company{font-size:12px;color:var(--text-dim);margin-top:2px;}
+    .chip-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+    .chip{
       font-size:11px;font-weight:600;color:var(--text-dim);
       background:var(--bg);border-radius:6px;padding:3px 8px;
     }
     .tel-link{color:var(--gold-dk);text-decoration:none;font-weight:700;}
     .tel-link:hover{text-decoration:underline;}
 
-    /* 상세정보 접기/펼치기 */
-    .detail-toggle{
+    /* 상세 접기/펼치기 */
+    .tog-btn{
       display:flex;align-items:center;gap:5px;width:100%;
       background:#f5f5f8;border:1px solid var(--border);border-radius:8px;
       padding:8px 13px;cursor:pointer;font-family:var(--font);
       font-size:12px;font-weight:600;color:var(--text-dim);
       margin-top:10px;transition:background .15s;
     }
-    .detail-toggle:hover{background:#ebebf0;}
-    .detail-toggle .arr{transition:transform .2s;font-size:10px;margin-left:auto;}
-    .detail-toggle.open .arr{transform:rotate(180deg);}
+    .tog-btn:hover{background:#ebebf0;}
+    .tog-arr{transition:transform .2s;font-size:10px;margin-left:auto;}
+    .tog-btn.open .tog-arr{transform:rotate(180deg);}
     .detail-body{display:none;margin-top:10px;}
     .detail-body.open{display:block;}
-
-    .d-row{display:flex;gap:6px;margin-bottom:6px;font-size:13px;align-items:flex-start;}
+    .d-sec{
+      font-size:10px;font-weight:700;letter-spacing:1px;color:var(--gold);
+      text-transform:uppercase;margin:11px 0 6px;padding-bottom:4px;
+      border-bottom:1px solid var(--border);
+    }
+    .d-row{display:flex;gap:6px;margin-bottom:5px;font-size:13px;align-items:flex-start;}
     .d-key{flex-shrink:0;width:86px;color:var(--text-dim);font-weight:600;font-size:12px;}
     .d-val{color:var(--text);word-break:break-all;line-height:1.5;white-space:pre-wrap;}
 
-    .detail-section{
-      font-size:10px;font-weight:700;letter-spacing:1px;color:var(--gold);
-      text-transform:uppercase;margin:12px 0 7px;padding-bottom:4px;
-      border-bottom:1px solid var(--border);
-    }
-    .detail-section.care{color:var(--blue);border-bottom-color:#c5dff0;}
-
-    /* 차량관리 접기/펼치기 */
-    .care-toggle{
-      display:flex;align-items:center;gap:5px;width:100%;
-      background:#f0f6fb;border:1px solid #c5dff0;border-radius:8px;
-      padding:8px 13px;cursor:pointer;font-family:var(--font);
-      font-size:12px;font-weight:700;color:var(--blue);
-      margin-top:10px;transition:background .15s;
-    }
-    .care-toggle:hover{background:#e0effa;}
-    .care-toggle .arr{transition:transform .2s;font-size:10px;margin-left:auto;}
-    .care-toggle.open .arr{transform:rotate(180deg);}
-    .care-detail{display:none;margin-top:8px;}
-    .care-detail.open{display:block;}
-
-    /* d-day */
-    .dday-tag{
-      display:inline-block;font-size:10px;font-weight:700;
-      padding:1px 6px;border-radius:6px;margin-left:4px;vertical-align:middle;
-    }
-    .dday-tag.urgent{background:#fde8e8;color:#a01515;}
-    .dday-tag.warn{background:#fff0d0;color:#b06000;}
-    .dday-tag.ok{background:#e3f7ec;color:#0f6e35;}
-
-    /* 빈 상태 */
     .empty-state{
-      text-align:center;padding:48px 20px;
+      text-align:center;padding:44px 20px;
       background:var(--surface);border:1px solid var(--border);
-      border-radius:var(--radius);box-shadow:var(--shadow);
+      border-radius:var(--radius);
     }
-    .empty-state .empty-icon{font-size:40px;margin-bottom:12px;}
+    .empty-icon{font-size:38px;margin-bottom:11px;}
     .empty-state p{font-size:14px;color:var(--text-lt);}
 
-    /* 목록 헤더 */
-    .list-header{
-      display:flex;align-items:center;justify-content:space-between;
-      padding:16px 0 4px;
-    }
-    .list-count-badge{
-      font-size:12px;font-weight:700;background:var(--gold);color:#fff;
-      border-radius:20px;padding:2px 10px;
-    }
-
-    /*━━━━━━━━━━━━━━━━━━━━━ 반응형 ━━━━━━━━━━━━━━━━━━━━━*/
-    @media (max-width:640px){
-      .page-wrap{padding:0 12px 100px;}
+    /*━━━━━━━━━━━━━━━ 반응형 ━━━━━━━━━━━━━━━*/
+    @media(max-width:640px){
+      .page-wrap{padding:0 12px 110px;}
       .grid-2{grid-template-columns:1fr;}
       .field.full{grid-column:1;}
       .form-body{padding:14px;}
-      .stat-grid{grid-template-columns:repeat(4,1fr);gap:7px;}
-      .stat-num{font-size:20px;}
-      .stat-card{padding:12px 6px 10px;}
-      .stat-label{font-size:9px;}
-      .care-grid{grid-template-columns:repeat(4,1fr);gap:6px;}
-      .care-num{font-size:20px;}
-      .care-label{font-size:8px;}
-      .care-card{padding:10px 5px 8px;}
-      input[type="date"]{font-size:16px;padding:13px 14px;}
+      .stat-grid{gap:7px;} .stat-num{font-size:20px;}
+      .stat-card{padding:11px 5px 9px;} .stat-label{font-size:9px;}
+      .care-grid{gap:6px;} .care-num{font-size:19px;}
+      .care-card{padding:9px 5px 8px;} .care-label{font-size:8px;}
+      input[type="date"],input[type="datetime-local"]{font-size:16px;padding:13px 14px;}
       textarea#addConsultation{min-height:140px;}
-      .status-badge{font-size:12px;padding:4px 10px;}
+      .badge{font-size:12px;padding:4px 10px;}
     }
-    @media (max-width:380px){
-      .stat-grid{grid-template-columns:repeat(4,1fr);gap:5px;}
-      .stat-num{font-size:18px;}
-      .stat-label{font-size:8px;}
+    @media(max-width:380px){
+      .stat-num{font-size:17px;} .stat-label{font-size:8px;}
     }
   </style>
 </head>
@@ -476,7 +387,7 @@
 
 <div class="page-wrap">
 
-  <!-- PC 탭 메뉴 -->
+  <!-- PC 탭 -->
   <div class="pc-tabs">
     <button class="pc-tab-btn active" onclick="showView('home')">🏠 대시보드</button>
     <button class="pc-tab-btn" onclick="showView('new')">✏️ 신규등록</button>
@@ -484,114 +395,92 @@
     <button class="pc-tab-btn" onclick="showView('list')">👥 고객목록</button>
   </div>
 
-  <!-- ══════════════════ VIEW: 대시보드 ══════════════════ -->
+  <!-- ══════════ VIEW: 대시보드 ══════════ -->
   <div class="view active" id="homeView">
-
     <div class="home-greeting">
       <div class="home-greeting-title">안녕하세요, 진규 부장님 👋</div>
-      <div class="home-greeting-sub" id="todayDateStr">오늘도 좋은 하루 되세요</div>
+      <div class="home-greeting-sub" id="todayStr">오늘도 좋은 하루 되세요</div>
     </div>
 
-    <!-- 고객 현황 카드 -->
-    <div class="section-title"><span class="badge-dot"></span> 고객 현황</div>
+    <div class="section-heading"><span class="dot"></span> 고객 현황</div>
     <div class="stat-grid">
-      <div class="stat-card" onclick="goListFiltered('')" title="전체 고객">
-        <div class="stat-num" id="d-total" style="color:var(--gold);">0</div>
+      <div class="stat-card" onclick="goFilter('')">
+        <div class="stat-num" id="d-total" style="color:var(--gold)">0</div>
         <div class="stat-label">전체</div>
       </div>
-      <div class="stat-card" onclick="goListFiltered('신규문의')">
-        <div class="stat-num" id="d-new" style="color:#3a3a45;">0</div>
+      <div class="stat-card" onclick="goFilter('신규문의')">
+        <div class="stat-num" id="d-new" style="color:#3a3a45">0</div>
         <div class="stat-label">신규문의</div>
       </div>
-      <div class="stat-card" onclick="goListFiltered('A급가망')">
-        <div class="stat-num" id="d-agrade" style="color:#c05800;">0</div>
+      <div class="stat-card" onclick="goFilter('A급가망')">
+        <div class="stat-num" id="d-a" style="color:#c05800">0</div>
         <div class="stat-label">A급가망</div>
       </div>
-      <div class="stat-card" onclick="goListFiltered('상담중')">
-        <div class="stat-num" id="d-consult" style="color:#1055a8;">0</div>
+      <div class="stat-card" onclick="goFilter('상담중')">
+        <div class="stat-num" id="d-c" style="color:#1055a8">0</div>
         <div class="stat-label">상담중</div>
       </div>
-      <div class="stat-card" onclick="goListFiltered('계약유력')">
-        <div class="stat-num" id="d-likely" style="color:#6020a0;">0</div>
+      <div class="stat-card" onclick="goFilter('계약유력')">
+        <div class="stat-num" id="d-l" style="color:#6020a0">0</div>
         <div class="stat-label">계약유력</div>
       </div>
-      <div class="stat-card" onclick="goListFiltered('계약')">
-        <div class="stat-num" id="d-contract" style="color:#0f6e35;">0</div>
+      <div class="stat-card" onclick="goFilter('계약')">
+        <div class="stat-num" id="d-k" style="color:#0f6e35">0</div>
         <div class="stat-label">계약</div>
       </div>
-      <div class="stat-card" onclick="goListFiltered('출고')">
-        <div class="stat-num" id="d-delivery" style="color:#0a5528;">0</div>
+      <div class="stat-card" onclick="goFilter('출고')">
+        <div class="stat-num" id="d-d" style="color:#0a5528">0</div>
         <div class="stat-label">출고</div>
       </div>
-      <div class="stat-card" onclick="goListFiltered('해약')">
-        <div class="stat-num" id="d-cancel" style="color:#a01515;">0</div>
+      <div class="stat-card" onclick="goFilter('해약')">
+        <div class="stat-num" id="d-x" style="color:#a01515">0</div>
         <div class="stat-label">해약</div>
       </div>
     </div>
 
     <!-- 차량관리 알림 -->
     <!--
-      TODO (추후 알림 연동):
-      - 보험만기 30일 전: 카카오 알림톡/문자 발송 예정
-      - 자동차검사 30일 전: 문자 발송 예정
-      - 금융종료 90일 전: 상담 연락 예정
-      - 재구매 90일 전: 재구매 상담 연락 예정
+      TODO 추후 알림 연동:
+      - nextContact D-7 이내: 카카오/문자 발송 예정
+      - deliveryDate 기준 1/3년 경과: 재구매 상담 연락 예정
     -->
-    <div class="section-title"><span class="badge-dot"></span> 차량관리 알림</div>
+    <div class="section-heading"><span class="dot"></span> 차량관리 알림</div>
     <div class="care-grid">
       <div class="care-card info">
-        <div class="care-num" id="dc-week" style="color:var(--blue);">0</div>
+        <div class="care-num" id="dc-week" style="color:var(--blue)">0</div>
         <div class="care-label">이번주연락</div>
       </div>
       <div class="care-card warn">
-        <div class="care-num" id="dc-insurance" style="color:#e07000;">0</div>
-        <div class="care-label">보험만기30일</div>
+        <div class="care-num" id="dc-td" style="color:#e07000">0</div>
+        <div class="care-label">시승예정7일</div>
       </div>
       <div class="care-card warn">
-        <div class="care-num" id="dc-inspect" style="color:#e07000;">0</div>
-        <div class="care-label">검사30일</div>
-      </div>
-      <div class="care-card warn">
-        <div class="care-num" id="dc-finance" style="color:#c05800;">0</div>
-        <div class="care-label">금융종료90일</div>
-      </div>
-      <div class="care-card">
-        <div class="care-num" id="dc-1yr" style="color:#555;">0</div>
-        <div class="care-label">출고1년↑</div>
+        <div class="care-num" id="dc-del" style="color:#c05800">0</div>
+        <div class="care-label">출고예정7일</div>
       </div>
       <div class="care-card alert">
-        <div class="care-num" id="dc-3yr" style="color:#a01515;">0</div>
-        <div class="care-label">출고3년↑</div>
-      </div>
-      <div class="care-card warn">
-        <div class="care-num" id="dc-repurchase" style="color:#6020a0;">0</div>
-        <div class="care-label">재구매예상</div>
+        <div class="care-num" id="dc-1yr" style="color:#a01515">0</div>
+        <div class="care-label">출고1년↑</div>
       </div>
     </div>
 
-    <!-- 오늘 연락할 고객 -->
-    <div class="section-title"><span class="badge-dot"></span> 오늘 연락할 고객</div>
-    <div class="contact-section" id="todayContactList">
-      <div class="contact-list-empty">오늘 연락할 고객이 없습니다</div>
-    </div>
+    <!-- 오늘 연락 -->
+    <div class="section-heading"><span class="dot"></span> 오늘 연락할 고객</div>
+    <div id="todayList"><div class="contact-empty">오늘 연락할 고객이 없습니다</div></div>
 
-    <!-- 이번주 연락할 고객 -->
-    <div class="section-title"><span class="badge-dot"></span> 이번주 연락할 고객</div>
-    <div class="contact-section" id="weekContactList">
-      <div class="contact-list-empty">이번주 연락할 고객이 없습니다</div>
-    </div>
+    <!-- 이번주 연락 -->
+    <div class="section-heading"><span class="dot"></span> 이번주 연락할 고객</div>
+    <div id="weekList"><div class="contact-empty">이번주 연락할 고객이 없습니다</div></div>
+  </div>
 
-  </div><!-- /homeView -->
-
-  <!-- ══════════════════ VIEW: 신규고객 등록 ══════════════════ -->
+  <!-- ══════════ VIEW: 신규고객 등록 ══════════ -->
   <div class="view" id="newView">
     <div class="view-header">
-      <div>
-        <div class="view-header-title">✏️ 신규고객 등록</div>
-        <div class="view-header-sub">새 고객 정보를 입력하세요</div>
-      </div>
+      <div class="view-title">✏️ 신규고객 등록</div>
+      <div class="view-sub">새 고객 정보를 입력하세요 — 구글시트 A~S 컬럼에 순서대로 저장됩니다</div>
     </div>
 
+    <!-- 고객 기본 정보 -->
     <div class="form-card">
       <div class="form-card-header">고객 기본 정보</div>
       <div class="form-body">
@@ -601,377 +490,402 @@
             <input type="text" id="customerName" placeholder="홍길동"/>
           </div>
           <div class="field">
-            <label>휴대폰번호 <span class="req">*</span></label>
+            <label>법인명</label>
+            <input type="text" id="companyName" placeholder="(주)회사명 또는 공란"/>
+          </div>
+          <div class="field">
+            <label>연락처 <span class="req">*</span></label>
             <input type="tel" id="phone" placeholder="010-0000-0000" maxlength="13"/>
           </div>
           <div class="field">
-            <!-- birthDate는 향후 생일 알림 기능에 사용 예정 -->
-            <label>생년월일</label>
-            <input type="date" id="birthDate"/>
+            <label>거주지역</label>
+            <input type="text" id="region" placeholder="예: 서울 강남구"/>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- 차량 관심 정보 -->
     <div class="form-card">
-      <div class="form-card-header">차량 & 구매 정보</div>
+      <div class="form-card-header">차량 관심 정보</div>
       <div class="form-body">
         <div class="grid-2">
           <div class="field">
-            <label>관심차종</label>
-            <select id="carCategory" onchange="onCategoryChange()">
-              <option value="">— 차종 선택 —</option>
-              <option>A-Class</option><option>CLA</option><option>GLA / GLB</option>
-              <option>C-Class</option><option>E-Class</option>
-              <option>S-Class MY26</option><option>S-Class MY27</option>
-              <option>CLE</option><option>GLC</option><option>GLE</option>
-              <option>GLS</option><option>G-Class</option>
-              <option>AMG GT · SL</option><option>EQ</option>
-              <option>Mercedes-Maybach</option>
+            <label>모델명</label>
+            <!-- E열: 모델명 (구 차종대분류) -->
+            <select id="modelName" onchange="onModelChange()">
+              <option value="">— 모델 선택 —</option>
+              <option>A-Class</option><option>CLA</option>
+              <option>GLA / GLB</option><option>C-Class</option>
+              <option>E-Class</option><option>S-Class</option>
+              <option>CLE</option><option>GLC</option>
+              <option>GLE</option><option>GLS</option>
+              <option>G-Class</option><option>AMG GT · SL</option>
+              <option>EQ</option><option>Mercedes-Maybach</option>
             </select>
           </div>
           <div class="field">
             <label>세부모델</label>
-            <select id="carModel" disabled>
-              <option value="">— 차종을 먼저 선택하세요 —</option>
+            <!-- F열: 세부모델 (구 차종세부) -->
+            <select id="detailModel" disabled>
+              <option value="">— 모델을 먼저 선택하세요 —</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 구매 정보 -->
+    <div class="form-card">
+      <div class="form-card-header">구매 정보</div>
+      <div class="form-body">
+        <div class="grid-2">
+          <div class="field">
+            <label>구매예산</label>
+            <!-- G열: 구매예산 -->
+            <select id="budget">
+              <option value="">— 선택 —</option>
+              <option>1억이내</option>
+              <option>1억~1억5000만</option>
+              <option>1억5000만원선</option>
+              <option>2억이내</option>
+              <option>2억이상</option>
+              <option>한도달내구매</option>
+              <option>이번달이내</option>
+              <option>할부</option>
+              <option>미정</option>
             </select>
           </div>
           <div class="field">
-            <label>구매방식</label>
-            <select id="purchaseType">
+            <label>구매예정시기</label>
+            <!-- H열: 구매예정시기 -->
+            <input type="text" id="purchaseTiming" placeholder="예: 2026년 12월 이내"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 상담 정보 -->
+    <div class="form-card">
+      <div class="form-card-header">상담 정보</div>
+      <div class="form-body">
+        <div class="grid-2">
+          <div class="field">
+            <label>유입경로</label>
+            <!-- I열: 유입경로 -->
+            <select id="leadSource">
               <option value="">— 선택 —</option>
-              <option>일시불</option><option>할부</option>
-              <option>리스</option><option>장기렌트</option><option>미정</option>
+              <option>전시장방문및전화</option><option>GETCHA</option>
+              <option>지인소개</option><option>에이전시</option>
+              <option>유튜브</option><option>기존고객</option>
+              <option>고객소개</option><option>블로그</option>
+              <option>인스타그램</option><option>기타</option>
             </select>
           </div>
           <div class="field">
             <label>현재상태</label>
+            <!-- J열: 현재상태 -->
             <select id="status">
               <option value="">— 선택 —</option>
-              <option>신규문의</option><option>A급가망</option><option>상담중</option>
-              <option>계약유력</option><option>구매보류</option><option>계약</option>
-              <option>출고</option><option>상담종료</option><option>해약</option>
+              <option>신규문의</option><option>A급가망</option>
+              <option>상담중</option><option>계약유력</option>
+              <option>구매보류</option><option>계약</option>
+              <option>출고</option><option>상담종료</option>
+              <option>해약</option>
             </select>
           </div>
-          <div class="field">
-            <label>유입경로</label>
-            <select id="leadSource">
-              <option value="">— 선택 —</option>
-              <option>전시장방문및전화</option><option>GETCHA</option>
-              <option>지인소개</option><option>에이전시</option><option>유튜브</option>
-              <option>기존고객</option><option>고객소개</option>
-              <option>블로그</option><option>인스타그램</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="form-card">
-      <div class="form-card-header">보유차종 정보</div>
-      <div class="form-body">
-        <div class="grid-2">
-          <div class="field">
-            <label>보유차종 모델명</label>
-            <input type="text" id="ownedCarModel" placeholder="예: BMW 5시리즈"/>
-          </div>
-          <div class="field">
-            <label>주행거리</label>
-            <input type="text" id="ownedCarMileage" placeholder="예: 35,000km"/>
-          </div>
-          <div class="field">
-            <label>사고유무</label>
-            <select id="accidentHistory">
-              <option value="">— 선택 —</option>
-              <option>무사고</option><option>단순교환</option>
-              <option>사고있음</option><option>모름</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>차량번호</label>
-            <input type="text" id="carNumber" placeholder="예: 123가4567"/>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="form-card">
-      <div class="form-card-header">상담 내용</div>
-      <div class="form-body">
-        <div class="grid-2">
           <div class="field full">
             <label>상담내용</label>
-            <textarea id="consultation" placeholder="상담 내용을 간략히 입력하세요."></textarea>
+            <!-- K열: 상담내용 -->
+            <textarea id="consultation" placeholder="상담 내용을 입력하세요."></textarea>
           </div>
           <div class="field">
             <label>다음연락일</label>
+            <!-- L열: 다음연락일 -->
             <input type="date" id="nextContact"/>
           </div>
-          <div class="field">
-            <label>메모</label>
-            <input type="text" id="memo" placeholder="기타 특이사항"/>
-          </div>
         </div>
       </div>
     </div>
 
+    <!-- 일정 정보 -->
     <div class="form-card">
-      <div class="form-card-header">🚗 차량관리 / 재구매관리</div>
+      <div class="form-card-header">일정 정보</div>
       <div class="form-body">
         <div class="grid-2">
-          <div class="field"><label>구매예정일</label><input type="date" id="expectedPurchaseDate" class="care-input"/></div>
-          <div class="field"><label>계약일</label><input type="date" id="contractDate" class="care-input"/></div>
-          <div class="field"><label>출고일</label><input type="date" id="deliveryDate" class="care-input"/></div>
-          <div class="field"><label>보험만기일</label><input type="date" id="insuranceExpireDate" class="care-input"/></div>
-          <div class="field"><label>자동차검사 예정일</label><input type="date" id="inspectionDueDate" class="care-input"/></div>
-          <div class="field"><label>할부/리스/렌트 종료일</label><input type="date" id="financeEndDate" class="care-input"/></div>
-          <div class="field"><label>보증만료일</label><input type="date" id="warrantyEndDate" class="care-input"/></div>
-          <div class="field"><label>재구매 예상시점</label><input type="date" id="repurchaseExpectedDate" class="care-input"/></div>
-          <div class="field full">
-            <label>차량관리 메모</label>
-            <textarea id="vehicleCareMemo" placeholder="차량관리 관련 특이사항 등"></textarea>
+          <div class="field">
+            <label>상담일시</label>
+            <!-- M열: 상담일시 -->
+            <input type="datetime-local" id="consultDateTime"/>
+          </div>
+          <div class="field">
+            <label>시승일정</label>
+            <!-- N열: 시승일정 -->
+            <input type="date" id="testDriveSchedule"/>
+          </div>
+          <div class="field">
+            <label>출고일정</label>
+            <!-- O열: 출고일정 -->
+            <input type="date" id="deliverySchedule"/>
+          </div>
+          <div class="field">
+            <label>계약일</label>
+            <!-- P열: 계약일 -->
+            <input type="date" id="contractDate"/>
+          </div>
+          <div class="field">
+            <label>출고일</label>
+            <!-- Q열: 출고일 -->
+            <input type="date" id="deliveryDate"/>
+          </div>
+          <div class="field">
+            <label>출고월</label>
+            <!-- R열: 출고월 예: 2026-06 -->
+            <input type="month" id="deliveryMonth"/>
           </div>
         </div>
       </div>
     </div>
 
-    <button class="btn-submit" id="submitBtn" onclick="submitNew()">고객 정보 저장</button>
-    <div class="status-msg" id="status-msg"></div>
-  </div><!-- /newView -->
-
-  <!-- ══════════════════ VIEW: 기존상담 입력 ══════════════════ -->
-  <div class="view" id="consultView">
-    <div class="view-header">
-      <div>
-        <div class="view-header-title">📋 기존고객 추가상담</div>
-        <div class="view-header-sub">상담내용이 자동으로 누적됩니다</div>
+    <!-- 기타 -->
+    <div class="form-card">
+      <div class="form-card-header">기타</div>
+      <div class="form-body">
+        <div class="field">
+          <label>태그</label>
+          <!-- S열: 태그 -->
+          <input type="text" id="tags" placeholder="예: VIP, 재구매, 법인"/>
+        </div>
       </div>
     </div>
 
+    <button class="btn-submit" id="submitBtn" onclick="submitNew()">고객 정보 저장 (구글시트 A→S)</button>
+    <div class="st-msg" id="msg-new"></div>
+  </div>
+
+  <!-- ══════════ VIEW: 기존상담 입력 ══════════ -->
+  <div class="view" id="consultView">
+    <div class="view-header">
+      <div class="view-title">📋 기존고객 추가상담</div>
+      <div class="view-sub">상담내용이 K열에 자동 누적됩니다</div>
+    </div>
+
     <div class="form-card">
-      <div class="form-card-header update">고객 확인</div>
+      <div class="form-card-header blue">고객 확인 (연락처로 검색)</div>
       <div class="form-body">
         <div class="grid-2">
           <div class="field">
             <label>고객명</label>
-            <input type="text" id="u-customerName" placeholder="홍길동"/>
+            <input type="text" id="u-name" placeholder="홍길동"/>
           </div>
           <div class="field">
-            <label>휴대폰번호 <span class="req">*</span></label>
+            <label>연락처 <span class="req">*</span></label>
             <input type="tel" id="u-phone" placeholder="010-0000-0000" maxlength="13"
-                   oninput="onUpdatePhoneInput(this)"/>
+                   oninput="onUPhoneInput(this)"/>
           </div>
         </div>
-        <div class="customer-preview" id="customer-preview">
-          <div class="preview-name" id="preview-name">—</div>
-          <div class="preview-meta" id="preview-meta">—</div>
-          <div class="preview-status" id="preview-status"></div>
+        <div class="preview-box" id="preview-box">
+          <div class="preview-name" id="prev-name">—</div>
+          <div class="preview-meta" id="prev-meta">—</div>
+          <div class="preview-status" id="prev-status"></div>
         </div>
-        <div class="customer-not-found" id="customer-not-found">
+        <div class="nofound" id="nofound">
           ⚠ 기존 고객을 찾을 수 없습니다. 신규고객으로 등록해주세요.
         </div>
       </div>
     </div>
 
     <div class="form-card">
-      <div class="form-card-header update">추가상담 내용</div>
+      <div class="form-card-header blue">추가상담 내용</div>
       <div class="form-body">
         <div class="grid-2">
           <div class="field">
             <label>현재상태</label>
             <select id="u-status">
               <option value="">— 선택 (변경 시) —</option>
-              <option>신규문의</option><option>A급가망</option><option>상담중</option>
-              <option>계약유력</option><option>구매보류</option><option>계약</option>
-              <option>출고</option><option>상담종료</option><option>해약</option>
+              <option>신규문의</option><option>A급가망</option>
+              <option>상담중</option><option>계약유력</option>
+              <option>구매보류</option><option>계약</option>
+              <option>출고</option><option>상담종료</option>
+              <option>해약</option>
             </select>
           </div>
           <div class="field">
             <label>다음연락일</label>
-            <input type="date" id="u-nextContact"/>
+            <input type="date" id="u-next"/>
           </div>
           <div class="field full">
             <label>추가상담내용 <span class="req">*</span></label>
             <textarea id="addConsultation"
-              placeholder="이번 상담에서 나눈 내용을 입력하세요.&#10;날짜와 시간은 자동으로 붙습니다." style="min-height:130px;"></textarea>
-          </div>
-          <div class="field full">
-            <label>메모 업데이트</label>
-            <input type="text" id="u-memo" placeholder="메모 변경 시 입력 (비워두면 유지)"/>
+              placeholder="이번 상담 내용을 입력하세요.&#10;날짜/시간은 자동으로 앞에 붙습니다." style="min-height:130px;"></textarea>
           </div>
         </div>
       </div>
     </div>
 
-    <button class="btn-submit update-btn" id="updateBtn" onclick="submitUpdate()">추가상담 저장</button>
-    <div class="status-msg" id="status-msg-update"></div>
-  </div><!-- /consultView -->
+    <button class="btn-submit blue-btn" id="updateBtn" onclick="submitUpdate()">추가상담 저장</button>
+    <div class="st-msg" id="msg-update"></div>
+  </div>
 
-  <!-- ══════════════════ VIEW: 고객목록 ══════════════════ -->
+  <!-- ══════════ VIEW: 고객목록 ══════════ -->
   <div class="view" id="listView">
-
-    <div class="list-header">
-      <div>
-        <div class="view-header-title">👥 고객목록</div>
-      </div>
+    <div class="list-topbar">
+      <div class="view-title">👥 고객목록</div>
       <div class="list-count-badge" id="list-count">0명</div>
     </div>
 
-    <!-- 검색 -->
     <div class="search-bar">
-      <input type="text" id="searchInput" placeholder="🔍 이름 또는 전화번호 검색"
-             oninput="renderCustomerList()"/>
+      <input type="text" id="searchInput" placeholder="🔍 이름 또는 연락처 검색"
+             oninput="renderList()"/>
     </div>
 
-    <!-- 필터 표시 -->
-    <div class="filter-bar" id="filterBar" style="display:none;">
+    <div class="filter-bar" id="filterBar">
       <div class="filter-label" id="filterLabel">전체 고객</div>
       <button class="filter-clear" onclick="clearFilter()">전체 보기 ✕</button>
     </div>
 
-    <!-- 고객 카드 목록 -->
-    <div id="customerListContainer"></div>
-
-  </div><!-- /listView -->
+    <div id="listContainer"></div>
+  </div>
 
 </div><!-- /.page-wrap -->
 
-<!-- 하단 네비 바 (모바일 전용) -->
-<nav class="bottom-nav" id="bottomNav">
-  <button class="nav-btn active" id="nav-home" onclick="showView('home')" aria-label="홈">
-    <span class="nav-icon">🏠</span>
-    <span class="nav-label">홈</span>
+<!-- 하단 네비 (모바일) -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nb-home" onclick="showView('home')" aria-label="홈">
+    <span class="nav-icon">🏠</span><span class="nav-label">홈</span>
   </button>
-  <button class="nav-btn" id="nav-consult" onclick="showView('consult')" aria-label="상담">
-    <span class="nav-icon">📋</span>
-    <span class="nav-label">상담</span>
+  <button class="nav-btn" id="nb-consult" onclick="showView('consult')" aria-label="상담">
+    <span class="nav-icon">📋</span><span class="nav-label">상담</span>
   </button>
-  <!-- 가운데 + 버튼 -->
-  <button class="nav-btn-plus" id="nav-plus" onclick="showView('new')" aria-label="신규등록">
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <button class="nav-btn-plus" id="nb-plus" onclick="showView('new')" aria-label="신규등록">
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M12 4v16M4 12h16" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
     </svg>
   </button>
-  <button class="nav-btn" id="nav-list" onclick="showView('list')" aria-label="고객목록">
-    <span class="nav-icon">👥</span>
-    <span class="nav-label">고객목록</span>
+  <button class="nav-btn" id="nb-list" onclick="showView('list')" aria-label="고객목록">
+    <span class="nav-icon">👥</span><span class="nav-label">고객목록</span>
   </button>
-  <button class="nav-btn" id="nav-more" onclick="showView('home')" aria-label="더보기">
-    <span class="nav-icon">⋯</span>
-    <span class="nav-label">더보기</span>
+  <button class="nav-btn" id="nb-more" onclick="showView('home')" aria-label="더보기">
+    <span class="nav-icon">⋯</span><span class="nav-label">더보기</span>
   </button>
 </nav>
 
 <script>
 // ============================================================
-// LS 키 / 상수
+// 상수
 // ============================================================
-var LS_KEY = "nj_customers";
-var currentFilter = ""; // 고객목록 필터
-
-// ============================================================
-// 화면 전환
-// ============================================================
-var VIEW_NAMES = {home:"대시보드",new:"신규등록",consult:"추가상담",list:"고객목록"};
-var VIEW_IDS   = {home:"homeView",new:"newView",consult:"consultView",list:"listView"};
-var NAV_IDS    = {home:"nav-home",new:"nav-plus",consult:"nav-consult",list:"nav-list"};
-
-function showView(v){
-  // 뷰 전환
-  Object.values(VIEW_IDS).forEach(function(id){
-    var el=document.getElementById(id);
-    if(el){ el.classList.remove("active"); }
-  });
-  var target=document.getElementById(VIEW_IDS[v]);
-  if(target){ target.classList.add("active"); }
-
-  // 뱃지
-  document.getElementById("viewBadge").textContent = VIEW_NAMES[v]||"";
-
-  // 하단바 active
-  ["home","consult","list"].forEach(function(k){
-    var btn=document.getElementById(NAV_IDS[k]);
-    if(btn) btn.classList.toggle("active", k===v);
-  });
-  var plus=document.getElementById("nav-plus");
-  if(plus) plus.classList.toggle("active", v==="new");
-
-  // PC 탭 active
-  var pcBtns=document.querySelectorAll(".pc-tab-btn");
-  var order=["home","new","consult","list"];
-  pcBtns.forEach(function(btn,i){
-    btn.classList.toggle("active", order[i]===v);
-  });
-
-  // 특정 화면 초기화
-  if(v==="list") renderCustomerList();
-  if(v==="home") renderHomeContacts();
-
-  window.scrollTo({top:0, behavior:"smooth"});
-  hideMsg("status-msg");
-  hideMsg("status-msg-update");
-}
-
-// 대시보드 카드 클릭 → 필터된 고객목록
-function goListFiltered(status){
-  currentFilter = status;
-  showView("list");
-}
-
-function clearFilter(){
-  currentFilter="";
-  document.getElementById("filterBar").style.display="none";
-  renderCustomerList();
-}
+var LS_KEY = "nj_crm_v7";
+var currentFilter = "";
 
 // ============================================================
-// 차종 데이터
+// 세부모델 데이터 (모델명 = 구글시트 E열)
 // ============================================================
-var CAR_MODELS = {
+var DETAIL_MODELS = {
   "A-Class":["A 220 Hatch","A 220 Sedan","Mercedes-AMG A 35 4MATIC","Mercedes-AMG A 45 S 4MATIC+"],
   "CLA":["CLA 250 4MATIC AMG Line","Mercedes-AMG CLA 45 S 4MATIC+","Mercedes-AMG CLA 45 S 4MATIC+ Final Edition"],
   "GLA / GLB":["GLA 250 4MATIC AMG Line","GLB 200 d","GLB 250 4MATIC","Mercedes-AMG GLB 35 4MATIC"],
   "C-Class":["C 200 AVANTGARDE","C 200 AMG Line"],
-  "E-Class":["E 200 AVANTGARDE","E 200 EXCLUSIVE","E 200 AMG Line","E 200 AMG Line RoF Edition","E 220 d 4MATIC EXCLUSIVE","E 300 4MATIC EXCLUSIVE","E 300 4MATIC AMG Line","E 300 4MATIC 140주년 Edition","E 350 e 4MATIC EXCLUSIVE","E 450 4MATIC AMG Line","E 450 4MATIC EXCLUSIVE","Mercedes-AMG E 53 HYBRID 4MATIC+"],
-  "S-Class MY26":["S 350 d 4MATIC","S 450 4MATIC SWB","S 450 4MATIC Long","S 500 4MATIC","S 580 4MATIC","Mercedes-AMG S 63 E Performance"],
-  "S-Class MY27":["S 350 d 4MATIC","S 450 4MATIC","S 450 4MATIC Long Exclusive","S 450 4MATIC Long AMG Line","S 500 4MATIC Long","S 580 4MATIC Long"],
-  "CLE":["── Coupé ──","CLE 200 Coupé AMG Line","CLE 450 4MATIC Coupé AMG Line","Mercedes-AMG CLE 53 4MATIC+ Coupé","── Cabriolet ──","CLE 200 Cabriolet AMG Line","CLE 450 4MATIC Cabriolet AMG Line","Mercedes-AMG CLE 53 4MATIC+ Cabriolet"],
-  "GLC":["── SUV ──","GLC 220 d 4MATIC","GLC 300 4MATIC AVANTGARDE","GLC 300 4MATIC AMG Line","Mercedes-AMG GLC 43 4MATIC","── Coupé ──","GLC 300 4MATIC Coupé AVANTGARDE","GLC 300 4MATIC Coupé AMG Line","Mercedes-AMG GLC 43 4MATIC Coupé"],
-  "GLE":["── SUV ──","GLE 350 4MATIC","GLE 300 d 4MATIC","GLE 450 4MATIC","GLE 450 4MATIC AMG Line","Mercedes-AMG GLE 53 4MATIC+","── Coupé ──","GLE 450 d 4MATIC Coupé AMG Line","GLE 450 4MATIC Coupé AMG Line","Mercedes-AMG GLE 53 4MATIC+ Coupé"],
-  "GLS":["GLS 450 d 4MATIC AMG Line","GLS 450 4MATIC AMG Line","GLS 450 d 4MATIC AMG Line Premium","GLS 450 4MATIC AMG Line Premium","GLS 580 4MATIC AMG Line","Mercedes-AMG GLS 63 4MATIC+"],
+  "E-Class":["E 200 AVANTGARDE","E 200 EXCLUSIVE","E 200 AMG Line","E 200 AMG Line RoF Edition",
+    "E 220 d 4MATIC EXCLUSIVE","E 300 4MATIC EXCLUSIVE","E 300 4MATIC AMG Line",
+    "E 300 4MATIC 140주년 Edition","E 350 e 4MATIC EXCLUSIVE",
+    "E 450 4MATIC AMG Line","E 450 4MATIC EXCLUSIVE","Mercedes-AMG E 53 HYBRID 4MATIC+"],
+  "S-Class":["S 350 d 4MATIC","S 450 4MATIC SWB","S 450 4MATIC Long","S 500 4MATIC",
+    "S 580 4MATIC","Mercedes-AMG S 63 E Performance",
+    "S 450 4MATIC Long Exclusive","S 450 4MATIC Long AMG Line","S 500 4MATIC Long","S 580 4MATIC Long"],
+  "CLE":["── Coupé ──","CLE 200 Coupé AMG Line","CLE 450 4MATIC Coupé AMG Line",
+    "Mercedes-AMG CLE 53 4MATIC+ Coupé","── Cabriolet ──",
+    "CLE 200 Cabriolet AMG Line","CLE 450 4MATIC Cabriolet AMG Line","Mercedes-AMG CLE 53 4MATIC+ Cabriolet"],
+  "GLC":["── SUV ──","GLC 220 d 4MATIC","GLC 300 4MATIC AVANTGARDE","GLC 300 4MATIC AMG Line",
+    "Mercedes-AMG GLC 43 4MATIC","── Coupé ──","GLC 300 4MATIC Coupé AVANTGARDE",
+    "GLC 300 4MATIC Coupé AMG Line","Mercedes-AMG GLC 43 4MATIC Coupé"],
+  "GLE":["── SUV ──","GLE 350 4MATIC","GLE 300 d 4MATIC","GLE 450 4MATIC","GLE 450 4MATIC AMG Line",
+    "Mercedes-AMG GLE 53 4MATIC+","── Coupé ──","GLE 450 d 4MATIC Coupé AMG Line",
+    "GLE 450 4MATIC Coupé AMG Line","Mercedes-AMG GLE 53 4MATIC+ Coupé"],
+  "GLS":["GLS 450 d 4MATIC AMG Line","GLS 450 4MATIC AMG Line","GLS 450 d 4MATIC AMG Line Premium",
+    "GLS 450 4MATIC AMG Line Premium","GLS 580 4MATIC AMG Line","Mercedes-AMG GLS 63 4MATIC+"],
   "G-Class":["G 450 d","G 450 d MANUFAKTUR","Mercedes-AMG G 63","Mercedes-AMG G 63 MANUFAKTUR"],
-  "AMG GT · SL":["Mercedes-AMG SL 43","Mercedes-AMG SL 63 4MATIC+","Mercedes-AMG GT 55 4MATIC+","Mercedes-AMG GT 63 S E Performance","Mercedes-AMG GT 43 4MATIC+"],
-  "EQ":["EQA 250 Progressive","EQA 250 AMG Line","EQB 300 4MATIC Progressive","EQB 300 4MATIC AMG Line","EQE 350+ SUV","EQE 350+","EQE 500 4MATIC SUV","EQS 450 4MATIC SUV","EQS 580 4MATIC SUV","G 580 with EQ Technology"],
-  "Mercedes-Maybach":["── MY26 ──","Mercedes-Maybach S 580","Mercedes-Maybach S 680","Mercedes-Maybach S 680 V12 Edition","Mercedes-Maybach SL 680","Mercedes-Maybach GLS 600","Mercedes-Maybach GLS 600 MANUFAKTUR","Mercedes-Maybach EQS 680 SUV","── MY27 ──","Mercedes-Maybach S 580","Mercedes-Maybach S 580 MANUFAKTUR","Mercedes-Maybach S 680"]
+  "AMG GT · SL":["Mercedes-AMG SL 43","Mercedes-AMG SL 63 4MATIC+","Mercedes-AMG GT 55 4MATIC+",
+    "Mercedes-AMG GT 63 S E Performance","Mercedes-AMG GT 43 4MATIC+"],
+  "EQ":["EQA 250 Progressive","EQA 250 AMG Line","EQB 300 4MATIC Progressive",
+    "EQB 300 4MATIC AMG Line","EQE 350+ SUV","EQE 350+","EQE 500 4MATIC SUV",
+    "EQS 450 4MATIC SUV","EQS 580 4MATIC SUV","G 580 with EQ Technology"],
+  "Mercedes-Maybach":["── MY26 ──","Mercedes-Maybach S 580","Mercedes-Maybach S 680",
+    "Mercedes-Maybach S 680 V12 Edition","Mercedes-Maybach SL 680","Mercedes-Maybach GLS 600",
+    "Mercedes-Maybach GLS 600 MANUFAKTUR","Mercedes-Maybach EQS 680 SUV",
+    "── MY27 ──","Mercedes-Maybach S 580","Mercedes-Maybach S 580 MANUFAKTUR","Mercedes-Maybach S 680"]
 };
+
 function isSep(v){return v.indexOf("──")!==-1;}
 
-function onCategoryChange(){
-  var cat=document.getElementById("carCategory").value;
-  var sel=document.getElementById("carModel");
+function onModelChange(){
+  var m=document.getElementById("modelName").value;
+  var sel=document.getElementById("detailModel");
   sel.innerHTML=""; sel.disabled=true;
-  if(!cat){sel.innerHTML='<option value="">— 차종을 먼저 선택하세요 —</option>';return;}
+  if(!m){sel.innerHTML='<option value="">— 모델을 먼저 선택하세요 —</option>';return;}
   sel.innerHTML='<option value="">— 세부모델 선택 —</option>';
-  (CAR_MODELS[cat]||[]).forEach(function(m){
+  (DETAIL_MODELS[m]||[]).forEach(function(v){
     var o=document.createElement("option");
-    if(isSep(m)){o.value="";o.disabled=true;o.style.color="#aaa";o.style.fontStyle="italic";}
-    else{o.value=m;}
-    o.textContent=m; sel.appendChild(o);
+    if(isSep(v)){o.value="";o.disabled=true;o.style.color="#aaa";o.style.fontStyle="italic";}
+    else{o.value=v;}
+    o.textContent=v; sel.appendChild(o);
   });
   sel.disabled=false;
 }
 
 // ============================================================
-// 상태 관련
+// 화면 전환
 // ============================================================
-var STATUS_MIGRATE={
+var VIEWS={home:"homeView",new:"newView",consult:"consultView",list:"listView"};
+var VNAMES={home:"대시보드",new:"신규등록",consult:"추가상담",list:"고객목록"};
+var NBS={home:"nb-home",consult:"nb-consult",list:"nb-list"};
+
+function showView(v){
+  Object.values(VIEWS).forEach(function(id){
+    var el=document.getElementById(id);if(el)el.classList.remove("active");
+  });
+  var t=document.getElementById(VIEWS[v]);if(t)t.classList.add("active");
+  document.getElementById("viewBadge").textContent=VNAMES[v]||"";
+
+  // 하단바 active
+  ["home","consult","list"].forEach(function(k){
+    var b=document.getElementById(NBS[k]);if(b)b.classList.toggle("active",k===v);
+  });
+  var plus=document.getElementById("nb-plus");
+  if(plus)plus.classList.toggle("active",v==="new");
+
+  // PC 탭
+  var pbs=document.querySelectorAll(".pc-tab-btn");
+  ["home","new","consult","list"].forEach(function(k,i){
+    if(pbs[i])pbs[i].classList.toggle("active",k===v);
+  });
+
+  if(v==="list")renderList();
+  if(v==="home"){updateDash();renderHomeContacts();}
+  window.scrollTo({top:0,behavior:"smooth"});
+  hideMsg("msg-new"); hideMsg("msg-update");
+}
+
+function goFilter(st){
+  currentFilter=st;
+  showView("list");
+}
+function clearFilter(){
+  currentFilter="";
+  document.getElementById("filterBar").style.display="none";
+  renderList();
+}
+
+// ============================================================
+// 상태
+// ============================================================
+var ST_MAP={
   "신규 문의":"신규문의","상담 진행 중":"상담중","견적 발송":"상담중",
-  "시승 예정":"상담중","시승 완료":"상담중","계약 진행 중":"계약유력",
-  "계약 완료":"계약","출고 완료":"출고","장기 보류":"구매보류","취소 / 이탈":"해약"
+  "계약 진행 중":"계약유력","계약 완료":"계약","출고 완료":"출고",
+  "장기 보류":"구매보류","취소 / 이탈":"해약"
 };
-function ms(s){if(!s)return s;return STATUS_MIGRATE[s]||s;}
+function mst(s){if(!s)return s;return ST_MAP[s]||s;}
 function sc(s){
-  var v=ms(s);
+  var v=mst(s);
   if(v==="신규문의")return"s1";if(v==="A급가망")return"s2";
   if(v==="상담중")return"s3";if(v==="계약유력")return"s4";
   if(v==="구매보류")return"s5";if(v==="계약")return"s6";
@@ -982,29 +896,24 @@ function sc(s){
 // ============================================================
 // 날짜 유틸
 // ============================================================
-function todayDate(){
+function todayD(){
   var s=new Date().toLocaleDateString("ko-KR",{timeZone:"Asia/Seoul"})
     .replace(/\./g,"-").replace(/\s/g,"").replace(/-$/,"");
   return new Date(s);
 }
-function parseDt(s){
+function parseD(s){
   if(!s)return null;
-  var p=s.split("-");if(p.length<3)return null;
-  return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));
+  // datetime-local 처리 ("2026-06-05T14:30")
+  var p=s.indexOf("T")>=0?s.split("T")[0]:s;
+  var a=p.split("-");if(a.length<3)return null;
+  return new Date(parseInt(a[0]),parseInt(a[1])-1,parseInt(a[2]));
 }
-function daysFrom(ds){
-  var d=parseDt(ds);if(!d)return null;
-  return Math.round((d-todayDate())/86400000);
+function dFrom(ds){
+  var d=parseD(ds);if(!d)return null;
+  return Math.round((d-todayD())/86400000);
 }
-function ddTag(days){
-  if(days===null)return"";
-  if(days<0)return'<span class="dday-tag urgent">D+'+Math.abs(days)+'</span>';
-  if(days===0)return'<span class="dday-tag urgent">D-Day</span>';
-  if(days<=30)return'<span class="dday-tag warn">D-'+days+'</span>';
-  return'<span class="dday-tag ok">D-'+days+'</span>';
-}
-function getNowKST(){return new Date().toLocaleString("ko-KR",{timeZone:"Asia/Seoul"});}
-function getConsultTs(){
+function getNow(){return new Date().toLocaleString("ko-KR",{timeZone:"Asia/Seoul"});}
+function getTs(){
   var d=new Date(),k=new Date(d.getTime()+9*3600000);
   var y=k.getUTCFullYear(),mo=String(k.getUTCMonth()+1).padStart(2,"0");
   var dy=String(k.getUTCDate()).padStart(2,"0"),h=String(k.getUTCHours()).padStart(2,"0");
@@ -1015,271 +924,189 @@ function getConsultTs(){
 // ============================================================
 // localStorage
 // ============================================================
-function loadCustomers(){try{return JSON.parse(localStorage.getItem(LS_KEY))||[];}catch(e){return[];}}
-function saveCustomers(l){localStorage.setItem(LS_KEY,JSON.stringify(l));}
-function normPhone(p){return(p||"").replace(/\D/g,"");}
-function findByPhone(phone){
-  var list=loadCustomers(),np=normPhone(phone);
-  for(var i=0;i<list.length;i++){if(normPhone(list[i].phone)===np)return{idx:i,c:list[i]};}
+function load(){try{return JSON.parse(localStorage.getItem(LS_KEY))||[];}catch(e){return[];}}
+function save(l){localStorage.setItem(LS_KEY,JSON.stringify(l));}
+function normP(p){return(p||"").replace(/\D/g,"");}
+function findC(phone){
+  var list=load(),np=normP(phone);
+  for(var i=0;i<list.length;i++)if(normP(list[i].phone)===np)return{idx:i,c:list[i]};
   return null;
 }
 
 // ============================================================
-// 대시보드 데이터 계산
+// 대시보드 계산
 // ============================================================
-function calcDash(list){
-  var d={total:list.length,newInq:0,agrade:0,consult:0,likely:0,contract:0,delivery:0,cancel:0};
-  var c={week:0,insurance:0,inspect:0,finance:0,yr1:0,yr3:0,repurchase:0};
-  var now=todayDate();
+function updateDash(){
+  var list=load(),now=todayD();
+  var tot=list.length,ni=0,ag=0,co=0,li=0,kt=0,de=0,ca=0;
+  var wk=0,td=0,dl=0,y1=0;
 
   list.forEach(function(x){
-    var v=ms(x.status);
-    if(v==="신규문의")d.newInq++;else if(v==="A급가망")d.agrade++;
-    else if(v==="상담중")d.consult++;else if(v==="계약유력")d.likely++;
-    else if(v==="계약")d.contract++;else if(v==="출고")d.delivery++;
-    else if(v==="해약")d.cancel++;
+    var v=mst(x.status);
+    if(v==="신규문의")ni++;else if(v==="A급가망")ag++;
+    else if(v==="상담중")co++;else if(v==="계약유력")li++;
+    else if(v==="계약")kt++;else if(v==="출고")de++;
+    else if(v==="해약")ca++;
 
-    var nd=parseDt(x.nextContact);
-    if(nd){var df=Math.round((nd-now)/86400000);if(df>=0&&df<=7)c.week++;}
-    var ins=daysFrom(x.insuranceExpireDate);if(ins!==null&&ins>=0&&ins<=30)c.insurance++;
-    var ins2=daysFrom(x.inspectionDueDate);if(ins2!==null&&ins2>=0&&ins2<=30)c.inspect++;
-    var fin=daysFrom(x.financeEndDate);if(fin!==null&&fin>=0&&fin<=90)c.finance++;
-    var del=parseDt(x.deliveryDate);
-    if(del){var el=Math.round((now-del)/86400000);if(el>=365)c.yr1++;if(el>=1095)c.yr3++;}
-    var rep=daysFrom(x.repurchaseExpectedDate);if(rep!==null&&rep>=0&&rep<=90)c.repurchase++;
+    // 이번주 연락 (nextContact)
+    var nd=parseD(x.nextContact);
+    if(nd){var df=Math.round((nd-now)/86400000);if(df>=0&&df<=7)wk++;}
+    // 시승예정 7일
+    var tdd=parseD(x.testDriveSchedule);
+    if(tdd){var tdf=Math.round((tdd-now)/86400000);if(tdf>=0&&tdf<=7)td++;}
+    // 출고일정 7일
+    var dsd=parseD(x.deliverySchedule);
+    if(dsd){var dsdf=Math.round((dsd-now)/86400000);if(dsdf>=0&&dsdf<=7)dl++;}
+    // 출고일 1년 경과
+    var deld=parseD(x.deliveryDate);
+    if(deld){var el=Math.round((now-deld)/86400000);if(el>=365)y1++;}
   });
-  return{d:d,c:c};
-}
 
-function updateDashboard(){
-  var list=loadCustomers();
-  var r=calcDash(list);
-  var d=r.d,c=r.c;
-  document.getElementById("d-total").textContent=d.total;
-  document.getElementById("d-new").textContent=d.newInq;
-  document.getElementById("d-agrade").textContent=d.agrade;
-  document.getElementById("d-consult").textContent=d.consult;
-  document.getElementById("d-likely").textContent=d.likely;
-  document.getElementById("d-contract").textContent=d.contract;
-  document.getElementById("d-delivery").textContent=d.delivery;
-  document.getElementById("d-cancel").textContent=d.cancel;
-  document.getElementById("dc-week").textContent=c.week;
-  document.getElementById("dc-insurance").textContent=c.insurance;
-  document.getElementById("dc-inspect").textContent=c.inspect;
-  document.getElementById("dc-finance").textContent=c.finance;
-  document.getElementById("dc-1yr").textContent=c.yr1;
-  document.getElementById("dc-3yr").textContent=c.yr3;
-  document.getElementById("dc-repurchase").textContent=c.repurchase;
-  document.getElementById("list-count").textContent=d.total+"명";
+  set("d-total",tot);set("d-new",ni);set("d-a",ag);set("d-c",co);
+  set("d-l",li);set("d-k",kt);set("d-d",de);set("d-x",ca);
+  set("dc-week",wk);set("dc-td",td);set("dc-del",dl);set("dc-1yr",y1);
+  set("list-count",tot+"명");
 }
+function set(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
 
 // ============================================================
-// 대시보드 오늘/이번주 연락 고객 렌더링
+// 오늘/이번주 연락 고객
 // ============================================================
 function renderHomeContacts(){
-  var list=loadCustomers();
-  var now=todayDate();
-  var today=[],week=[];
-
+  var list=load(),now=todayD(),today=[],week=[];
   list.forEach(function(c){
-    var nd=parseDt(c.nextContact);
-    if(!nd)return;
+    var nd=parseD(c.nextContact);if(!nd)return;
     var df=Math.round((nd-now)/86400000);
-    if(df===0) today.push({c:c,df:df});
-    else if(df>0&&df<=7) week.push({c:c,df:df});
+    if(df===0)today.push({c:c,df:df});
+    else if(df>0&&df<=7)week.push({c:c,df:df});
   });
 
-  // 오늘
-  var todayEl=document.getElementById("todayContactList");
-  if(today.length===0){
-    todayEl.innerHTML='<div class="contact-list-empty">오늘 연락할 고객이 없습니다</div>';
-  } else {
-    todayEl.innerHTML=today.map(function(x){return contactCard(x.c,x.df);}).join("");
-  }
+  var te=document.getElementById("todayList");
+  te.innerHTML=today.length===0?'<div class="contact-empty">오늘 연락할 고객이 없습니다</div>':
+    today.map(function(x){return ccItem(x.c,x.df);}).join("");
 
-  // 이번주 (오늘 제외)
-  var weekEl=document.getElementById("weekContactList");
-  if(week.length===0){
-    weekEl.innerHTML='<div class="contact-list-empty">이번주 추가 연락 고객이 없습니다</div>';
-  } else {
-    week.sort(function(a,b){return a.df-b.df;});
-    weekEl.innerHTML=week.map(function(x){return contactCard(x.c,x.df);}).join("");
-  }
+  var we=document.getElementById("weekList");
+  week.sort(function(a,b){return a.df-b.df;});
+  we.innerHTML=week.length===0?'<div class="contact-empty">이번주 추가 연락 고객이 없습니다</div>':
+    week.map(function(x){return ccItem(x.c,x.df);}).join("");
 }
-
-function contactCard(c,df){
-  var cat=c.carCategory||c.carModel||"—";
-  var statusDisp=ms(c.status)||c.status||"—";
+function ccItem(c,df){
+  var model=(c.modelName||"")+(c.detailModel?" · "+c.detailModel:"");
+  var sd=mst(c.status)||c.status||"—";
   return '<div class="contact-item">'+
-    '<div class="contact-item-left">'+
-      '<div class="c-name">'+esc(c.customerName)+'</div>'+
-      '<div class="c-meta">'+esc(cat)+(c.carModel&&c.carCategory?" · "+esc(c.carModel):"")+
-        ' | <span class="status-badge '+sc(c.status)+'">'+esc(statusDisp)+'</span>'+
-        ' | D-'+df+'일</div>'+
-    '</div>'+
-    '<div class="contact-item-right">'+
-      '<a class="call-btn" href="tel:'+esc(c.phone)+'">📞 전화</a>'+
-    '</div>'+
+    '<div><div class="c-name">'+esc(c.customerName)+'</div>'+
+    '<div class="c-meta">'+esc(model||"모델미정")+
+    ' | <span class="badge '+sc(c.status)+'">'+esc(sd)+'</span>'+
+    ' | D-'+df+'일</div></div>'+
+    '<a class="call-btn" href="tel:'+esc(c.phone)+'">📞 전화</a>'+
   '</div>';
 }
 
 // ============================================================
-// 고객목록 렌더링 (필터+검색 통합)
+// 고객목록 렌더링
 // ============================================================
-function renderCustomerList(){
-  var list=loadCustomers();
-  var searchQ=(document.getElementById("searchInput")||{}).value||"";
-  searchQ=searchQ.trim().toLowerCase();
+function renderList(){
+  var list=load();
+  var q=(document.getElementById("searchInput")||{}).value||"";
+  q=q.trim().toLowerCase();
 
-  // 필터바 표시
-  var filterBar=document.getElementById("filterBar");
-  var filterLabel=document.getElementById("filterLabel");
+  var fb=document.getElementById("filterBar");
+  var fl=document.getElementById("filterLabel");
   if(currentFilter){
-    filterBar.style.display="flex";
-    filterLabel.textContent=currentFilter+" 고객";
+    fb.style.display="flex";
+    fl.textContent=currentFilter+" 고객";
   } else {
-    filterBar.style.display="none";
+    fb.style.display="none";
   }
 
-  // 필터 적용
   var filtered=list.filter(function(c){
-    if(currentFilter){
-      var v=ms(c.status)||c.status||"";
-      if(v!==currentFilter) return false;
-    }
-    if(searchQ){
-      var name=(c.customerName||"").toLowerCase();
-      var phone=normPhone(c.phone);
-      if(name.indexOf(searchQ)<0 && phone.indexOf(searchQ.replace(/\D/g,""))<0) return false;
+    if(currentFilter){var v=mst(c.status)||"";if(v!==currentFilter)return false;}
+    if(q){
+      var nm=(c.customerName||"").toLowerCase();
+      var ph=normP(c.phone);
+      if(nm.indexOf(q)<0&&ph.indexOf(q.replace(/\D/g,""))<0)return false;
     }
     return true;
   });
 
-  // 최신 수정/등록 순 정렬
   filtered.sort(function(a,b){
-    var ta=a.updatedAt||a.registeredAt||"";
-    var tb=b.updatedAt||b.registeredAt||"";
+    var ta=a._updatedAt||a._savedAt||"";
+    var tb=b._updatedAt||b._savedAt||"";
     return tb.localeCompare(ta);
   });
 
-  document.getElementById("list-count").textContent=filtered.length+"명";
+  set("list-count",filtered.length+"명");
 
-  var container=document.getElementById("customerListContainer");
+  var con=document.getElementById("listContainer");
   if(filtered.length===0){
-    container.innerHTML='<div class="empty-state">'+
-      '<div class="empty-icon">🔍</div>'+
-      '<p>'+(currentFilter||searchQ?"조건에 맞는 고객이 없습니다":"아직 등록된 고객이 없습니다")+'</p>'+
-    '</div>';
+    con.innerHTML='<div class="empty-state"><div class="empty-icon">🔍</div>'+
+      '<p>'+(currentFilter||q?"조건에 맞는 고객이 없습니다":"아직 등록된 고객이 없습니다")+'</p></div>';
     return;
   }
-
-  container.innerHTML=filtered.map(function(c,idx){return buildCustCard(c,idx);}).join("");
+  con.innerHTML=filtered.map(function(c,i){return buildCard(c,i);}).join("");
 }
 
-function buildCustCard(c,idx){
-  var cat=c.carCategory||c.carModel||"";
-  var model=c.carCategory?(c.carModel||""):"";
-  var statusDisp=ms(c.status)||c.status||"—";
-  var isUpdated=!!c.updatedAt;
-  var detailId="det-"+idx;
-  var careId="care-"+idx;
+function buildCard(c,idx){
+  var sd=mst(c.status)||c.status||"—";
+  var model=(c.modelName||"")+(c.detailModel?" · "+c.detailModel:"");
+  var isUpd=!!c._updatedAt;
+  var did="det-"+idx;
 
-  var hasCare=c.expectedPurchaseDate||c.contractDate||c.deliveryDate||
-    c.insuranceExpireDate||c.inspectionDueDate||c.financeEndDate||
-    c.warrantyEndDate||c.repurchaseExpectedDate||c.vehicleCareMemo;
-
-  var html='<div class="cust-card'+(isUpdated?" updated":"")+'">';
-
-  // 상단
-  html+='<div class="cust-card-top">'+
+  var html='<div class="cust-card'+(isUpd?" updated":"")+'">';
+  html+='<div class="card-top">'+
     '<div>'+
       '<div class="cust-name">'+esc(c.customerName)+'</div>'+
-      '<div class="cust-date">'+(isUpdated?"수정: "+esc(c.updatedAt):"등록: "+esc(c.registeredAt||""))+'</div>'+
+      (c.companyName?'<div class="cust-company">'+esc(c.companyName)+'</div>':'')+
+      '<div class="cust-company">'+(isUpd?"수정: "+esc(c._updatedAt):"등록: "+esc(c._savedAt||""))+'</div>'+
     '</div>'+
-    '<span class="status-badge '+sc(c.status)+'">'+esc(statusDisp)+'</span>'+
+    '<span class="badge '+sc(c.status)+'">'+esc(sd)+'</span>'+
   '</div>';
 
-  // 핵심 정보
-  html+='<div class="cust-info-row">';
-  if(c.phone) html+='<a class="tel-link" href="tel:'+esc(c.phone)+'">📞 '+esc(c.phone)+'</a>';
-  if(cat)     html+='<span class="cust-chip">'+esc(cat)+'</span>';
-  if(model)   html+='<span class="cust-chip">'+esc(model)+'</span>';
-  if(c.nextContact) html+='<span class="cust-chip">📅 '+esc(c.nextContact)+'</span>';
-  if(c.leadSource)  html+='<span class="cust-chip">'+esc(c.leadSource)+'</span>';
+  html+='<div class="chip-row">';
+  if(c.phone)html+='<a class="tel-link" href="tel:'+esc(c.phone)+'">📞 '+esc(c.phone)+'</a>';
+  if(model)  html+='<span class="chip">'+esc(model)+'</span>';
+  if(c.region)html+='<span class="chip">📍'+esc(c.region)+'</span>';
+  if(c.nextContact)html+='<span class="chip">📅 '+esc(c.nextContact)+'</span>';
+  if(c.leadSource) html+='<span class="chip">'+esc(c.leadSource)+'</span>';
   html+='</div>';
 
-  // 상세 접기/펼치기
-  html+='<button class="detail-toggle" onclick="toggleDetail(this,\''+detailId+'\')" aria-expanded="false">'+
-    '상세정보 보기 <span class="arr">▼</span>'+
-  '</button>';
-  html+='<div class="detail-body" id="'+detailId+'">';
+  html+='<button class="tog-btn" onclick="togDet(this,\''+did+'\')" aria-expanded="false">'+
+    '상세정보 보기 <span class="tog-arr">▼</span></button>';
+  html+='<div class="detail-body" id="'+did+'">';
 
-  // 기본
-  html+='<div class="detail-section">기본 정보</div>';
-  if(c.birthDate)     html+=drow("생년월일",c.birthDate);
-  if(c.purchaseType)  html+=drow("구매방식",c.purchaseType);
-  if(c.ownedCarModel) html+=drow("보유차종",c.ownedCarModel);
-  if(c.ownedCarMileage)html+=drow("주행거리",c.ownedCarMileage);
-  if(c.accidentHistory)html+=drow("사고유무",c.accidentHistory);
-  if(c.carNumber)     html+=drow("차량번호",c.carNumber);
+  html+='<div class="d-sec">구매 정보</div>';
+  if(c.budget)       html+=dr("구매예산",c.budget);
+  if(c.purchaseTiming)html+=dr("구매예정시기",c.purchaseTiming);
 
-  // 상담
-  if(c.consultation||c.memo){
-    html+='<div class="detail-section">상담</div>';
-    if(c.consultation) html+='<div class="d-row"><span class="d-key">상담내용</span><span class="d-val">'+esc(c.consultation)+'</span></div>';
-    if(c.memo)         html+=drow("메모",c.memo);
-  }
+  html+='<div class="d-sec">상담</div>';
+  if(c.consultation) html+='<div class="d-row"><span class="d-key">상담내용</span><span class="d-val">'+esc(c.consultation)+'</span></div>';
+  if(c.tags)         html+=dr("태그",c.tags);
 
-  // 차량관리 (하위 접기)
-  if(hasCare){
-    html+='<button class="care-toggle" onclick="toggleCare(this,\''+careId+'\')" aria-expanded="false">'+
-      '🚗 차량관리 정보 보기 <span class="arr">▼</span>'+
-    '</button>';
-    html+='<div class="care-detail" id="'+careId+'">';
-    html+='<div class="detail-section care">차량관리 / 재구매</div>';
-    if(c.expectedPurchaseDate) html+=drow("구매예정일",c.expectedPurchaseDate);
-    if(c.contractDate)         html+=drow("계약일",c.contractDate);
-    if(c.deliveryDate){
-      var dEl=Math.abs(daysFrom(c.deliveryDate)||0);
-      var dlbl=c.deliveryDate+(dEl>=1095?'<span class="dday-tag urgent"> 3년↑</span>':dEl>=365?'<span class="dday-tag warn"> 1년↑</span>':"");
-      html+='<div class="d-row"><span class="d-key">출고일</span><span class="d-val">'+dlbl+'</span></div>';
-    }
-    if(c.insuranceExpireDate){ var iD=daysFrom(c.insuranceExpireDate); html+=drow("보험만기일",esc(c.insuranceExpireDate)+ddTag(iD)); }
-    if(c.inspectionDueDate){   var inD=daysFrom(c.inspectionDueDate);  html+=drow("검사예정일",esc(c.inspectionDueDate)+ddTag(inD)); }
-    if(c.financeEndDate){      var fD=daysFrom(c.financeEndDate);       html+=drow("금융종료일",esc(c.financeEndDate)+ddTag(fD)); }
-    if(c.warrantyEndDate)      html+=drow("보증만료일",c.warrantyEndDate);
-    if(c.repurchaseExpectedDate){ var rD=daysFrom(c.repurchaseExpectedDate); html+=drow("재구매예상",esc(c.repurchaseExpectedDate)+ddTag(rD)); }
-    if(c.vehicleCareMemo)      html+=drow("관리메모",c.vehicleCareMemo);
-    html+='</div>';
-  }
+  html+='<div class="d-sec">일정</div>';
+  if(c.consultDateTime)  html+=dr("상담일시",c.consultDateTime);
+  if(c.testDriveSchedule)html+=dr("시승일정",c.testDriveSchedule);
+  if(c.deliverySchedule) html+=dr("출고일정",c.deliverySchedule);
+  if(c.contractDate)     html+=dr("계약일",c.contractDate);
+  if(c.deliveryDate)     html+=dr("출고일",c.deliveryDate);
+  if(c.deliveryMonth)    html+=dr("출고월",c.deliveryMonth);
 
-  html+='</div>'; // /detail-body
-  html+='</div>'; // /cust-card
+  html+='</div></div>';
   return html;
 }
 
-function drow(k,v){
-  if(!v) return"";
-  return'<div class="d-row"><span class="d-key">'+k+'</span><span class="d-val">'+v+'</span></div>';
+function dr(k,v){
+  if(!v)return"";
+  return'<div class="d-row"><span class="d-key">'+k+'</span><span class="d-val">'+esc(v)+'</span></div>';
 }
 
-function toggleDetail(btn,id){
+function togDet(btn,id){
   var d=document.getElementById(id);
   var open=d.classList.contains("open");
   d.classList.toggle("open",!open);
   btn.classList.toggle("open",!open);
-  btn.querySelector(".arr").textContent=open?"▼":"▲";
-  btn.firstChild.textContent=open?"상세정보 보기 ":"상세정보 닫기 ";
+  btn.querySelector(".tog-arr").textContent=open?"▼":"▲";
+  btn.childNodes[0].textContent=open?"상세정보 보기 ":"상세정보 닫기 ";
   btn.setAttribute("aria-expanded",!open);
-}
-
-function toggleCare(btn,id){
-  var d=document.getElementById(id);
-  var open=d.classList.contains("open");
-  d.classList.toggle("open",!open);
-  btn.classList.toggle("open",!open);
-  btn.setAttribute("aria-expanded",!open);
-  btn.childNodes[0].textContent=open?"🚗 차량관리 정보 보기 ":"🚗 차량관리 정보 닫기 ";
 }
 
 // ============================================================
@@ -1293,43 +1120,43 @@ function esc(s){
 // ============================================================
 // 전화번호 자동 하이픈
 // ============================================================
-function fmtPhone(el){
+function fmtP(el){
   var v=el.value.replace(/\D/g,"");
   if(v.length<=3)el.value=v;
   else if(v.length<=7)el.value=v.slice(0,3)+"-"+v.slice(3);
   else el.value=v.slice(0,3)+"-"+v.slice(3,7)+"-"+v.slice(7,11);
 }
-document.getElementById("phone").addEventListener("input",function(){fmtPhone(this);});
-document.getElementById("u-phone").addEventListener("input",function(){fmtPhone(this);});
+document.getElementById("phone").addEventListener("input",function(){fmtP(this);});
+document.getElementById("u-phone").addEventListener("input",function(){fmtP(this);});
 
 // ============================================================
-// 추가상담 — 전화번호 입력 시 고객 프리뷰
+// 추가상담 전화번호 입력 → 고객 프리뷰
 // ============================================================
-var previewTimer=null;
-function onUpdatePhoneInput(el){
-  fmtPhone(el);
-  clearTimeout(previewTimer);
-  previewTimer=setTimeout(function(){
-    var np=normPhone(el.value);
-    var prev=document.getElementById("customer-preview");
-    var nf=document.getElementById("customer-not-found");
-    prev.classList.remove("visible"); nf.classList.remove("visible");
+var prevTimer=null;
+function onUPhoneInput(el){
+  fmtP(el);
+  clearTimeout(prevTimer);
+  prevTimer=setTimeout(function(){
+    var np=normP(el.value);
+    var pb=document.getElementById("preview-box");
+    var nf=document.getElementById("nofound");
+    pb.classList.remove("show"); nf.classList.remove("show");
     if(np.length<10)return;
-    var result=findByPhone(el.value);
-    if(result){
-      var c=result.c;
-      document.getElementById("preview-name").textContent=c.customerName||"—";
-      document.getElementById("preview-meta").textContent=
-        (c.carCategory?c.carCategory+(c.carModel?" · "+c.carModel:""):"차종 미등록")+
+    var r=findC(el.value);
+    if(r){
+      var c=r.c,sd=mst(c.status)||c.status||"—";
+      document.getElementById("prev-name").textContent=c.customerName||"—";
+      document.getElementById("prev-meta").textContent=
+        (c.modelName?c.modelName+(c.detailModel?" · "+c.detailModel:""):"모델미정")+
         " | "+(c.leadSource||"—");
-      document.getElementById("preview-status").innerHTML=
-        '<span class="status-badge '+sc(c.status)+'">'+esc(ms(c.status)||c.status||"—")+'</span>'+
-        ' <span style="font-size:12px;color:#888;margin-left:6px;">'+esc(c.updatedAt||c.registeredAt||"")+'</span>';
-      var nameEl=document.getElementById("u-customerName");
-      if(!nameEl.value) nameEl.value=c.customerName||"";
-      prev.classList.add("visible");
+      document.getElementById("prev-status").innerHTML=
+        '<span class="badge '+sc(c.status)+'">'+esc(sd)+'</span>'+
+        ' <span style="font-size:12px;color:#888;margin-left:6px;">'+esc(c._updatedAt||c._savedAt||"")+'</span>';
+      var ne=document.getElementById("u-name");
+      if(!ne.value)ne.value=c.customerName||"";
+      pb.classList.add("show");
     } else if(np.length>=11){
-      nf.classList.add("visible");
+      nf.classList.add("show");
     }
   },400);
 }
@@ -1339,153 +1166,163 @@ function onUpdatePhoneInput(el){
 // ============================================================
 function showMsg(id,type,text){
   var el=document.getElementById(id);if(!el)return;
-  el.className="status-msg "+type; el.textContent=text;
+  el.className="st-msg "+type; el.textContent=text;
   el.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 function hideMsg(id){
   var el=document.getElementById(id);if(!el)return;
-  el.className="status-msg"; el.textContent="";
+  el.className="st-msg"; el.textContent="";
+}
+
+// ============================================================
+// getFormData() — 구글시트 A~S 순서 100% 일치
+// A 고객명      B 법인명       C 연락처       D 거주지역
+// E 모델명      F 세부모델     G 구매예산     H 구매예정시기
+// I 유입경로    J 현재상태     K 상담내용     L 다음연락일
+// M 상담일시    N 시승일정     O 출고일정     P 계약일
+// Q 출고일      R 출고월       S 태그
+// ============================================================
+function getFormData(){
+  return {
+    action:            "new",
+    _savedAt:          getNow(),
+    customerName:      document.getElementById("customerName").value.trim(),      // A
+    companyName:       document.getElementById("companyName").value.trim(),       // B
+    phone:             document.getElementById("phone").value.trim(),             // C
+    region:            document.getElementById("region").value.trim(),            // D
+    modelName:         document.getElementById("modelName").value,               // E
+    detailModel:       document.getElementById("detailModel").value,             // F
+    budget:            document.getElementById("budget").value,                  // G
+    purchaseTiming:    document.getElementById("purchaseTiming").value.trim(),   // H
+    leadSource:        document.getElementById("leadSource").value,              // I
+    status:            document.getElementById("status").value,                  // J
+    consultation:      document.getElementById("consultation").value.trim(),     // K
+    nextContact:       document.getElementById("nextContact").value,             // L
+    consultDateTime:   document.getElementById("consultDateTime").value,         // M
+    testDriveSchedule: document.getElementById("testDriveSchedule").value,      // N
+    deliverySchedule:  document.getElementById("deliverySchedule").value,        // O
+    contractDate:      document.getElementById("contractDate").value,            // P
+    deliveryDate:      document.getElementById("deliveryDate").value,            // Q
+    deliveryMonth:     document.getElementById("deliveryMonth").value,           // R
+    tags:              document.getElementById("tags").value.trim()              // S
+  };
+}
+
+function resetNewForm(){
+  var ids=["customerName","companyName","phone","region","purchaseTiming",
+    "budget","leadSource","status","consultation","nextContact","consultDateTime",
+    "testDriveSchedule","deliverySchedule","contractDate","deliveryDate","deliveryMonth","tags"];
+  ids.forEach(function(id){document.getElementById(id).value="";});
+  document.getElementById("modelName").value="";
+  var dm=document.getElementById("detailModel");
+  dm.innerHTML='<option value="">— 모델을 먼저 선택하세요 —</option>'; dm.disabled=true;
 }
 
 // ============================================================
 // 신규 고객 저장
 // ============================================================
-function getNewFormData(){
-  return{
-    action:"new", registeredAt:getNowKST(),
-    customerName:document.getElementById("customerName").value.trim(),
-    phone:document.getElementById("phone").value.trim(),
-    birthDate:document.getElementById("birthDate").value,
-    carCategory:document.getElementById("carCategory").value,
-    carModel:document.getElementById("carModel").value,
-    ownedCarModel:document.getElementById("ownedCarModel").value.trim(),
-    ownedCarMileage:document.getElementById("ownedCarMileage").value.trim(),
-    accidentHistory:document.getElementById("accidentHistory").value,
-    carNumber:document.getElementById("carNumber").value.trim(),
-    purchaseType:document.getElementById("purchaseType").value,
-    status:document.getElementById("status").value,
-    leadSource:document.getElementById("leadSource").value,
-    consultation:document.getElementById("consultation").value.trim(),
-    nextContact:document.getElementById("nextContact").value,
-    memo:document.getElementById("memo").value.trim(),
-    expectedPurchaseDate:document.getElementById("expectedPurchaseDate").value,
-    contractDate:document.getElementById("contractDate").value,
-    deliveryDate:document.getElementById("deliveryDate").value,
-    insuranceExpireDate:document.getElementById("insuranceExpireDate").value,
-    inspectionDueDate:document.getElementById("inspectionDueDate").value,
-    financeEndDate:document.getElementById("financeEndDate").value,
-    warrantyEndDate:document.getElementById("warrantyEndDate").value,
-    repurchaseExpectedDate:document.getElementById("repurchaseExpectedDate").value,
-    vehicleCareMemo:document.getElementById("vehicleCareMemo").value.trim()
-  };
-}
-
-function resetNewForm(){
-  var ids=["customerName","phone","birthDate","ownedCarModel","ownedCarMileage","accidentHistory",
-    "carNumber","purchaseType","status","leadSource","consultation","nextContact","memo",
-    "expectedPurchaseDate","contractDate","deliveryDate","insuranceExpireDate",
-    "inspectionDueDate","financeEndDate","warrantyEndDate","repurchaseExpectedDate","vehicleCareMemo"];
-  ids.forEach(function(id){document.getElementById(id).value="";});
-  document.getElementById("carCategory").value="";
-  var sel=document.getElementById("carModel");
-  sel.innerHTML='<option value="">— 차종을 먼저 선택하세요 —</option>'; sel.disabled=true;
-}
-
 function submitNew(){
-  hideMsg("status-msg");
-  var data=getNewFormData();
-  if(!data.customerName){showMsg("status-msg","error","⚠ 고객명을 입력해주세요.");return;}
-  if(!data.phone){showMsg("status-msg","error","⚠ 휴대폰번호를 입력해주세요.");return;}
+  hideMsg("msg-new");
+  var data=getFormData();
+  if(!data.customerName){showMsg("msg-new","err","⚠ 고객명을 입력해주세요.");return;}
+  if(!data.phone){showMsg("msg-new","err","⚠ 연락처를 입력해주세요.");return;}
 
   var btn=document.getElementById("submitBtn");
   btn.disabled=true; btn.textContent="저장 중…";
 
-  fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
+  // 구글시트 저장 (기존 로직 유지)
+  fetch(SCRIPT_URL,{
+    method:"POST",mode:"no-cors",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(data)
+  })
   .then(function(){
-    var list=loadCustomers();
-    var np=normPhone(data.phone),idx=-1;
-    for(var i=0;i<list.length;i++){if(normPhone(list[i].phone)===np){idx=i;break;}}
+    // localStorage upsert
+    var list=load();
+    var np=normP(data.phone),idx=-1;
+    for(var i=0;i<list.length;i++){if(normP(list[i].phone)===np){idx=i;break;}}
     if(idx>=0)list[idx]=data; else list.push(data);
-    saveCustomers(list);
-    updateDashboard();
-    showMsg("status-msg","success","✅ 저장되었습니다. 구글시트에 기록되었습니다.");
+    save(list);
+    updateDash();
+    showMsg("msg-new","ok","✅ 저장되었습니다. 구글시트 A~S 컬럼에 기록되었습니다.");
     resetNewForm();
   })
   .catch(function(err){
-    showMsg("status-msg","error","❌ 저장에 실패했습니다. 인터넷 연결을 확인해주세요.");
+    showMsg("msg-new","err","❌ 저장에 실패했습니다. 인터넷 연결을 확인해주세요.");
     console.error(err);
   })
-  .finally(function(){btn.disabled=false;btn.textContent="고객 정보 저장";});
+  .finally(function(){btn.disabled=false;btn.textContent="고객 정보 저장 (구글시트 A→S)";});
 }
 
 // ============================================================
 // 추가상담 저장
 // ============================================================
 function submitUpdate(){
-  hideMsg("status-msg-update");
+  hideMsg("msg-update");
   var phone=document.getElementById("u-phone").value.trim();
   var addC=document.getElementById("addConsultation").value.trim();
-  if(!phone){showMsg("status-msg-update","error","⚠ 휴대폰번호를 입력해주세요.");return;}
-  if(!addC){showMsg("status-msg-update","error","⚠ 추가상담내용을 입력해주세요.");return;}
+  if(!phone){showMsg("msg-update","err","⚠ 연락처를 입력해주세요.");return;}
+  if(!addC){showMsg("msg-update","err","⚠ 추가상담내용을 입력해주세요.");return;}
 
-  var now=getNowKST();
-  var entry=getConsultTs()+"\n"+addC;
+  var now=getNow();
+  var entry=getTs()+"\n"+addC;
   var payload={
-    action:"update", updatedAt:now,
-    customerName:document.getElementById("u-customerName").value.trim(),
+    action:"update",
+    _updatedAt:now,
+    customerName:document.getElementById("u-name").value.trim(),
     phone:phone,
     consultationEntry:entry,
     status:document.getElementById("u-status").value,
-    nextContact:document.getElementById("u-nextContact").value,
-    memo:document.getElementById("u-memo").value.trim()
+    nextContact:document.getElementById("u-next").value
   };
 
   var btn=document.getElementById("updateBtn");
   btn.disabled=true; btn.textContent="저장 중…";
 
-  fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})
+  fetch(SCRIPT_URL,{
+    method:"POST",mode:"no-cors",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(payload)
+  })
   .then(function(){
-    var list=loadCustomers();
-    var np=normPhone(phone),found=false;
+    var list=load();
+    var np=normP(phone),found=false;
     for(var i=0;i<list.length;i++){
-      if(normPhone(list[i].phone)===np){
+      if(normP(list[i].phone)===np){
         var prev=list[i].consultation||"";
         list[i].consultation=prev?prev+"\n\n"+entry:entry;
-        if(payload.status)      list[i].status=payload.status;
-        if(payload.nextContact) list[i].nextContact=payload.nextContact;
-        if(payload.memo)        list[i].memo=payload.memo;
-        list[i].updatedAt=now;
+        if(payload.status)     list[i].status=payload.status;
+        if(payload.nextContact)list[i].nextContact=payload.nextContact;
+        list[i]._updatedAt=now;
         found=true; break;
       }
     }
-    if(found){saveCustomers(list); updateDashboard();}
-    showMsg("status-msg-update","success","✅ 추가상담이 저장되었습니다.");
-    // 폼 초기화
-    ["u-customerName","u-phone","u-status","u-nextContact","u-memo","addConsultation"]
+    if(found)save(list);
+    updateDash();
+    showMsg("msg-update","ok","✅ 추가상담이 저장되었습니다. 구글시트 K열에 누적되었습니다.");
+    ["u-name","u-phone","u-status","u-next","addConsultation"]
       .forEach(function(id){document.getElementById(id).value="";});
-    document.getElementById("customer-preview").classList.remove("visible");
-    document.getElementById("customer-not-found").classList.remove("visible");
+    document.getElementById("preview-box").classList.remove("show");
+    document.getElementById("nofound").classList.remove("show");
   })
   .catch(function(err){
-    showMsg("status-msg-update","error","❌ 저장에 실패했습니다. 인터넷 연결을 확인해주세요.");
+    showMsg("msg-update","err","❌ 저장에 실패했습니다. 인터넷 연결을 확인해주세요.");
     console.error(err);
   })
   .finally(function(){btn.disabled=false;btn.textContent="추가상담 저장";});
 }
 
 // ============================================================
-// 오늘 날짜 표시
+// 초기 실행
 // ============================================================
 (function(){
   var d=new Date();
-  var str=d.toLocaleDateString("ko-KR",{timeZone:"Asia/Seoul",year:"numeric",month:"long",day:"numeric",weekday:"long"});
-  document.getElementById("todayDateStr").textContent=str;
+  var s=d.toLocaleDateString("ko-KR",{timeZone:"Asia/Seoul",
+    year:"numeric",month:"long",day:"numeric",weekday:"long"});
+  document.getElementById("todayStr").textContent=s;
 })();
 
-// ============================================================
-// 초기 실행
-// ============================================================
-updateDashboard();
+updateDash();
 renderHomeContacts();
 </script>
 </body>
