@@ -7,36 +7,33 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyNjgE7-8IobMMeImaOFp8wwMNhqaKDg7M_beJ5K_0jI4OLUfEH9Y-FkQ8CSy_2eivuqA/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxswUgpfFoncBTJ_MUaLx7dcT4pbZXvVNhiQqYj75xwAXqfs-GuCPU6w_YbT2jVVbDelQ/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   </script>
 
   <style>
-    /*━━━━━━━━━━━━━━━ BASE ━━━━━━━━━━━━━━━*/
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{
-      --bg:#f5f5f7; --surface:#fff; --surface2:#fafafa;
-      --border:#e4e4ea; --border2:#d0d0da;
-      --gold:#b8963a; --gold-dk:#9a7a28;
-      --black:#111; --text:#1a1a1a;
-      --text-dim:#555566; --text-lt:#999aaa;
-      --danger:#c0392b; --success:#1a8a4a; --blue:#1a6aa0;
-      --radius:14px; --shadow:0 2px 16px rgba(0,0,0,.09);
+      --bg:#f5f5f7;--surface:#fff;--surface2:#fafafa;
+      --border:#e4e4ea;--border2:#d0d0da;
+      --gold:#b8963a;--gold-dk:#9a7a28;
+      --black:#111;--text:#1a1a1a;
+      --text-dim:#555566;--text-lt:#999aaa;
+      --danger:#c0392b;--success:#1a8a4a;--blue:#1a6aa0;
+      --purple:#7a3db8;--orange:#c05800;--green:#0f6e35;
+      --radius:14px;--shadow:0 2px 16px rgba(0,0,0,.09);
       --font:'Noto Sans KR','Apple SD Gothic Neo',sans-serif;
     }
-    html,body{
-      min-height:100%; background:var(--bg);
-      color:var(--text); font-family:var(--font);
-      font-size:15px; line-height:1.6; overflow-x:hidden;
-    }
+    html,body{min-height:100%;background:var(--bg);color:var(--text);
+      font-family:var(--font);font-size:15px;line-height:1.6;overflow-x:hidden;}
 
-    /*━━━━━━━━━━━━━━━ VIEWS ━━━━━━━━━━━━━━━*/
-    .view{display:none; animation:vIn .18s ease;}
+    /* ── VIEWS ── */
+    .view{display:none;animation:vIn .18s ease;}
     .view.active{display:block;}
     @keyframes vIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
     .page-wrap{max-width:780px;margin:0 auto;padding:0 14px 110px;}
 
-    /*━━━━━━━━━━━━━━━ 상단 헤더 ━━━━━━━━━━━━━━━*/
+    /* ── 상단 헤더 ── */
     .app-header{
       position:sticky;top:0;z-index:100;
       background:var(--black);padding:13px 18px 11px;
@@ -44,22 +41,16 @@
       box-shadow:0 2px 12px rgba(0,0,0,.2);
     }
     .app-header-left{display:flex;align-items:center;gap:11px;}
-    .app-logo{
-      width:32px;height:32px;border-radius:50%;
-      border:1.5px solid var(--gold);
+    .app-logo{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--gold);
       display:flex;align-items:center;justify-content:center;
-      font-size:12px;font-weight:800;color:var(--gold);flex-shrink:0;
-    }
+      font-size:12px;font-weight:800;color:var(--gold);flex-shrink:0;}
     .app-title{font-size:15px;font-weight:700;color:#fff;letter-spacing:-.3px;}
     .app-sub{font-size:10px;color:#aaa;margin-top:1px;}
-    .view-badge{
-      font-size:11px;font-weight:700;
+    .view-badge{font-size:11px;font-weight:700;
       background:rgba(184,150,58,.2);color:var(--gold);
-      border-radius:20px;padding:3px 10px;
-      border:1px solid rgba(184,150,58,.28);
-    }
+      border-radius:20px;padding:3px 10px;border:1px solid rgba(184,150,58,.28);}
 
-    /*━━━━━━━━━━━━━━━ 하단 네비 (모바일) ━━━━━━━━━━━━━━━*/
+    /* ── 하단 네비 (모바일 전용) ── */
     .bottom-nav{
       position:fixed;bottom:14px;left:50%;transform:translateX(-50%);
       width:calc(100% - 24px);max-width:480px;height:68px;
@@ -68,11 +59,9 @@
       display:flex;align-items:center;justify-content:space-around;
       padding:0 8px;z-index:200;
     }
-    .nav-btn{
-      display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;
+    .nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;
       padding:8px 4px;border:none;background:transparent;cursor:pointer;
-      font-family:var(--font);color:var(--text-lt);transition:color .15s;
-    }
+      font-family:var(--font);color:var(--text-lt);transition:color .15s;}
     .nav-icon{font-size:22px;line-height:1;}
     .nav-label{font-size:10px;font-weight:600;}
     .nav-btn.active{color:var(--black);}
@@ -87,105 +76,74 @@
     .nav-btn-plus.active{background:var(--gold);}
     .nav-btn-plus svg{width:22px;height:22px;}
 
-    /* PC: 하단바 숨김, 상단 탭 표시 */
     @media(min-width:641px){
       .bottom-nav{display:none;}
       .page-wrap{padding-bottom:40px;}
-      .pc-tabs{
-        display:flex;gap:4px;margin:14px 0;
+      .pc-tabs{display:flex;gap:4px;margin:14px 0;
         background:var(--surface);border-radius:var(--radius);
-        padding:6px;box-shadow:var(--shadow);border:1px solid var(--border);
-      }
-      .pc-tab-btn{
-        flex:1;padding:11px 8px;border:none;border-radius:10px;
+        padding:6px;box-shadow:var(--shadow);border:1px solid var(--border);}
+      .pc-tab-btn{flex:1;padding:11px 8px;border:none;border-radius:10px;
         background:transparent;cursor:pointer;font-family:var(--font);
         font-size:13px;font-weight:600;color:var(--text-dim);
-        transition:background .15s,color .15s;
-      }
+        transition:background .15s,color .15s;}
       .pc-tab-btn.active{background:var(--black);color:#fff;}
     }
     @media(max-width:640px){.pc-tabs{display:none;}}
 
-    /*━━━━━━━━━━━━━━━ 대시보드 ━━━━━━━━━━━━━━━*/
+    /* ── 대시보드 ── */
     .home-greeting{padding:20px 0 6px;}
     .home-greeting-title{font-size:21px;font-weight:800;color:var(--black);letter-spacing:-.5px;}
     .home-greeting-sub{font-size:13px;color:var(--text-dim);margin-top:3px;}
-
-    .section-heading{
-      font-size:13px;font-weight:700;color:var(--text-dim);
-      letter-spacing:.3px;margin:18px 0 10px;
-      display:flex;align-items:center;gap:6px;
-    }
+    .section-heading{font-size:13px;font-weight:700;color:var(--text-dim);
+      letter-spacing:.3px;margin:18px 0 10px;display:flex;align-items:center;gap:6px;}
     .dot{width:6px;height:6px;border-radius:50%;background:var(--gold);}
 
+    /* 고객현황 8칸 */
     .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:4px;}
-    .stat-card{
-      background:var(--surface);border:1px solid var(--border);
-      border-radius:var(--radius);padding:13px 7px 11px;
-      text-align:center;box-shadow:var(--shadow);
-      cursor:pointer;transition:transform .12s,box-shadow .12s;
-      -webkit-tap-highlight-color:transparent;
-    }
+    .stat-card{background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius);padding:13px 7px 11px;text-align:center;
+      box-shadow:var(--shadow);cursor:pointer;
+      transition:transform .12s,box-shadow .12s;-webkit-tap-highlight-color:transparent;}
     .stat-card:active{transform:scale(.95);box-shadow:none;}
     .stat-num{font-size:24px;font-weight:800;line-height:1.1;}
     .stat-label{font-size:10px;color:var(--text-dim);margin-top:5px;font-weight:600;}
 
-    .care-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px;}
-    .care-card{
-      background:var(--surface);border:1px solid var(--border);
-      border-radius:12px;padding:11px 7px 9px;text-align:center;
-      box-shadow:0 1px 8px rgba(0,0,0,.06);
-    }
-    .care-card.warn{border-top:3px solid #e07000;}
-    .care-card.alert{border-top:3px solid #c0392b;}
-    .care-card.info{border-top:3px solid var(--blue);}
-    .care-num{font-size:21px;font-weight:800;line-height:1.1;}
-    .care-label{font-size:9px;color:var(--text-dim);margin-top:4px;font-weight:600;}
+    /* 차량관리 알림 — 3열×2행 */
+    .care-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
+    .care-card{background:var(--surface);border:1px solid var(--border);
+      border-radius:12px;padding:14px 10px 12px;text-align:center;
+      box-shadow:0 1px 8px rgba(0,0,0,.06);}
+    .care-card.bday {border-top:3px solid var(--purple);}
+    .care-card.warn {border-top:3px solid var(--orange);}
+    .care-card.info {border-top:3px solid var(--green);}
+    .care-card.alert{border-top:3px solid var(--danger);}
+    .care-num{font-size:24px;font-weight:800;line-height:1.1;}
+    .care-label{font-size:10px;color:var(--text-dim);margin-top:5px;font-weight:600;}
 
-    /* 연락 고객 */
-    .contact-empty{
-      background:var(--surface);border:1px solid var(--border);
-      border-radius:var(--radius);padding:18px;text-align:center;
-      color:var(--text-lt);font-size:13px;
-    }
-    .contact-item{
-      background:var(--surface);border:1px solid var(--border);
+    /* 오늘/이번주 연락 */
+    .contact-empty{background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius);padding:18px;text-align:center;color:var(--text-lt);font-size:13px;}
+    .contact-item{background:var(--surface);border:1px solid var(--border);
       border-radius:var(--radius);padding:13px 15px;margin-bottom:8px;
       display:flex;align-items:center;justify-content:space-between;
-      box-shadow:0 1px 6px rgba(0,0,0,.05);
-    }
+      box-shadow:0 1px 6px rgba(0,0,0,.05);}
     .c-name{font-size:15px;font-weight:700;color:var(--black);}
     .c-meta{font-size:12px;color:var(--text-dim);margin-top:2px;}
-    .call-btn{
-      padding:7px 13px;border-radius:20px;border:none;
+    .call-btn{padding:7px 13px;border-radius:20px;border:none;
       background:var(--black);color:#fff;text-decoration:none;
-      font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:4px;
-    }
+      font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:4px;}
 
-    /*━━━━━━━━━━━━━━━ 폼 공통 ━━━━━━━━━━━━━━━*/
+    /* ── 폼 공통 ── */
     .view-header{padding:16px 0 6px;}
     .view-title{font-size:20px;font-weight:800;color:var(--black);}
     .view-sub{font-size:12px;color:var(--text-dim);margin-top:2px;}
-
-    .form-card{
-      background:var(--surface);border:1px solid var(--border);
-      border-radius:var(--radius);overflow:hidden;
-      box-shadow:var(--shadow);margin-bottom:14px;
-    }
-    .form-card-header{
-      padding:13px 17px;background:var(--surface2);
-      border-bottom:1px solid var(--border);
-      font-size:13px;font-weight:700;color:var(--black);
-    }
+    .form-card{background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);margin-bottom:14px;}
+    .form-card-header{padding:13px 17px;background:var(--surface2);
+      border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:var(--black);}
     .form-card-header.blue{background:#edf5fc;border-bottom-color:#c5dff0;color:var(--blue);}
+    .form-card-header.care{background:#f5f0ff;border-bottom-color:#d5b8f5;color:var(--purple);}
     .form-body{padding:16px;}
-
-    .sec-label{
-      font-size:11px;font-weight:700;letter-spacing:1px;
-      color:var(--gold);text-transform:uppercase;
-      margin:18px 0 9px;padding-bottom:5px;border-bottom:1px solid var(--border);
-    }
-    .sec-label:first-child{margin-top:0;}
 
     .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
     .field{display:flex;flex-direction:column;gap:5px;}
@@ -193,8 +151,7 @@
     label{font-size:12px;font-weight:600;color:var(--text-dim);}
     label .req{color:var(--gold);margin-left:2px;}
 
-    input[type="text"],input[type="tel"],input[type="date"],
-    input[type="datetime-local"],select,textarea{
+    input[type="text"],input[type="tel"],input[type="date"],select,textarea{
       width:100%;background:#fff;border:1px solid var(--border2);
       border-radius:9px;color:var(--text);font-family:var(--font);
       font-size:15px;padding:12px 14px;outline:none;
@@ -202,31 +159,32 @@
       -webkit-appearance:none;appearance:none;
     }
     input:focus,select:focus,textarea:focus{
-      border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,150,58,.12);
-    }
-    select{
-      cursor:pointer;
+      border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,150,58,.12);}
+    select{cursor:pointer;
       background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888899' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
-      background-repeat:no-repeat;background-position:right 13px center;padding-right:36px;
-    }
+      background-repeat:no-repeat;background-position:right 13px center;padding-right:36px;}
     select:disabled{background-color:#f5f5f8;color:var(--text-lt);cursor:not-allowed;}
     textarea{resize:vertical;min-height:90px;}
-    input[type="date"]::-webkit-calendar-picker-indicator,
-    input[type="datetime-local"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.6;}
+    input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.6;}
+
+    /* 차량관리 입력 강조 */
+    .care-input{background:#f8f5ff!important;border-color:#c8a8f0!important;}
+    .care-input:focus{border-color:var(--purple)!important;
+      box-shadow:0 0 0 3px rgba(122,61,184,.1)!important;}
+
+    /* 출고월 자동 표시 */
+    .auto-field{background:var(--surface2)!important;border:1px dashed var(--border2)!important;
+      color:var(--text-dim)!important;cursor:default;}
 
     /* 저장 버튼 */
-    .btn-submit{
-      width:100%;margin-top:18px;padding:16px;border:none;
+    .btn-submit{width:100%;margin-top:18px;padding:16px;border:none;
       border-radius:var(--radius);background:var(--black);color:#fff;
       font-family:var(--font);font-size:16px;font-weight:700;
       cursor:pointer;transition:background .18s,transform .1s;
-      position:relative;overflow:hidden;min-height:54px;
-    }
-    .btn-submit::after{
-      content:"";position:absolute;inset:0;
+      position:relative;overflow:hidden;min-height:54px;}
+    .btn-submit::after{content:"";position:absolute;inset:0;
       background:linear-gradient(135deg,rgba(184,150,58,.2) 0%,transparent 60%);
-      pointer-events:none;
-    }
+      pointer-events:none;}
     .btn-submit:hover{background:#2a2a2a;}
     .btn-submit:active{transform:scale(.99);}
     .btn-submit:disabled{opacity:.5;cursor:not-allowed;transform:none;}
@@ -234,19 +192,15 @@
     .btn-submit.blue-btn:hover{background:#155a8a;}
 
     /* 상태 메시지 */
-    .st-msg{
-      display:none;margin-top:13px;padding:14px 16px;
+    .st-msg{display:none;margin-top:13px;padding:14px 16px;
       border-radius:var(--radius);font-size:14px;font-weight:600;
-      text-align:center;animation:vIn .2s ease;
-    }
+      text-align:center;animation:vIn .2s ease;}
     .st-msg.ok{display:block;background:#edfaf3;border:1px solid #a8dfc0;color:var(--success);}
     .st-msg.err{display:block;background:#fdf0ef;border:1px solid #f0b8b2;color:var(--danger);}
 
-    /*━━━━━━━━━━━━━━━ 상태 뱃지 ━━━━━━━━━━━━━━━*/
-    .badge{
-      display:inline-block;font-size:11px;font-weight:700;
-      padding:3px 9px;border-radius:20px;white-space:nowrap;
-    }
+    /* 상태 뱃지 */
+    .badge{display:inline-block;font-size:11px;font-weight:700;
+      padding:3px 9px;border-radius:20px;white-space:nowrap;}
     .badge.s0{background:#ebebf0;color:#444;}
     .badge.s1{background:#e8e8ea;color:#3a3a45;}
     .badge.s2{background:#fff0e0;color:#c05800;border:1px solid #ffd8a8;}
@@ -258,101 +212,94 @@
     .badge.s8{background:#ebebeb;color:#404040;border:1px solid #c8c8c8;}
     .badge.s9{background:#fde8e8;color:#a01515;border:1px solid #f0a0a0;}
 
-    /*━━━━━━━━━━━━━━━ 추가상담 프리뷰 ━━━━━━━━━━━━━━━*/
-    .preview-box{
-      display:none;margin-top:10px;
+    /* 프리뷰 */
+    .preview-box{display:none;margin-top:10px;
       background:#edf5fc;border:1px solid #b5d5f0;
-      border-radius:var(--radius);padding:13px 15px;
-    }
+      border-radius:var(--radius);padding:13px 15px;}
     .preview-box.show{display:block;animation:vIn .2s ease;}
     .preview-name{font-size:15px;font-weight:800;color:var(--black);}
     .preview-meta{font-size:12px;color:var(--text-dim);margin-top:3px;}
     .preview-status{margin-top:7px;}
-    .nofound{
-      display:none;margin-top:10px;
+    .nofound{display:none;margin-top:10px;
       background:#fff3f3;border:1px solid #f0b8b8;
       border-radius:var(--radius);padding:12px 15px;
-      color:var(--danger);font-size:13px;font-weight:600;text-align:center;
-    }
+      color:var(--danger);font-size:13px;font-weight:600;text-align:center;}
     .nofound.show{display:block;}
 
-    /*━━━━━━━━━━━━━━━ 고객목록 ━━━━━━━━━━━━━━━*/
-    .list-topbar{
-      display:flex;align-items:center;justify-content:space-between;
-      padding:14px 0 4px;
-    }
-    .list-count-badge{
-      font-size:12px;font-weight:700;background:var(--gold);
-      color:#fff;border-radius:20px;padding:2px 10px;
-    }
+    /* 고객목록 */
+    .list-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 0 4px;}
+    .list-count-badge{font-size:12px;font-weight:700;background:var(--gold);
+      color:#fff;border-radius:20px;padding:2px 10px;}
     .search-bar{display:flex;gap:8px;margin:8px 0;}
-    .search-bar input{
-      flex:1;background:var(--surface);border:1px solid var(--border);
+    .search-bar input{flex:1;background:var(--surface);border:1px solid var(--border);
       border-radius:24px;padding:11px 18px;font-size:14px;
-      box-shadow:0 1px 6px rgba(0,0,0,.05);
-    }
-    .filter-bar{
-      display:none;align-items:center;gap:8px;
+      box-shadow:0 1px 6px rgba(0,0,0,.05);}
+    .filter-bar{display:none;align-items:center;gap:8px;
       background:var(--surface);border:1px solid var(--border);
       border-radius:var(--radius);padding:11px 15px;margin:8px 0;
-      box-shadow:0 1px 6px rgba(0,0,0,.05);
-    }
+      box-shadow:0 1px 6px rgba(0,0,0,.05);}
     .filter-label{font-size:13px;font-weight:700;color:var(--blue);flex:1;}
-    .filter-clear{
-      padding:5px 12px;border-radius:20px;border:1px solid var(--border2);
+    .filter-clear{padding:5px 12px;border-radius:20px;border:1px solid var(--border2);
       background:var(--surface);font-size:12px;font-weight:600;
-      color:var(--text-dim);cursor:pointer;font-family:var(--font);
-    }
+      color:var(--text-dim);cursor:pointer;font-family:var(--font);}
 
     /* 고객 카드 */
-    .cust-card{
-      background:var(--surface);border:1px solid var(--border);
+    .cust-card{background:var(--surface);border:1px solid var(--border);
       border-radius:var(--radius);padding:16px;margin-bottom:12px;
-      box-shadow:0 1px 8px rgba(0,0,0,.06);
-    }
+      box-shadow:0 1px 8px rgba(0,0,0,.06);}
     .cust-card.updated{border-left:3px solid var(--gold);}
     .card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
     .cust-name{font-size:17px;font-weight:800;color:var(--black);}
-    .cust-company{font-size:12px;color:var(--text-dim);margin-top:2px;}
+    .cust-sub{font-size:12px;color:var(--text-dim);margin-top:2px;}
     .chip-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
-    .chip{
-      font-size:11px;font-weight:600;color:var(--text-dim);
-      background:var(--bg);border-radius:6px;padding:3px 8px;
-    }
+    .chip{font-size:11px;font-weight:600;color:var(--text-dim);
+      background:var(--bg);border-radius:6px;padding:3px 8px;}
     .tel-link{color:var(--gold-dk);text-decoration:none;font-weight:700;}
     .tel-link:hover{text-decoration:underline;}
 
-    /* 상세 접기/펼치기 */
-    .tog-btn{
-      display:flex;align-items:center;gap:5px;width:100%;
+    /* 상세/차량관리 접기/펼치기 */
+    .tog-btn{display:flex;align-items:center;gap:5px;width:100%;
       background:#f5f5f8;border:1px solid var(--border);border-radius:8px;
       padding:8px 13px;cursor:pointer;font-family:var(--font);
       font-size:12px;font-weight:600;color:var(--text-dim);
-      margin-top:10px;transition:background .15s;
-    }
+      margin-top:10px;transition:background .15s;}
     .tog-btn:hover{background:#ebebf0;}
     .tog-arr{transition:transform .2s;font-size:10px;margin-left:auto;}
     .tog-btn.open .tog-arr{transform:rotate(180deg);}
     .detail-body{display:none;margin-top:10px;}
     .detail-body.open{display:block;}
-    .d-sec{
-      font-size:10px;font-weight:700;letter-spacing:1px;color:var(--gold);
+
+    .care-tog{display:flex;align-items:center;gap:5px;width:100%;
+      background:#f5f0ff;border:1px solid #d5b8f5;border-radius:8px;
+      padding:8px 13px;cursor:pointer;font-family:var(--font);
+      font-size:12px;font-weight:700;color:var(--purple);
+      margin-top:10px;transition:background .15s;}
+    .care-tog:hover{background:#ece5ff;}
+    .care-tog.open .tog-arr{transform:rotate(180deg);}
+    .care-detail{display:none;margin-top:8px;}
+    .care-detail.open{display:block;}
+
+    .d-sec{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--gold);
       text-transform:uppercase;margin:11px 0 6px;padding-bottom:4px;
-      border-bottom:1px solid var(--border);
-    }
+      border-bottom:1px solid var(--border);}
+    .d-sec.care{color:var(--purple);border-bottom-color:#d5b8f5;}
     .d-row{display:flex;gap:6px;margin-bottom:5px;font-size:13px;align-items:flex-start;}
-    .d-key{flex-shrink:0;width:86px;color:var(--text-dim);font-weight:600;font-size:12px;}
+    .d-key{flex-shrink:0;width:82px;color:var(--text-dim);font-weight:600;font-size:12px;}
     .d-val{color:var(--text);word-break:break-all;line-height:1.5;white-space:pre-wrap;}
 
-    .empty-state{
-      text-align:center;padding:44px 20px;
-      background:var(--surface);border:1px solid var(--border);
-      border-radius:var(--radius);
-    }
+    /* D-day 태그 */
+    .dd{display:inline-block;font-size:10px;font-weight:700;
+      padding:1px 6px;border-radius:6px;margin-left:4px;vertical-align:middle;}
+    .dd.urg{background:#fde8e8;color:#a01515;}
+    .dd.warn{background:#fff0d0;color:#b06000;}
+    .dd.ok{background:#e3f7ec;color:#0f6e35;}
+
+    .empty-state{text-align:center;padding:44px 20px;
+      background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);}
     .empty-icon{font-size:38px;margin-bottom:11px;}
     .empty-state p{font-size:14px;color:var(--text-lt);}
 
-    /*━━━━━━━━━━━━━━━ 반응형 ━━━━━━━━━━━━━━━*/
+    /* ── 반응형 ── */
     @media(max-width:640px){
       .page-wrap{padding:0 12px 110px;}
       .grid-2{grid-template-columns:1fr;}
@@ -360,14 +307,16 @@
       .form-body{padding:14px;}
       .stat-grid{gap:7px;} .stat-num{font-size:20px;}
       .stat-card{padding:11px 5px 9px;} .stat-label{font-size:9px;}
-      .care-grid{gap:6px;} .care-num{font-size:19px;}
-      .care-card{padding:9px 5px 8px;} .care-label{font-size:8px;}
-      input[type="date"],input[type="datetime-local"]{font-size:16px;padding:13px 14px;}
+      .care-grid{grid-template-columns:repeat(2,1fr);gap:8px;}
+      .care-num{font-size:22px;} .care-label{font-size:10px;}
+      .care-card{padding:13px 8px 11px;}
+      input[type="date"]{font-size:16px;padding:13px 14px;}
       textarea#addConsultation{min-height:140px;}
       .badge{font-size:12px;padding:4px 10px;}
     }
     @media(max-width:380px){
       .stat-num{font-size:17px;} .stat-label{font-size:8px;}
+      .care-grid{grid-template-columns:repeat(2,1fr);}
     }
   </style>
 </head>
@@ -402,6 +351,7 @@
       <div class="home-greeting-sub" id="todayStr">오늘도 좋은 하루 되세요</div>
     </div>
 
+    <!-- 고객 현황 -->
     <div class="section-heading"><span class="dot"></span> 고객 현황</div>
     <div class="stat-grid">
       <div class="stat-card" onclick="goFilter('')">
@@ -438,37 +388,46 @@
       </div>
     </div>
 
-    <!-- 차량관리 알림 -->
     <!--
       TODO 추후 알림 연동:
-      - nextContact D-7 이내: 카카오/문자 발송 예정
-      - deliveryDate 기준 1/3년 경과: 재구매 상담 연락 예정
+      - 생일 D-7: 카카오 생일 축하 메시지 발송 예정
+      - 보험만기 30일 전: 카카오/문자 발송 예정
+      - 자동차검사 30일 전: 문자 발송 예정
+      - 금융종료 90일 전: 재구매 상담 연락 예정
+      - 출고 1년/3년: 재구매 상담 연락 예정
     -->
+    <!-- 차량관리 알림 — 3열×2행 -->
     <div class="section-heading"><span class="dot"></span> 차량관리 알림</div>
     <div class="care-grid">
+      <div class="care-card bday">
+        <div class="care-num" id="dc-bday" style="color:var(--purple)">0</div>
+        <div class="care-label">🎂 생일 D-7</div>
+      </div>
+      <div class="care-card warn">
+        <div class="care-num" id="dc-ins" style="color:var(--orange)">0</div>
+        <div class="care-label">🛡 보험만기 30일</div>
+      </div>
+      <div class="care-card warn">
+        <div class="care-num" id="dc-insp" style="color:var(--orange)">0</div>
+        <div class="care-label">🔧 자동차검사 30일</div>
+      </div>
+      <div class="care-card warn">
+        <div class="care-num" id="dc-fin" style="color:var(--orange)">0</div>
+        <div class="care-label">💳 금융종료 90일</div>
+      </div>
       <div class="care-card info">
-        <div class="care-num" id="dc-week" style="color:var(--blue)">0</div>
-        <div class="care-label">이번주연락</div>
-      </div>
-      <div class="care-card warn">
-        <div class="care-num" id="dc-td" style="color:#e07000">0</div>
-        <div class="care-label">시승예정7일</div>
-      </div>
-      <div class="care-card warn">
-        <div class="care-num" id="dc-del" style="color:#c05800">0</div>
-        <div class="care-label">출고예정7일</div>
+        <div class="care-num" id="dc-1yr" style="color:var(--green)">0</div>
+        <div class="care-label">🚗 출고 1년↑</div>
       </div>
       <div class="care-card alert">
-        <div class="care-num" id="dc-1yr" style="color:#a01515">0</div>
-        <div class="care-label">출고1년↑</div>
+        <div class="care-num" id="dc-3yr" style="color:var(--danger)">0</div>
+        <div class="care-label">🚗 출고 3년↑</div>
       </div>
     </div>
 
-    <!-- 오늘 연락 -->
+    <!-- 오늘/이번주 연락 -->
     <div class="section-heading"><span class="dot"></span> 오늘 연락할 고객</div>
     <div id="todayList"><div class="contact-empty">오늘 연락할 고객이 없습니다</div></div>
-
-    <!-- 이번주 연락 -->
     <div class="section-heading"><span class="dot"></span> 이번주 연락할 고객</div>
     <div id="weekList"><div class="contact-empty">이번주 연락할 고객이 없습니다</div></div>
   </div>
@@ -477,7 +436,7 @@
   <div class="view" id="newView">
     <div class="view-header">
       <div class="view-title">✏️ 신규고객 등록</div>
-      <div class="view-sub">새 고객 정보를 입력하세요 — 구글시트 A~S 컬럼에 순서대로 저장됩니다</div>
+      <div class="view-sub">구글시트 A~W 컬럼에 순서대로 저장됩니다</div>
     </div>
 
     <!-- 고객 기본 정보 -->
@@ -501,6 +460,11 @@
             <label>거주지역</label>
             <input type="text" id="region" placeholder="예: 서울 강남구"/>
           </div>
+          <div class="field">
+            <!-- birthDate: 생일 D-7 알림 계산용 -->
+            <label>생년월일</label>
+            <input type="date" id="birthDate"/>
+          </div>
         </div>
       </div>
     </div>
@@ -512,7 +476,6 @@
         <div class="grid-2">
           <div class="field">
             <label>모델명</label>
-            <!-- E열: 모델명 (구 차종대분류) -->
             <select id="modelName" onchange="onModelChange()">
               <option value="">— 모델 선택 —</option>
               <option>A-Class</option><option>CLA</option>
@@ -526,7 +489,6 @@
           </div>
           <div class="field">
             <label>세부모델</label>
-            <!-- F열: 세부모델 (구 차종세부) -->
             <select id="detailModel" disabled>
               <option value="">— 모델을 먼저 선택하세요 —</option>
             </select>
@@ -541,37 +503,26 @@
       <div class="form-body">
         <div class="grid-2">
           <div class="field">
-            <label>구매예산</label>
-            <!-- I열: 구매예산 -->
-            <select id="budget">
+            <label>구매방식</label>
+            <select id="purchaseMethod">
               <option value="">— 선택 —</option>
-              <option>1억이내</option>
-              <option>1억~1억5000만</option>
-              <option>1억5000만원선</option>
-              <option>2억이내</option>
-              <option>2억이상</option>
-              <option>한도달내구매</option>
-              <option>이번달이내</option>
-              <option>미정</option>
+              <option>일시불</option><option>할부</option>
+              <option>리스</option><option>장기렌트</option>
+              <option>법인할부</option><option>법인리스</option><option>미정</option>
             </select>
           </div>
           <div class="field">
-            <label>구매방식</label>
-            <!-- H열: 구매방식 -->
-            <select id="purchaseMethod">
+            <label>구매예산</label>
+            <select id="budget">
               <option value="">— 선택 —</option>
-              <option>일시불</option>
-              <option>할부</option>
-              <option>리스</option>
-              <option>장기렌트</option>
-              <option>법인할부</option>
-              <option>법인리스</option>
-              <option>미정</option>
+              <option>1억이내</option><option>1억~1억5000만</option>
+              <option>1억5000만원선</option><option>2억이내</option>
+              <option>2억이상</option><option>한도달내구매</option>
+              <option>이번달이내</option><option>미정</option>
             </select>
           </div>
           <div class="field">
             <label>구매예정시기</label>
-            <!-- J열: 구매예정시기 -->
             <input type="text" id="purchaseTiming" placeholder="예: 2026년 12월 이내"/>
           </div>
         </div>
@@ -585,7 +536,6 @@
         <div class="grid-2">
           <div class="field">
             <label>유입경로</label>
-            <!-- I열: 유입경로 -->
             <select id="leadSource">
               <option value="">— 선택 —</option>
               <option>전시장방문및전화</option><option>GETCHA</option>
@@ -597,64 +547,72 @@
           </div>
           <div class="field">
             <label>현재상태</label>
-            <!-- J열: 현재상태 -->
             <select id="status">
               <option value="">— 선택 —</option>
               <option>신규문의</option><option>A급가망</option>
               <option>상담중</option><option>계약유력</option>
               <option>구매보류</option><option>계약</option>
-              <option>출고</option><option>상담종료</option>
-              <option>해약</option>
+              <option>출고</option><option>상담종료</option><option>해약</option>
             </select>
           </div>
           <div class="field full">
             <label>상담내용</label>
-            <!-- K열: 상담내용 -->
             <textarea id="consultation" placeholder="상담 내용을 입력하세요."></textarea>
           </div>
           <div class="field">
             <label>다음연락일</label>
-            <!-- L열: 다음연락일 -->
             <input type="date" id="nextContact"/>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 일정 정보 -->
+    <!-- 차량관리 / 금융관리 -->
     <div class="form-card">
-      <div class="form-card-header">일정 정보</div>
+      <div class="form-card-header care">🚗 차량관리 / 금융관리</div>
       <div class="form-body">
         <div class="grid-2">
           <div class="field">
-            <label>상담일시</label>
-            <!-- M열: 상담일시 -->
-            <input type="datetime-local" id="consultDateTime"/>
+            <label>보험가입일</label>
+            <input type="date" id="insuranceStartDate" class="care-input"/>
           </div>
           <div class="field">
-            <label>시승일정</label>
-            <!-- N열: 시승일정 -->
-            <input type="date" id="testDriveSchedule"/>
+            <label>보험만기일</label>
+            <input type="date" id="insuranceExpireDate" class="care-input"/>
           </div>
           <div class="field">
-            <label>출고일정</label>
-            <!-- O열: 출고일정 -->
-            <input type="date" id="deliverySchedule"/>
+            <label>자동차검사일</label>
+            <input type="date" id="inspectionDueDate" class="care-input"/>
           </div>
+          <div class="field">
+            <label>금융시작일</label>
+            <input type="date" id="financeStartDate" class="care-input"/>
+          </div>
+          <div class="field">
+            <label>금융종료일</label>
+            <input type="date" id="financeEndDate" class="care-input"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 계약 / 출고 정보 -->
+    <div class="form-card">
+      <div class="form-card-header">계약 / 출고 정보</div>
+      <div class="form-body">
+        <div class="grid-2">
           <div class="field">
             <label>계약일</label>
-            <!-- P열: 계약일 -->
             <input type="date" id="contractDate"/>
           </div>
           <div class="field">
             <label>출고일</label>
-            <!-- Q열: 출고일 -->
-            <input type="date" id="deliveryDate"/>
+            <input type="date" id="deliveryDate" oninput="autoDeliveryMonth()"/>
           </div>
           <div class="field">
-            <label>출고월</label>
-            <!-- R열: 출고월 예: 2026-06 -->
-            <input type="month" id="deliveryMonth"/>
+            <label>출고월 <span style="font-size:10px;color:var(--text-lt);">(출고일 입력 시 자동)</span></label>
+            <input type="text" id="deliveryMonth" class="auto-field" readonly
+                   placeholder="출고일을 입력하면 자동 생성됩니다"/>
           </div>
         </div>
       </div>
@@ -666,13 +624,12 @@
       <div class="form-body">
         <div class="field">
           <label>태그</label>
-          <!-- S열: 태그 -->
           <input type="text" id="tags" placeholder="예: VIP, 재구매, 법인"/>
         </div>
       </div>
     </div>
 
-    <button class="btn-submit" id="submitBtn" onclick="submitNew()">고객 정보 저장 (구글시트 A→S)</button>
+    <button class="btn-submit" id="submitBtn" onclick="submitNew()">고객 정보 저장</button>
     <div class="st-msg" id="msg-new"></div>
   </div>
 
@@ -680,7 +637,7 @@
   <div class="view" id="consultView">
     <div class="view-header">
       <div class="view-title">📋 기존고객 추가상담</div>
-      <div class="view-sub">상담내용이 K열에 자동 누적됩니다</div>
+      <div class="view-sub">상담내용이 자동 누적됩니다</div>
     </div>
 
     <div class="form-card">
@@ -719,8 +676,7 @@
               <option>신규문의</option><option>A급가망</option>
               <option>상담중</option><option>계약유력</option>
               <option>구매보류</option><option>계약</option>
-              <option>출고</option><option>상담종료</option>
-              <option>해약</option>
+              <option>출고</option><option>상담종료</option><option>해약</option>
             </select>
           </div>
           <div class="field">
@@ -730,7 +686,8 @@
           <div class="field full">
             <label>추가상담내용 <span class="req">*</span></label>
             <textarea id="addConsultation"
-              placeholder="이번 상담 내용을 입력하세요.&#10;날짜/시간은 자동으로 앞에 붙습니다." style="min-height:130px;"></textarea>
+              placeholder="이번 상담 내용을 입력하세요.&#10;날짜/시간은 자동으로 앞에 붙습니다."
+              style="min-height:130px;"></textarea>
           </div>
         </div>
       </div>
@@ -746,17 +703,13 @@
       <div class="view-title">👥 고객목록</div>
       <div class="list-count-badge" id="list-count">0명</div>
     </div>
-
     <div class="search-bar">
-      <input type="text" id="searchInput" placeholder="🔍 이름 또는 연락처 검색"
-             oninput="renderList()"/>
+      <input type="text" id="searchInput" placeholder="🔍 이름 또는 연락처 검색" oninput="renderList()"/>
     </div>
-
     <div class="filter-bar" id="filterBar">
       <div class="filter-label" id="filterLabel">전체 고객</div>
       <button class="filter-clear" onclick="clearFilter()">전체 보기 ✕</button>
     </div>
-
     <div id="listContainer"></div>
   </div>
 
@@ -784,14 +737,11 @@
 </nav>
 
 <script>
-// ============================================================
-// 상수
-// ============================================================
-var LS_KEY = "nj_crm_v7";
+var LS_KEY = "nj_crm_v10";
 var currentFilter = "";
 
 // ============================================================
-// 세부모델 데이터 (모델명 = 구글시트 E열)
+// 세부모델 데이터
 // ============================================================
 var DETAIL_MODELS = {
   "A-Class":["A 220 Hatch","A 220 Sedan","Mercedes-AMG A 35 4MATIC","Mercedes-AMG A 45 S 4MATIC+"],
@@ -802,9 +752,9 @@ var DETAIL_MODELS = {
     "E 220 d 4MATIC EXCLUSIVE","E 300 4MATIC EXCLUSIVE","E 300 4MATIC AMG Line",
     "E 300 4MATIC 140주년 Edition","E 350 e 4MATIC EXCLUSIVE",
     "E 450 4MATIC AMG Line","E 450 4MATIC EXCLUSIVE","Mercedes-AMG E 53 HYBRID 4MATIC+"],
-  "S-Class":["S 350 d 4MATIC","S 450 4MATIC SWB","S 450 4MATIC Long","S 500 4MATIC",
-    "S 580 4MATIC","Mercedes-AMG S 63 E Performance",
-    "S 450 4MATIC Long Exclusive","S 450 4MATIC Long AMG Line","S 500 4MATIC Long","S 580 4MATIC Long"],
+  "S-Class":["S 350 d 4MATIC","S 450 4MATIC SWB","S 450 4MATIC Long","S 500 4MATIC","S 580 4MATIC",
+    "Mercedes-AMG S 63 E Performance","S 450 4MATIC Long Exclusive",
+    "S 450 4MATIC Long AMG Line","S 500 4MATIC Long","S 580 4MATIC Long"],
   "CLE":["── Coupé ──","CLE 200 Coupé AMG Line","CLE 450 4MATIC Coupé AMG Line",
     "Mercedes-AMG CLE 53 4MATIC+ Coupé","── Cabriolet ──",
     "CLE 200 Cabriolet AMG Line","CLE 450 4MATIC Cabriolet AMG Line","Mercedes-AMG CLE 53 4MATIC+ Cabriolet"],
@@ -827,22 +777,28 @@ var DETAIL_MODELS = {
     "Mercedes-Maybach GLS 600 MANUFAKTUR","Mercedes-Maybach EQS 680 SUV",
     "── MY27 ──","Mercedes-Maybach S 580","Mercedes-Maybach S 580 MANUFAKTUR","Mercedes-Maybach S 680"]
 };
-
 function isSep(v){return v.indexOf("──")!==-1;}
-
 function onModelChange(){
   var m=document.getElementById("modelName").value;
   var sel=document.getElementById("detailModel");
-  sel.innerHTML=""; sel.disabled=true;
+  sel.innerHTML="";sel.disabled=true;
   if(!m){sel.innerHTML='<option value="">— 모델을 먼저 선택하세요 —</option>';return;}
   sel.innerHTML='<option value="">— 세부모델 선택 —</option>';
   (DETAIL_MODELS[m]||[]).forEach(function(v){
     var o=document.createElement("option");
     if(isSep(v)){o.value="";o.disabled=true;o.style.color="#aaa";o.style.fontStyle="italic";}
     else{o.value=v;}
-    o.textContent=v; sel.appendChild(o);
+    o.textContent=v;sel.appendChild(o);
   });
   sel.disabled=false;
+}
+
+// 출고일 입력 → 출고월 자동 생성 (YYYY-MM)
+function autoDeliveryMonth(){
+  var d=document.getElementById("deliveryDate").value;
+  var m=document.getElementById("deliveryMonth");
+  if(d&&d.length>=7){m.value=d.substring(0,7);}
+  else{m.value="";}
 }
 
 // ============================================================
@@ -858,30 +814,21 @@ function showView(v){
   });
   var t=document.getElementById(VIEWS[v]);if(t)t.classList.add("active");
   document.getElementById("viewBadge").textContent=VNAMES[v]||"";
-
-  // 하단바 active
   ["home","consult","list"].forEach(function(k){
     var b=document.getElementById(NBS[k]);if(b)b.classList.toggle("active",k===v);
   });
   var plus=document.getElementById("nb-plus");
   if(plus)plus.classList.toggle("active",v==="new");
-
-  // PC 탭
   var pbs=document.querySelectorAll(".pc-tab-btn");
   ["home","new","consult","list"].forEach(function(k,i){
     if(pbs[i])pbs[i].classList.toggle("active",k===v);
   });
-
   if(v==="list")renderList();
   if(v==="home"){updateDash();renderHomeContacts();}
   window.scrollTo({top:0,behavior:"smooth"});
-  hideMsg("msg-new"); hideMsg("msg-update");
+  hideMsg("msg-new");hideMsg("msg-update");
 }
-
-function goFilter(st){
-  currentFilter=st;
-  showView("list");
-}
+function goFilter(st){currentFilter=st;showView("list");}
 function clearFilter(){
   currentFilter="";
   document.getElementById("filterBar").style.display="none";
@@ -891,11 +838,9 @@ function clearFilter(){
 // ============================================================
 // 상태
 // ============================================================
-var ST_MAP={
-  "신규 문의":"신규문의","상담 진행 중":"상담중","견적 발송":"상담중",
+var ST_MAP={"신규 문의":"신규문의","상담 진행 중":"상담중","견적 발송":"상담중",
   "계약 진행 중":"계약유력","계약 완료":"계약","출고 완료":"출고",
-  "장기 보류":"구매보류","취소 / 이탈":"해약"
-};
+  "장기 보류":"구매보류","취소 / 이탈":"해약"};
 function mst(s){if(!s)return s;return ST_MAP[s]||s;}
 function sc(s){
   var v=mst(s);
@@ -916,15 +861,10 @@ function todayD(){
 }
 function parseD(s){
   if(!s)return null;
-  // datetime-local 처리 ("2026-06-05T14:30")
-  var p=s.indexOf("T")>=0?s.split("T")[0]:s;
-  var a=p.split("-");if(a.length<3)return null;
-  return new Date(parseInt(a[0]),parseInt(a[1])-1,parseInt(a[2]));
+  var p=s.split("-");if(p.length<2)return null;
+  return new Date(parseInt(p[0]),parseInt(p[1])-1,p[2]?parseInt(p[2]):1);
 }
-function dFrom(ds){
-  var d=parseD(ds);if(!d)return null;
-  return Math.round((d-todayD())/86400000);
-}
+function dFrom(ds){var d=parseD(ds);if(!d)return null;return Math.round((d-todayD())/86400000);}
 function getNow(){return new Date().toLocaleString("ko-KR",{timeZone:"Asia/Seoul"});}
 function getTs(){
   var d=new Date(),k=new Date(d.getTime()+9*3600000);
@@ -932,6 +872,30 @@ function getTs(){
   var dy=String(k.getUTCDate()).padStart(2,"0"),h=String(k.getUTCHours()).padStart(2,"0");
   var mi=String(k.getUTCMinutes()).padStart(2,"0");
   return "["+y+"-"+mo+"-"+dy+" "+h+":"+mi+" 추가상담]";
+}
+
+// 생일 D-7 계산 (올해/내년 생일 기준)
+function bdayDiff(birthDate){
+  if(!birthDate)return null;
+  var b=parseD(birthDate);if(!b)return null;
+  var now=todayD();
+  var thisYr=new Date(now.getFullYear(),b.getMonth(),b.getDate());
+  var diff=Math.round((thisYr-now)/86400000);
+  if(diff<0){
+    var nextYr=new Date(now.getFullYear()+1,b.getMonth(),b.getDate());
+    diff=Math.round((nextYr-now)/86400000);
+  }
+  return diff;
+}
+
+// D-day 태그 HTML
+function ddTag(days,warnDays){
+  if(days===null)return"";
+  warnDays=warnDays||30;
+  if(days<0)return'<span class="dd urg">D+'+Math.abs(days)+'</span>';
+  if(days===0)return'<span class="dd urg">D-Day</span>';
+  if(days<=warnDays)return'<span class="dd warn">D-'+days+'</span>';
+  return'<span class="dd ok">D-'+days+'</span>';
 }
 
 // ============================================================
@@ -952,7 +916,7 @@ function findC(phone){
 function updateDash(){
   var list=load(),now=todayD();
   var tot=list.length,ni=0,ag=0,co=0,li=0,kt=0,de=0,ca=0;
-  var wk=0,td=0,dl=0,y1=0;
+  var bday=0,ins=0,insp=0,fin=0,y1=0,y3=0;
 
   list.forEach(function(x){
     var v=mst(x.status);
@@ -961,26 +925,26 @@ function updateDash(){
     else if(v==="계약")kt++;else if(v==="출고")de++;
     else if(v==="해약")ca++;
 
-    // 이번주 연락 (nextContact)
-    var nd=parseD(x.nextContact);
-    if(nd){var df=Math.round((nd-now)/86400000);if(df>=0&&df<=7)wk++;}
-    // 시승예정 7일
-    var tdd=parseD(x.testDriveSchedule);
-    if(tdd){var tdf=Math.round((tdd-now)/86400000);if(tdf>=0&&tdf<=7)td++;}
-    // 출고일정 7일
-    var dsd=parseD(x.deliverySchedule);
-    if(dsd){var dsdf=Math.round((dsd-now)/86400000);if(dsdf>=0&&dsdf<=7)dl++;}
-    // 출고일 1년 경과
-    var deld=parseD(x.deliveryDate);
-    if(deld){var el=Math.round((now-deld)/86400000);if(el>=365)y1++;}
+    // 생일 D-7 이내
+    if(x.birthDate){var bd=bdayDiff(x.birthDate);if(bd!==null&&bd>=0&&bd<=7)bday++;}
+    // 보험만기 30일 이내
+    var iD=dFrom(x.insuranceExpireDate);if(iD!==null&&iD>=0&&iD<=30)ins++;
+    // 자동차검사 30일 이내
+    var inD=dFrom(x.inspectionDueDate);if(inD!==null&&inD>=0&&inD<=30)insp++;
+    // 금융종료 90일 이내
+    var fD=dFrom(x.financeEndDate);if(fD!==null&&fD>=0&&fD<=90)fin++;
+    // 출고 1년/3년
+    var del=parseD(x.deliveryDate);
+    if(del){var el=Math.round((now-del)/86400000);if(el>=365)y1++;if(el>=1095)y3++;}
   });
 
+  function set(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
   set("d-total",tot);set("d-new",ni);set("d-a",ag);set("d-c",co);
   set("d-l",li);set("d-k",kt);set("d-d",de);set("d-x",ca);
-  set("dc-week",wk);set("dc-td",td);set("dc-del",dl);set("dc-1yr",y1);
+  set("dc-bday",bday);set("dc-ins",ins);set("dc-insp",insp);
+  set("dc-fin",fin);set("dc-1yr",y1);set("dc-3yr",y3);
   set("list-count",tot+"명");
 }
-function set(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
 
 // ============================================================
 // 오늘/이번주 연락 고객
@@ -993,20 +957,18 @@ function renderHomeContacts(){
     if(df===0)today.push({c:c,df:df});
     else if(df>0&&df<=7)week.push({c:c,df:df});
   });
-
   var te=document.getElementById("todayList");
-  te.innerHTML=today.length===0?'<div class="contact-empty">오늘 연락할 고객이 없습니다</div>':
-    today.map(function(x){return ccItem(x.c,x.df);}).join("");
-
-  var we=document.getElementById("weekList");
+  te.innerHTML=today.length?today.map(function(x){return cItem(x.c,x.df);}).join(""):
+    '<div class="contact-empty">오늘 연락할 고객이 없습니다</div>';
   week.sort(function(a,b){return a.df-b.df;});
-  we.innerHTML=week.length===0?'<div class="contact-empty">이번주 추가 연락 고객이 없습니다</div>':
-    week.map(function(x){return ccItem(x.c,x.df);}).join("");
+  var we=document.getElementById("weekList");
+  we.innerHTML=week.length?week.map(function(x){return cItem(x.c,x.df);}).join(""):
+    '<div class="contact-empty">이번주 연락할 고객이 없습니다</div>';
 }
-function ccItem(c,df){
+function cItem(c,df){
   var model=(c.modelName||"")+(c.detailModel?" · "+c.detailModel:"");
   var sd=mst(c.status)||c.status||"—";
-  return '<div class="contact-item">'+
+  return'<div class="contact-item">'+
     '<div><div class="c-name">'+esc(c.customerName)+'</div>'+
     '<div class="c-meta">'+esc(model||"모델미정")+
     ' | <span class="badge '+sc(c.status)+'">'+esc(sd)+'</span>'+
@@ -1022,16 +984,9 @@ function renderList(){
   var list=load();
   var q=(document.getElementById("searchInput")||{}).value||"";
   q=q.trim().toLowerCase();
-
   var fb=document.getElementById("filterBar");
-  var fl=document.getElementById("filterLabel");
-  if(currentFilter){
-    fb.style.display="flex";
-    fl.textContent=currentFilter+" 고객";
-  } else {
-    fb.style.display="none";
-  }
-
+  if(currentFilter){fb.style.display="flex";document.getElementById("filterLabel").textContent=currentFilter+" 고객";}
+  else{fb.style.display="none";}
   var filtered=list.filter(function(c){
     if(currentFilter){var v=mst(c.status)||"";if(v!==currentFilter)return false;}
     if(q){
@@ -1041,15 +996,12 @@ function renderList(){
     }
     return true;
   });
-
   filtered.sort(function(a,b){
     var ta=a._updatedAt||a._savedAt||"";
     var tb=b._updatedAt||b._savedAt||"";
     return tb.localeCompare(ta);
   });
-
-  set("list-count",filtered.length+"명");
-
+  document.getElementById("list-count").textContent=filtered.length+"명";
   var con=document.getElementById("listContainer");
   if(filtered.length===0){
     con.innerHTML='<div class="empty-state"><div class="empty-icon">🔍</div>'+
@@ -1064,67 +1016,107 @@ function buildCard(c,idx){
   var model=(c.modelName||"")+(c.detailModel?" · "+c.detailModel:"");
   var isUpd=!!c._updatedAt;
   var did="det-"+idx;
+  var cid="care-"+idx;
+  var hasCare=c.birthDate||c.insuranceStartDate||c.insuranceExpireDate||
+    c.inspectionDueDate||c.financeStartDate||c.financeEndDate||
+    c.contractDate||c.deliveryDate||c.deliveryMonth;
 
   var html='<div class="cust-card'+(isUpd?" updated":"")+'">';
   html+='<div class="card-top">'+
     '<div>'+
       '<div class="cust-name">'+esc(c.customerName)+'</div>'+
-      (c.companyName?'<div class="cust-company">'+esc(c.companyName)+'</div>':'')+
-      '<div class="cust-company">'+(isUpd?"수정: "+esc(c._updatedAt):"등록: "+esc(c._savedAt||""))+'</div>'+
+      (c.companyName?'<div class="cust-sub">'+esc(c.companyName)+'</div>':'')+
+      '<div class="cust-sub">'+(isUpd?"수정: "+esc(c._updatedAt):"등록: "+esc(c._savedAt||""))+'</div>'+
     '</div>'+
     '<span class="badge '+sc(c.status)+'">'+esc(sd)+'</span>'+
   '</div>';
 
   html+='<div class="chip-row">';
-  if(c.phone)html+='<a class="tel-link" href="tel:'+esc(c.phone)+'">📞 '+esc(c.phone)+'</a>';
-  if(model)  html+='<span class="chip">'+esc(model)+'</span>';
-  if(c.region)html+='<span class="chip">📍'+esc(c.region)+'</span>';
+  if(c.phone)      html+='<a class="tel-link" href="tel:'+esc(c.phone)+'">📞 '+esc(c.phone)+'</a>';
+  if(model)        html+='<span class="chip">'+esc(model)+'</span>';
+  if(c.region)     html+='<span class="chip">📍'+esc(c.region)+'</span>';
   if(c.nextContact)html+='<span class="chip">📅 '+esc(c.nextContact)+'</span>';
   if(c.leadSource) html+='<span class="chip">'+esc(c.leadSource)+'</span>';
   html+='</div>';
 
+  // 상세 접기/펼치기
   html+='<button class="tog-btn" onclick="togDet(this,\''+did+'\')" aria-expanded="false">'+
     '상세정보 보기 <span class="tog-arr">▼</span></button>';
   html+='<div class="detail-body" id="'+did+'">';
 
   html+='<div class="d-sec">구매 정보</div>';
-  if(c.budget)       html+=dr("구매예산",c.budget);
-  if(c.purchaseTiming)html+=dr("구매예정시기",c.purchaseTiming);
+  if(c.purchaseMethod) html+=dr("구매방식",c.purchaseMethod);
+  if(c.budget)         html+=dr("구매예산",c.budget);
+  if(c.purchaseTiming) html+=dr("구매예정시기",c.purchaseTiming);
 
   html+='<div class="d-sec">상담</div>';
   if(c.consultation) html+='<div class="d-row"><span class="d-key">상담내용</span><span class="d-val">'+esc(c.consultation)+'</span></div>';
   if(c.tags)         html+=dr("태그",c.tags);
 
-  html+='<div class="d-sec">일정</div>';
-  if(c.consultDateTime)  html+=dr("상담일시",c.consultDateTime);
-  if(c.testDriveSchedule)html+=dr("시승일정",c.testDriveSchedule);
-  if(c.deliverySchedule) html+=dr("출고일정",c.deliverySchedule);
-  if(c.contractDate)     html+=dr("계약일",c.contractDate);
-  if(c.deliveryDate)     html+=dr("출고일",c.deliveryDate);
-  if(c.deliveryMonth)    html+=dr("출고월",c.deliveryMonth);
+  // 차량관리 / 금융관리 접기/펼치기
+  if(hasCare){
+    html+='<button class="care-tog tog-btn" onclick="togCare(this,\''+cid+'\')" aria-expanded="false">'+
+      '🚗 차량관리 / 금융관리 정보 보기 <span class="tog-arr">▼</span></button>';
+    html+='<div class="care-detail" id="'+cid+'">';
+    html+='<div class="d-sec care">차량관리 / 금융관리</div>';
+
+    // 생년월일 + D-7 태그
+    if(c.birthDate){
+      var bd=bdayDiff(c.birthDate);
+      var bdLbl=esc(c.birthDate)+(bd!==null&&bd<=7?'<span class="dd urg"> D-'+bd+'</span>':"");
+      html+='<div class="d-row"><span class="d-key">생년월일</span><span class="d-val">'+bdLbl+'</span></div>';
+    }
+    if(c.insuranceStartDate)  html+=dr("보험가입일",c.insuranceStartDate);
+    if(c.insuranceExpireDate){
+      var iD=dFrom(c.insuranceExpireDate);
+      html+='<div class="d-row"><span class="d-key">보험만기일</span><span class="d-val">'+esc(c.insuranceExpireDate)+ddTag(iD,30)+'</span></div>';
+    }
+    if(c.inspectionDueDate){
+      var inD=dFrom(c.inspectionDueDate);
+      html+='<div class="d-row"><span class="d-key">자동차검사일</span><span class="d-val">'+esc(c.inspectionDueDate)+ddTag(inD,30)+'</span></div>';
+    }
+    if(c.financeStartDate)    html+=dr("금융시작일",c.financeStartDate);
+    if(c.financeEndDate){
+      var fD=dFrom(c.financeEndDate);
+      html+='<div class="d-row"><span class="d-key">금융종료일</span><span class="d-val">'+esc(c.financeEndDate)+ddTag(fD,90)+'</span></div>';
+    }
+
+    html+='<div class="d-sec care">계약 / 출고</div>';
+    if(c.contractDate)  html+=dr("계약일",c.contractDate);
+    if(c.deliveryDate){
+      var del=parseD(c.deliveryDate);
+      var elp=del?Math.round((todayD()-del)/86400000):0;
+      var delLbl=esc(c.deliveryDate);
+      if(elp>=1095)delLbl+='<span class="dd urg"> 3년↑</span>';
+      else if(elp>=365)delLbl+='<span class="dd warn"> 1년↑</span>';
+      html+='<div class="d-row"><span class="d-key">출고일</span><span class="d-val">'+delLbl+'</span></div>';
+    }
+    if(c.deliveryMonth) html+=dr("출고월",c.deliveryMonth);
+    html+='</div>';
+  }
 
   html+='</div></div>';
   return html;
 }
 
-function dr(k,v){
-  if(!v)return"";
-  return'<div class="d-row"><span class="d-key">'+k+'</span><span class="d-val">'+esc(v)+'</span></div>';
-}
+function dr(k,v){if(!v)return"";
+  return'<div class="d-row"><span class="d-key">'+k+'</span><span class="d-val">'+esc(v)+'</span></div>';}
 
 function togDet(btn,id){
-  var d=document.getElementById(id);
-  var open=d.classList.contains("open");
-  d.classList.toggle("open",!open);
-  btn.classList.toggle("open",!open);
+  var d=document.getElementById(id);var open=d.classList.contains("open");
+  d.classList.toggle("open",!open);btn.classList.toggle("open",!open);
   btn.querySelector(".tog-arr").textContent=open?"▼":"▲";
   btn.childNodes[0].textContent=open?"상세정보 보기 ":"상세정보 닫기 ";
   btn.setAttribute("aria-expanded",!open);
 }
+function togCare(btn,id){
+  var d=document.getElementById(id);var open=d.classList.contains("open");
+  d.classList.toggle("open",!open);btn.classList.toggle("open",!open);
+  btn.querySelector(".tog-arr").textContent=open?"▼":"▲";
+  btn.childNodes[0].textContent=open?"🚗 차량관리 / 금융관리 정보 보기 ":"🚗 차량관리 / 금융관리 정보 닫기 ";
+  btn.setAttribute("aria-expanded",!open);
+}
 
-// ============================================================
-// HTML 이스케이프
-// ============================================================
 function esc(s){
   if(!s)return"";
   return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -1153,7 +1145,7 @@ function onUPhoneInput(el){
     var np=normP(el.value);
     var pb=document.getElementById("preview-box");
     var nf=document.getElementById("nofound");
-    pb.classList.remove("show"); nf.classList.remove("show");
+    pb.classList.remove("show");nf.classList.remove("show");
     if(np.length<10)return;
     var r=findC(el.value);
     if(r){
@@ -1165,73 +1157,76 @@ function onUPhoneInput(el){
       document.getElementById("prev-status").innerHTML=
         '<span class="badge '+sc(c.status)+'">'+esc(sd)+'</span>'+
         ' <span style="font-size:12px;color:#888;margin-left:6px;">'+esc(c._updatedAt||c._savedAt||"")+'</span>';
-      var ne=document.getElementById("u-name");
-      if(!ne.value)ne.value=c.customerName||"";
+      var ne=document.getElementById("u-name");if(!ne.value)ne.value=c.customerName||"";
       pb.classList.add("show");
-    } else if(np.length>=11){
-      nf.classList.add("show");
-    }
+    }else if(np.length>=11){nf.classList.add("show");}
   },400);
 }
 
 // ============================================================
-// 메시지 헬퍼
+// 메시지
 // ============================================================
 function showMsg(id,type,text){
   var el=document.getElementById(id);if(!el)return;
-  el.className="st-msg "+type; el.textContent=text;
+  el.className="st-msg "+type;el.textContent=text;
   el.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
-function hideMsg(id){
-  var el=document.getElementById(id);if(!el)return;
-  el.className="st-msg"; el.textContent="";
-}
+function hideMsg(id){var el=document.getElementById(id);if(!el)return;el.className="st-msg";el.textContent="";}
 
 // ============================================================
-// getFormData() — 구글시트 A~S 순서 100% 일치
-// A 고객명      B 법인명       C 연락처       D 거주지역
-// E 모델명      F 세부모델     G 구매예산     H 구매예정시기
-// I 유입경로    J 현재상태     K 상담내용     L 다음연락일
-// M 상담일시    N 시승일정     O 출고일정     P 계약일
-// Q 출고일      R 출고월       S 태그
+// getFormData() — 구글시트 A~W 순서
+// A 고객ID(빈값)  B 고객명       C 법인명        D 연락처
+// E 거주지역      F 모델명       G 세부모델      H 구매방식
+// I 구매예산      J 구매예정시기 K 유입경로      L 현재상태
+// M 상담내용      N 다음연락일
+// O 보험가입일    P 보험만기일   Q 자동차검사일
+// R 금융시작일    S 금융종료일
+// T 계약일        U 출고일       V 출고월(자동)  W 태그
 // ============================================================
 function getFormData(){
+  var deliveryDate=document.getElementById("deliveryDate").value;
+  // 출고월 자동 생성 (YYYY-MM)
+  var deliveryMonth=deliveryDate&&deliveryDate.length>=7?deliveryDate.substring(0,7):"";
   return {
-    action:            "new",
-    _savedAt:          getNow(),
-    // ★ 실제 구글시트 컬럼 순서 (A~U)
-    // A: 고객ID (빈값 — 숨김 열)
-    customerName:      document.getElementById("customerName").value.trim(),      // B 고객명
-    companyName:       document.getElementById("companyName").value.trim(),       // C 법인명
-    phone:             document.getElementById("phone").value.trim(),             // D 연락처
-    region:            document.getElementById("region").value.trim(),            // E 거주지역
-    modelName:         document.getElementById("modelName").value,               // F 모델명
-    detailModel:       document.getElementById("detailModel").value,             // G 세부모델
-    purchaseMethod:    document.getElementById("purchaseMethod").value,          // H 구매방식
-    budget:            document.getElementById("budget").value,                  // I 구매예산
-    purchaseTiming:    document.getElementById("purchaseTiming").value.trim(),   // J 구매예정시기
-    leadSource:        document.getElementById("leadSource").value,              // K 유입경로
-    status:            document.getElementById("status").value,                  // L 현재상태
-    consultation:      document.getElementById("consultation").value.trim(),     // M 상담내용
-    nextContact:       document.getElementById("nextContact").value,             // N 다음연락일
-    consultDateTime:   document.getElementById("consultDateTime").value,         // O 상담일시
-    testDriveSchedule: document.getElementById("testDriveSchedule").value,      // P 시승일정
-    deliverySchedule:  document.getElementById("deliverySchedule").value,        // Q 출고일정
-    contractDate:      document.getElementById("contractDate").value,            // R 계약일
-    deliveryDate:      document.getElementById("deliveryDate").value,            // S 출고일
-    deliveryMonth:     document.getElementById("deliveryMonth").value,           // T 출고월
-    tags:              document.getElementById("tags").value.trim()              // U 태그
+    action:              "new",
+    _savedAt:            getNow(),
+    customerName:        document.getElementById("customerName").value.trim(),      // B
+    companyName:         document.getElementById("companyName").value.trim(),       // C
+    phone:               document.getElementById("phone").value.trim(),             // D
+    region:              document.getElementById("region").value.trim(),            // E
+    modelName:           document.getElementById("modelName").value,               // F
+    detailModel:         document.getElementById("detailModel").value,             // G
+    purchaseMethod:      document.getElementById("purchaseMethod").value,          // H
+    budget:              document.getElementById("budget").value,                  // I
+    purchaseTiming:      document.getElementById("purchaseTiming").value.trim(),   // J
+    leadSource:          document.getElementById("leadSource").value,              // K
+    status:              document.getElementById("status").value,                  // L
+    consultation:        document.getElementById("consultation").value.trim(),     // M
+    nextContact:         document.getElementById("nextContact").value,             // N
+    insuranceStartDate:  document.getElementById("insuranceStartDate").value,      // O
+    insuranceExpireDate: document.getElementById("insuranceExpireDate").value,     // P
+    inspectionDueDate:   document.getElementById("inspectionDueDate").value,       // Q
+    financeStartDate:    document.getElementById("financeStartDate").value,        // R
+    financeEndDate:      document.getElementById("financeEndDate").value,          // S
+    contractDate:        document.getElementById("contractDate").value,            // T
+    deliveryDate:        deliveryDate,                                             // U
+    deliveryMonth:       deliveryMonth,                                            // V (자동)
+    tags:                document.getElementById("tags").value.trim(),             // W
+    // 차량관리 대시보드용 (구글시트 저장 안 함 — birthDate는 추후 컬럼 추가 시 연동)
+    birthDate:           document.getElementById("birthDate").value
   };
 }
 
 function resetNewForm(){
-  var ids=["customerName","companyName","phone","region","purchaseMethod","purchaseTiming",
-    "budget","leadSource","status","consultation","nextContact","consultDateTime",
-    "testDriveSchedule","deliverySchedule","contractDate","deliveryDate","deliveryMonth","tags"];
+  var ids=["customerName","companyName","phone","region","purchaseMethod","budget",
+    "purchaseTiming","leadSource","status","consultation","nextContact",
+    "insuranceStartDate","insuranceExpireDate","inspectionDueDate",
+    "financeStartDate","financeEndDate","contractDate","deliveryDate","tags","birthDate"];
   ids.forEach(function(id){document.getElementById(id).value="";});
+  document.getElementById("deliveryMonth").value="";
   document.getElementById("modelName").value="";
   var dm=document.getElementById("detailModel");
-  dm.innerHTML='<option value="">— 모델을 먼저 선택하세요 —</option>'; dm.disabled=true;
+  dm.innerHTML='<option value="">— 모델을 먼저 선택하세요 —</option>';dm.disabled=true;
 }
 
 // ============================================================
@@ -1242,32 +1237,24 @@ function submitNew(){
   var data=getFormData();
   if(!data.customerName){showMsg("msg-new","err","⚠ 고객명을 입력해주세요.");return;}
   if(!data.phone){showMsg("msg-new","err","⚠ 연락처를 입력해주세요.");return;}
-
   var btn=document.getElementById("submitBtn");
-  btn.disabled=true; btn.textContent="저장 중…";
-
-  // 구글시트 저장 (기존 로직 유지)
-  fetch(SCRIPT_URL,{
-    method:"POST",mode:"no-cors",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify(data)
-  })
+  btn.disabled=true;btn.textContent="저장 중…";
+  fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",
+    headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
   .then(function(){
-    // localStorage upsert
     var list=load();
     var np=normP(data.phone),idx=-1;
     for(var i=0;i<list.length;i++){if(normP(list[i].phone)===np){idx=i;break;}}
-    if(idx>=0)list[idx]=data; else list.push(data);
-    save(list);
-    updateDash();
-    showMsg("msg-new","ok","✅ 저장되었습니다. 구글시트 A~S 컬럼에 기록되었습니다.");
+    if(idx>=0)list[idx]=data;else list.push(data);
+    save(list);updateDash();
+    showMsg("msg-new","ok","✅ 저장되었습니다. 구글시트 A~W 컬럼에 기록되었습니다.");
     resetNewForm();
   })
   .catch(function(err){
-    showMsg("msg-new","err","❌ 저장에 실패했습니다. 인터넷 연결을 확인해주세요.");
+    showMsg("msg-new","err","❌ 저장 실패. 인터넷 연결을 확인해주세요.");
     console.error(err);
   })
-  .finally(function(){btn.disabled=false;btn.textContent="고객 정보 저장 (구글시트 A→S)";});
+  .finally(function(){btn.disabled=false;btn.textContent="고객 정보 저장";});
 }
 
 // ============================================================
@@ -1279,27 +1266,17 @@ function submitUpdate(){
   var addC=document.getElementById("addConsultation").value.trim();
   if(!phone){showMsg("msg-update","err","⚠ 연락처를 입력해주세요.");return;}
   if(!addC){showMsg("msg-update","err","⚠ 추가상담내용을 입력해주세요.");return;}
-
   var now=getNow();
   var entry=getTs()+"\n"+addC;
-  var payload={
-    action:"update",
-    _updatedAt:now,
+  var payload={action:"update",_updatedAt:now,
     customerName:document.getElementById("u-name").value.trim(),
-    phone:phone,
-    consultationEntry:entry,
+    phone:phone,consultationEntry:entry,
     status:document.getElementById("u-status").value,
-    nextContact:document.getElementById("u-next").value
-  };
-
+    nextContact:document.getElementById("u-next").value};
   var btn=document.getElementById("updateBtn");
-  btn.disabled=true; btn.textContent="저장 중…";
-
-  fetch(SCRIPT_URL,{
-    method:"POST",mode:"no-cors",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify(payload)
-  })
+  btn.disabled=true;btn.textContent="저장 중…";
+  fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",
+    headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})
   .then(function(){
     var list=load();
     var np=normP(phone),found=false;
@@ -1309,20 +1286,19 @@ function submitUpdate(){
         list[i].consultation=prev?prev+"\n\n"+entry:entry;
         if(payload.status)     list[i].status=payload.status;
         if(payload.nextContact)list[i].nextContact=payload.nextContact;
-        list[i]._updatedAt=now;
-        found=true; break;
+        list[i]._updatedAt=now;found=true;break;
       }
     }
     if(found)save(list);
     updateDash();
-    showMsg("msg-update","ok","✅ 추가상담이 저장되었습니다. 구글시트 K열에 누적되었습니다.");
+    showMsg("msg-update","ok","✅ 추가상담이 저장되었습니다.");
     ["u-name","u-phone","u-status","u-next","addConsultation"]
       .forEach(function(id){document.getElementById(id).value="";});
     document.getElementById("preview-box").classList.remove("show");
     document.getElementById("nofound").classList.remove("show");
   })
   .catch(function(err){
-    showMsg("msg-update","err","❌ 저장에 실패했습니다. 인터넷 연결을 확인해주세요.");
+    showMsg("msg-update","err","❌ 저장 실패. 인터넷 연결을 확인해주세요.");
     console.error(err);
   })
   .finally(function(){btn.disabled=false;btn.textContent="추가상담 저장";});
@@ -1337,7 +1313,6 @@ function submitUpdate(){
     year:"numeric",month:"long",day:"numeric",weekday:"long"});
   document.getElementById("todayStr").textContent=s;
 })();
-
 updateDash();
 renderHomeContacts();
 </script>
