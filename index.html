@@ -7,7 +7,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzFqSNt5l6l_Afrw7GmrgZBKPKzy38kSSv9OburSpsBjc5L7wyIu6ClJy8dJcyx-9ajqw/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwgDRucDbNYAHrsKZq82vKfPvOzTH0CdqMr7T_x8GMEFQR6LK0vpJH3P3I4QxovPAzemQ/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   </script>
 
@@ -302,6 +302,24 @@
       background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);}
     .empty-icon{font-size:38px;margin-bottom:11px;}
     .empty-state p{font-size:14px;color:var(--text-lt);}
+
+    /* 구글시트 불러오기 버튼 */
+    .sync-btn{
+      display:inline-flex;align-items:center;gap:5px;
+      padding:8px 14px;border-radius:20px;border:1.5px solid var(--blue);
+      background:#fff;color:var(--blue);font-family:var(--font);
+      font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;
+      transition:background .15s,color .15s;flex-shrink:0;
+    }
+    .sync-btn:hover{background:var(--blue);color:#fff;}
+    .sync-btn:disabled{opacity:.55;cursor:not-allowed;background:#fff;color:var(--blue);}
+    .sync-msg{
+      display:none;padding:10px 14px;border-radius:var(--radius);
+      font-size:13px;font-weight:600;margin:6px 0;text-align:center;
+      animation:vIn .2s ease;
+    }
+    .sync-msg.ok{display:block;background:#edfaf3;border:1px solid #a8dfc0;color:var(--success);}
+    .sync-msg.err{display:block;background:#fdf0ef;border:1px solid #f0b8b2;color:var(--danger);}
 
     /* ── 반응형 ── */
     @media(max-width:640px){
@@ -762,7 +780,9 @@
     </div>
     <div class="search-bar">
       <input type="text" id="searchInput" placeholder="🔍 이름 또는 연락처 검색" oninput="renderList()"/>
+      <button class="sync-btn" id="syncBtn" onclick="syncFromSheet()">☁ 불러오기</button>
     </div>
+    <div class="sync-msg" id="sync-msg"></div>
     <div class="filter-bar" id="filterBar">
       <div class="filter-label" id="filterLabel">전체 고객</div>
       <button class="filter-clear" onclick="clearFilter()">전체 보기 ✕</button>
@@ -1541,6 +1561,86 @@ function submitUpdate(){
 }
 
 // ============================================================
+// 구글시트 불러오기 (GET ?action=list)
+// ============================================================
+var _syncInProgress = false;
+
+function syncFromSheet(isAuto){
+  if(_syncInProgress)return;
+  _syncInProgress=true;
+  var btn=document.getElementById("syncBtn");
+  var msgEl=document.getElementById("sync-msg");
+  if(btn){btn.disabled=true;btn.textContent="불러오는 중…";}
+  if(msgEl){msgEl.className="sync-msg";msgEl.textContent="";}
+
+  fetch(SCRIPT_URL+"?action=list",{method:"GET"})
+  .then(function(res){
+    if(!res.ok)throw new Error("HTTP "+res.status);
+    return res.json();
+  })
+  .then(function(json){
+    if(!json.success)throw new Error(json.message||"Apps Script 오류");
+
+    var incoming=json.customers||[];
+
+    // ── 연락처 기준 중복 제거 (아래 행 / 수정일시 최신 우선) ──
+    // incoming 배열은 시트 위→아래 순이므로 뒤 항목이 우선
+    var phoneMap={};
+    incoming.forEach(function(c){
+      var np=normP(c.phone);
+      if(!np){
+        // 연락처 없는 경우: 고객ID 또는 인덱스로 키 생성
+        phoneMap["_nophone_"+(c.customerId||Math.random())]=c;
+        return;
+      }
+      var existing=phoneMap[np];
+      if(!existing){phoneMap[np]=c;return;}
+      // 수정일시 비교 (없으면 등록일시 비교)
+      var ta=c._updatedAt||c._savedAt||"";
+      var tb=existing._updatedAt||existing._savedAt||"";
+      if(ta>=tb)phoneMap[np]=c; // 최신 우선
+    });
+    var deduped=Object.values(phoneMap);
+
+    // ── 기존 localStorage 고객 보존 (시트에 없는 로컬 신규 고객 유지) ──
+    var local=load();
+    var sheetPhones={};
+    deduped.forEach(function(c){if(normP(c.phone))sheetPhones[normP(c.phone)]=true;});
+    var onlyLocal=local.filter(function(c){
+      // 로컬에만 있는 고객 (아직 시트에 없거나 연락처 없는 것)
+      return normP(c.phone)&&!sheetPhones[normP(c.phone)];
+    });
+    var merged=deduped.concat(onlyLocal);
+    save(merged);
+
+    // ── 화면 전체 갱신 ──
+    updateDash();
+    renderHomeContacts();
+    if(document.getElementById("listView")&&
+       document.getElementById("listView").classList.contains("active"))renderList();
+
+    var cnt=deduped.length;
+    if(!isAuto&&msgEl){
+      msgEl.className="sync-msg ok";
+      msgEl.textContent="✅ 구글시트에서 고객 "+cnt+"명을 불러왔습니다.";
+      setTimeout(function(){if(msgEl)msgEl.className="sync-msg";},4000);
+    }
+    console.log("[syncFromSheet] 고객 "+cnt+"명 불러오기 완료");
+  })
+  .catch(function(err){
+    console.error("[syncFromSheet] 오류:", err);
+    if(!isAuto&&msgEl){
+      msgEl.className="sync-msg err";
+      msgEl.textContent="❌ 구글시트 불러오기에 실패했습니다. Apps Script 배포 상태와 권한을 확인해주세요.";
+    }
+  })
+  .finally(function(){
+    _syncInProgress=false;
+    if(btn){btn.disabled=false;btn.textContent="☁ 불러오기";}
+  });
+}
+
+// ============================================================
 // 초기 실행
 // ============================================================
 (function(){
@@ -1551,113 +1651,9 @@ function submitUpdate(){
 })();
 updateDash();
 renderHomeContacts();
+// 페이지 로드 시 구글시트에서 자동으로 고객목록 불러오기
+syncFromSheet(true);
 
-
-// ============================================================
-// 세부모델 데이터
-// ============================================================
-var DETAIL_MODELS = {
-  "A-Class":["A 220 Hatch","A 220 Sedan","Mercedes-AMG A 35 4MATIC","Mercedes-AMG A 45 S 4MATIC+"],
-  "CLA":["CLA 250 4MATIC AMG Line","Mercedes-AMG CLA 45 S 4MATIC+","Mercedes-AMG CLA 45 S 4MATIC+ Final Edition"],
-  "GLA / GLB":["GLA 250 4MATIC AMG Line","GLB 200 d","GLB 250 4MATIC","Mercedes-AMG GLB 35 4MATIC"],
-  "C-Class":["C 200 AVANTGARDE","C 200 AMG Line"],
-  "E-Class":["E 200 AVANTGARDE","E 200 EXCLUSIVE","E 200 AMG Line","E 200 AMG Line RoF Edition",
-    "E 220 d 4MATIC EXCLUSIVE","E 300 4MATIC EXCLUSIVE","E 300 4MATIC AMG Line",
-    "E 300 4MATIC 140주년 Edition","E 350 e 4MATIC EXCLUSIVE",
-    "E 450 4MATIC AMG Line","E 450 4MATIC EXCLUSIVE","Mercedes-AMG E 53 HYBRID 4MATIC+"],
-  "S-Class":["S 350 d 4MATIC","S 450 4MATIC SWB","S 450 4MATIC Long","S 500 4MATIC","S 580 4MATIC",
-    "Mercedes-AMG S 63 E Performance","S 450 4MATIC Long Exclusive",
-    "S 450 4MATIC Long AMG Line","S 500 4MATIC Long","S 580 4MATIC Long"],
-  "CLE":["── Coupé ──","CLE 200 Coupé AMG Line","CLE 450 4MATIC Coupé AMG Line",
-    "Mercedes-AMG CLE 53 4MATIC+ Coupé","── Cabriolet ──",
-    "CLE 200 Cabriolet AMG Line","CLE 450 4MATIC Cabriolet AMG Line","Mercedes-AMG CLE 53 4MATIC+ Cabriolet"],
-  "GLC":["── SUV ──","GLC 220 d 4MATIC","GLC 300 4MATIC AVANTGARDE","GLC 300 4MATIC AMG Line",
-    "Mercedes-AMG GLC 43 4MATIC","── Coupé ──","GLC 300 4MATIC Coupé AVANTGARDE",
-    "GLC 300 4MATIC Coupé AMG Line","Mercedes-AMG GLC 43 4MATIC Coupé"],
-  "GLE":["── SUV ──","GLE 350 4MATIC","GLE 300 d 4MATIC","GLE 450 4MATIC","GLE 450 4MATIC AMG Line",
-    "Mercedes-AMG GLE 53 4MATIC+","── Coupé ──","GLE 450 d 4MATIC Coupé AMG Line",
-    "GLE 450 4MATIC Coupé AMG Line","Mercedes-AMG GLE 53 4MATIC+ Coupé"],
-  "GLS":["GLS 450 d 4MATIC AMG Line","GLS 450 4MATIC AMG Line","GLS 450 d 4MATIC AMG Line Premium",
-    "GLS 450 4MATIC AMG Line Premium","GLS 580 4MATIC AMG Line","Mercedes-AMG GLS 63 4MATIC+"],
-  "G-Class":["G 450 d","G 450 d MANUFAKTUR","Mercedes-AMG G 63","Mercedes-AMG G 63 MANUFAKTUR"],
-  "AMG GT · SL":["Mercedes-AMG SL 43","Mercedes-AMG SL 63 4MATIC+","Mercedes-AMG GT 55 4MATIC+",
-    "Mercedes-AMG GT 63 S E Performance","Mercedes-AMG GT 43 4MATIC+"],
-  "EQ":["EQA 250 Progressive","EQA 250 AMG Line","EQB 300 4MATIC Progressive",
-    "EQB 300 4MATIC AMG Line","EQE 350+ SUV","EQE 350+","EQE 500 4MATIC SUV",
-    "EQS 450 4MATIC SUV","EQS 580 4MATIC SUV","G 580 with EQ Technology"],
-  "Mercedes-Maybach":["── MY26 ──","Mercedes-Maybach S 580","Mercedes-Maybach S 680",
-    "Mercedes-Maybach S 680 V12 Edition","Mercedes-Maybach SL 680","Mercedes-Maybach GLS 600",
-    "Mercedes-Maybach GLS 600 MANUFAKTUR","Mercedes-Maybach EQS 680 SUV",
-    "── MY27 ──","Mercedes-Maybach S 580","Mercedes-Maybach S 580 MANUFAKTUR","Mercedes-Maybach S 680"]
-};
-function isSep(v){return v.indexOf("──")!==-1;}
-function onModelChange(){
-  var m=document.getElementById("modelName").value;
-  var sel=document.getElementById("detailModel");
-  sel.innerHTML="";sel.disabled=true;
-  if(!m){sel.innerHTML='<option value="">— 모델을 먼저 선택하세요 —</option>';return;}
-  sel.innerHTML='<option value="">— 세부모델 선택 —</option>';
-  (DETAIL_MODELS[m]||[]).forEach(function(v){
-    var o=document.createElement("option");
-    if(isSep(v)){o.value="";o.disabled=true;o.style.color="#aaa";o.style.fontStyle="italic";}
-    else{o.value=v;}
-    o.textContent=v;sel.appendChild(o);
-  });
-  sel.disabled=false;
-}
-
-// 출고일 입력 → 출고월 자동 생성 (YYYY-MM)
-function autoDeliveryMonth(){
-  var d=document.getElementById("deliveryDate").value;
-  var m=document.getElementById("deliveryMonth");
-  if(d&&d.length>=7){m.value=d.substring(0,7);}
-  else{m.value="";}
-}
-
-// ============================================================
-// 화면 전환
-// ============================================================
-var VIEWS={home:"homeView",new:"newView",consult:"consultView",list:"listView"};
-var VNAMES={home:"대시보드",new:"신규등록",consult:"추가상담",list:"고객목록"};
-var NBS={home:"nb-home",consult:"nb-consult",list:"nb-list"};
-
-function showView(v){
-  Object.values(VIEWS).forEach(function(id){
-    var el=document.getElementById(id);if(el)el.classList.remove("active");
-  });
-  var t=document.getElementById(VIEWS[v]);if(t)t.classList.add("active");
-  document.getElementById("viewBadge").textContent=VNAMES[v]||"";
-  ["home","consult","list"].forEach(function(k){
-    var b=document.getElementById(NBS[k]);if(b)b.classList.toggle("active",k===v);
-  });
-  var plus=document.getElementById("nb-plus");
-  if(plus)plus.classList.toggle("active",v==="new");
-  var pbs=document.querySelectorAll(".pc-tab-btn");
-  ["home","new","consult","list"].forEach(function(k,i){
-    if(pbs[i])pbs[i].classList.toggle("active",k===v);
-  });
-  if(v==="list")renderList();
-  if(v==="home"){updateDash();renderHomeContacts();}
-  window.scrollTo({top:0,behavior:"smooth"});
-  hideMsg("msg-new");hideMsg("msg-update");
-}
-function goFilter(st){
-  currentFilter=st;
-  currentCareFilter="";
-  showView("list");
-}
-// 차량관리 알림 카드 클릭 → 해당 조건 필터로 고객목록 이동
-function goCareFilter(type){
-  currentFilter="";
-  currentCareFilter=type;
-  showView("list");
-}
-function clearFilter(){
-  currentFilter="";
-  currentCareFilter="";
-  document.getElementById("filterBar").style.display="none";
-  renderList();
-}
 </script>
 </body>
 </html>
