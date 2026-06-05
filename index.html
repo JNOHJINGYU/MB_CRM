@@ -1,703 +1,928 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>노진규 고객관리 시스템</title>
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxCGJUY_Ee9WKk2gDRr4_PIFtOZolxI_PpiUhG0eWxs_Zcd8rCTC14iQ1X-K_3oKIpkEw/exec";
-    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyTU4LmZJiEGRLyKX2iEvYbrrTAVeNp4oyGX28q30jNbuCYkcNBAuhEfpt4HeqI1LoAFQ/exec";
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   </script>
 
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /*━━━━━━━━━━━━━━━━━━━━━ BASE ━━━━━━━━━━━━━━━━━━━━━*/
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
-    :root {
-      --bg:            #f4f4f6;
-      --surface:       #ffffff;
-      --surface2:      #fafafa;
-      --border:        #e0e0e6;
-      --border2:       #d0d0da;
-      --gold:          #b8963a;
-      --gold-dk:       #9a7a28;
-      --black:         #111111;
-      --text:          #1a1a1a;
-      --text-dim:      #555566;
-      --text-lt:       #888899;
-      --danger:        #c0392b;
-      --success:       #27864e;
-      --radius:        10px;
-      --shadow:        0 2px 12px rgba(0,0,0,.08);
-      --font:          'Noto Sans KR','Apple SD Gothic Neo',sans-serif;
-      --care-accent:   #1a6aa0;
-      --update-accent: #1a6aa0;
-      --update-bg:     #edf5fc;
-    }
-
-    html, body {
-      min-height: 100%; background: var(--bg); color: var(--text);
-      font-family: var(--font); font-size: 15px; line-height: 1.6; overflow-x: hidden;
+    :root{
+      --bg:       #f5f5f7;
+      --surface:  #ffffff;
+      --surface2: #fafafa;
+      --border:   #e4e4ea;
+      --border2:  #d0d0da;
+      --gold:     #b8963a;
+      --gold-dk:  #9a7a28;
+      --black:    #111111;
+      --text:     #1a1a1a;
+      --text-dim: #555566;
+      --text-lt:  #999aaa;
+      --danger:   #c0392b;
+      --success:  #1a8a4a;
+      --blue:     #1a6aa0;
+      --radius:   14px;
+      --shadow:   0 2px 16px rgba(0,0,0,.09);
+      --font:     'Noto Sans KR','Apple SD Gothic Neo',sans-serif;
+      --nav-h:    72px; /* 하단바 높이 */
     }
 
-    .page-wrap { max-width: 780px; margin: 0 auto; padding: 20px 14px 72px; }
-
-    /* ── 헤더 ── */
-    .site-header {
-      display: flex; align-items: center; gap: 14px;
-      padding: 18px 22px; background: var(--black);
-      border-radius: 14px; margin-bottom: 16px; box-shadow: var(--shadow);
-    }
-    .site-logo {
-      width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--gold);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 15px; font-weight: 800; color: var(--gold); flex-shrink: 0;
-    }
-    .site-title { font-size: 17px; font-weight: 700; color: #fff; letter-spacing: -.3px; }
-    .site-sub   { font-size: 12px; color: #aaa; margin-top: 1px; }
-
-    /* ── 대시보드 ── */
-    .dash-section-label {
-      font-size: 11px; font-weight: 700; letter-spacing: 1px;
-      color: var(--text-dim); margin-bottom: 8px; padding-left: 2px;
-    }
-    .dash-section-label.care { color: var(--care-accent); }
-    .dashboard {
-      display: grid; grid-template-columns: repeat(4,1fr); gap: 9px; margin-bottom: 8px;
-    }
-    .dashboard.care-dash { grid-template-columns: repeat(4,1fr); margin-bottom: 16px; }
-    .dash-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 14px 10px 12px;
-      text-align: center; box-shadow: var(--shadow);
-    }
-    .dash-card.care-card { border-left: 3px solid var(--care-accent); }
-    .dash-card.care-card.warn  { border-left-color: #e07000; }
-    .dash-card.care-card.alert { border-left-color: #c0392b; }
-    .dash-num   { font-size: 26px; font-weight: 800; color: var(--black); line-height: 1.1; }
-    .dash-label { font-size: 10px; color: var(--text-dim); margin-top: 4px; font-weight: 600; }
-
-    /* ── 모드 탭 ── */
-    .mode-tabs {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 0;
-      border-radius: 12px; overflow: hidden;
-      border: 2px solid var(--black); margin-bottom: 16px;
-      box-shadow: var(--shadow);
-    }
-    .mode-tab {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 3px; padding: 14px 10px; cursor: pointer; border: none;
-      font-family: var(--font); font-size: 14px; font-weight: 700;
-      letter-spacing: -.2px; transition: background .18s, color .18s;
-      background: var(--surface); color: var(--text-dim);
-    }
-    .mode-tab .tab-icon { font-size: 20px; line-height: 1; }
-    .mode-tab .tab-sub  { font-size: 11px; font-weight: 500; color: var(--text-lt); }
-    .mode-tab:first-child { border-right: 1px solid var(--border2); }
-
-    .mode-tab.active {
-      background: var(--black); color: #fff;
-    }
-    .mode-tab.active.update-mode { background: var(--update-accent); }
-    .mode-tab.active .tab-sub { color: rgba(255,255,255,.7); }
-
-    /* ── 카드 공통 ── */
-    .card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); margin-bottom: 16px;
-    }
-    .card-header {
-      padding: 16px 22px; border-bottom: 1px solid var(--border);
-      background: var(--surface2); display: flex; align-items: center; gap: 8px;
-    }
-    .card-header.update-header { background: var(--update-bg); border-bottom-color: #c5dff0; }
-    .card-header-title { font-size: 15px; font-weight: 700; color: var(--black); letter-spacing: -.2px; }
-    .card-header-badge {
-      font-size: 11px; background: var(--gold); color: #fff;
-      border-radius: 20px; padding: 1px 8px; font-weight: 700; margin-left: auto;
-    }
-    .card-body { padding: 22px; }
-
-    /* ── 섹션 레이블 ── */
-    .section-label {
-      font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
-      color: var(--gold); text-transform: uppercase;
-      margin: 22px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border);
-    }
-    .section-label:first-child { margin-top: 0; }
-    .section-label.care-label  { color: var(--care-accent); border-bottom-color: #c5dff0; }
-    .section-label.update-label { color: var(--update-accent); border-bottom-color: #b5d5f0; }
-
-    /* ── 그리드 & 필드 ── */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
-    .field { display: flex; flex-direction: column; gap: 5px; }
-    .field.full { grid-column: 1 / -1; }
-    label { font-size: 12px; font-weight: 600; color: var(--text-dim); letter-spacing: .2px; }
-    label .req { color: var(--gold); margin-left: 2px; }
-
-    /* ── 입력 요소 ── */
-    input[type="text"], input[type="tel"], input[type="date"], select, textarea {
-      width: 100%; background: #fff; border: 1px solid var(--border2);
-      border-radius: 8px; color: var(--text); font-family: var(--font);
-      font-size: 15px; padding: 11px 13px; outline: none;
-      transition: border-color .18s, box-shadow .18s;
-      -webkit-appearance: none; appearance: none;
-    }
-    input:focus, select:focus, textarea:focus {
-      border-color: var(--gold); box-shadow: 0 0 0 3px rgba(184,150,58,.12);
-    }
-    select {
-      cursor: pointer;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888899' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat; background-position: right 12px center; padding-right: 34px;
-    }
-    select:disabled { background-color: #f5f5f8; color: var(--text-lt); cursor: not-allowed; opacity: 1; }
-    textarea { resize: vertical; min-height: 88px; }
-    input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: .6; font-size: 16px; }
-    .care-date { background: #f8fbff !important; border-color: #b8d4ea !important; }
-    .care-date:focus { border-color: var(--care-accent) !important; box-shadow: 0 0 0 3px rgba(26,106,160,.1) !important; }
-
-    /* 추가상담 입력창 강조 */
-    .update-input:focus {
-      border-color: var(--update-accent) !important;
-      box-shadow: 0 0 0 3px rgba(26,106,160,.12) !important;
+    html,body{
+      min-height:100%; background:var(--bg);
+      color:var(--text); font-family:var(--font);
+      font-size:15px; line-height:1.6; overflow-x:hidden;
     }
 
-    /* ── 버튼 ── */
-    .btn-submit {
-      width: 100%; margin-top: 22px; padding: 16px; border: none;
-      border-radius: var(--radius); background: var(--black); color: #fff;
-      font-family: var(--font); font-size: 16px; font-weight: 700; letter-spacing: .4px;
-      cursor: pointer; transition: background .18s, transform .1s;
-      position: relative; overflow: hidden; min-height: 52px;
-    }
-    .btn-submit::after {
-      content: ""; position: absolute; inset: 0;
-      background: linear-gradient(135deg, rgba(184,150,58,.18) 0%, transparent 60%);
-      pointer-events: none;
-    }
-    .btn-submit:hover   { background: #2a2a2a; }
-    .btn-submit:active  { transform: scale(.99); }
-    .btn-submit:disabled { opacity: .5; cursor: not-allowed; transform: none; }
-    .btn-submit.update-btn { background: var(--update-accent); }
-    .btn-submit.update-btn:hover { background: #155a8a; }
+    /*━━━━━━━━━━━━━━━━━━━━━ VIEWS ━━━━━━━━━━━━━━━━━━━━━*/
+    .view{display:none; animation:fadeIn .18s ease;}
+    .view.active{display:block;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-    /* ── 고객 확인 영역 (추가상담) ── */
-    .customer-preview {
-      display: none; margin-top: 12px;
-      background: #edf5fc; border: 1px solid #b5d5f0; border-radius: var(--radius);
-      padding: 14px 16px;
+    .page-wrap{
+      max-width:780px; margin:0 auto;
+      padding:0 14px 100px; /* 하단바 여백 */
     }
-    .customer-preview.visible { display: block; animation: fadeIn .2s ease; }
-    .preview-name { font-size: 16px; font-weight: 800; color: var(--black); }
-    .preview-meta { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
-    .preview-status { margin-top: 8px; }
 
-    .customer-not-found {
-      display: none; margin-top: 12px;
-      background: #fff3f3; border: 1px solid #f0b8b8; border-radius: var(--radius);
-      padding: 14px 16px; color: var(--danger); font-size: 14px; font-weight: 600;
-      text-align: center;
+    /*━━━━━━━━━━━━━━━━━━━━━ 상단 헤더 ━━━━━━━━━━━━━━━━━━━━━*/
+    .app-header{
+      position:sticky; top:0; z-index:100;
+      background:var(--black); padding:14px 20px 12px;
+      display:flex; align-items:center; justify-content:space-between;
+      box-shadow:0 2px 12px rgba(0,0,0,.18);
     }
-    .customer-not-found.visible { display: block; animation: fadeIn .2s ease; }
+    .app-header-left{display:flex;align-items:center;gap:12px;}
+    .app-logo{
+      width:34px;height:34px;border-radius:50%;
+      border:1.5px solid var(--gold);
+      display:flex;align-items:center;justify-content:center;
+      font-size:13px;font-weight:800;color:var(--gold);flex-shrink:0;
+    }
+    .app-title{font-size:16px;font-weight:700;color:#fff;letter-spacing:-.3px;}
+    .app-sub{font-size:11px;color:#aaa;margin-top:1px;}
+    .view-badge{
+      font-size:11px;font-weight:700;
+      background:rgba(184,150,58,.22);color:var(--gold);
+      border-radius:20px;padding:3px 10px;
+      border:1px solid rgba(184,150,58,.3);
+    }
 
-    /* ── 상태 메시지 ── */
-    #status-msg, #status-msg-update {
-      display: none; margin-top: 14px; padding: 14px 16px;
-      border-radius: var(--radius); font-size: 14px; font-weight: 600;
-      text-align: center; animation: fadeIn .22s ease;
+    /*━━━━━━━━━━━━━━━━━━━━━ 하단 네비 바 ━━━━━━━━━━━━━━━━━━━━━*/
+    .bottom-nav{
+      position:fixed; bottom:16px; left:50%; transform:translateX(-50%);
+      width:calc(100% - 28px); max-width:480px;
+      height:var(--nav-h);
+      background:#fff; border-radius:24px;
+      box-shadow:0 8px 32px rgba(0,0,0,.16), 0 2px 8px rgba(0,0,0,.08);
+      display:flex; align-items:center; justify-content:space-around;
+      padding:0 8px; z-index:200;
     }
-    #status-msg.success, #status-msg-update.success {
-      display: block; background: #edfaf3; border: 1px solid #a8dfc0; color: var(--success);
+    .nav-btn{
+      display:flex; flex-direction:column; align-items:center;
+      gap:3px; flex:1; padding:10px 4px;
+      border:none; background:transparent; cursor:pointer;
+      font-family:var(--font); color:var(--text-lt); transition:color .15s;
     }
-    #status-msg.error, #status-msg-update.error {
-      display: block; background: #fdf0ef; border: 1px solid #f0b8b2; color: var(--danger);
-    }
-    @keyframes fadeIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
+    .nav-btn .nav-icon{font-size:22px;line-height:1;}
+    .nav-btn .nav-label{font-size:10px;font-weight:600;letter-spacing:-.2px;}
+    .nav-btn.active{color:var(--black);}
+    .nav-btn.active .nav-icon{transform:scale(1.08); transition:transform .15s;}
 
-    /* ── 상태 뱃지 ── */
-    .status-badge {
-      display: inline-block; font-size: 11px; font-weight: 700;
-      padding: 3px 9px; border-radius: 20px; white-space: nowrap; letter-spacing: .1px;
+    /* 가운데 + 버튼 */
+    .nav-btn-plus{
+      display:flex; align-items:center; justify-content:center;
+      width:52px; height:52px; border-radius:50%;
+      background:var(--black); border:none; cursor:pointer;
+      box-shadow:0 4px 16px rgba(0,0,0,.25);
+      flex-shrink:0; transition:background .15s, transform .12s;
+      margin:0 4px;
     }
-    .status-badge.s0 { background:#ebebf0; color:#444455; }
-    .status-badge.s1 { background:#e6e6e8; color:#3a3a45; }
-    .status-badge.s2 { background:#fff0e0; color:#c05800; border:1px solid #ffd8a8; }
-    .status-badge.s3 { background:#e3f0ff; color:#1055a8; border:1px solid #b0cef5; }
-    .status-badge.s4 { background:#f0e5ff; color:#6020a0; border:1px solid #d5b8f5; }
-    .status-badge.s5 { background:#fffbe0; color:#8a6b00; border:1px solid #ffe97a; }
-    .status-badge.s6 { background:#e3f7ec; color:#0f6e35; border:1px solid #90ddb0; }
-    .status-badge.s7 { background:#d4f0e0; color:#0a5528; border:1px solid #5fc890; }
-    .status-badge.s8 { background:#ebebeb; color:#404040; border:1px solid #c8c8c8; }
-    .status-badge.s9 { background:#fde8e8; color:#a01515; border:1px solid #f0a0a0; }
+    .nav-btn-plus:active{transform:scale(.94);}
+    .nav-btn-plus svg{width:24px;height:24px;fill:#fff;}
+    .nav-btn-plus.active{background:var(--gold);}
 
-    /* ── 고객목록 ── */
-    #list-empty { text-align:center; color:var(--text-lt); font-size:14px; padding:32px 0; }
-    .customer-table { width:100%; border-collapse:collapse; font-size:12px; }
-    .customer-table thead th {
-      background:#f0f0f5; color:var(--text-dim); font-weight:700;
-      font-size:11px; letter-spacing:.4px; padding:10px; text-align:left;
-      border-bottom:1px solid var(--border); white-space:nowrap;
+    /* PC에서 하단바 숨김 */
+    @media (min-width:641px){
+      .bottom-nav{display:none;}
+      .page-wrap{padding-bottom:40px;}
+      /* PC 탭 메뉴 */
+      .pc-tabs{
+        display:flex; gap:4px; margin:16px 0;
+        background:var(--surface); border-radius:var(--radius);
+        padding:6px; box-shadow:var(--shadow); border:1px solid var(--border);
+      }
+      .pc-tab-btn{
+        flex:1; padding:11px 8px; border:none; border-radius:10px;
+        background:transparent; cursor:pointer; font-family:var(--font);
+        font-size:13px; font-weight:600; color:var(--text-dim);
+        transition:background .15s, color .15s;
+      }
+      .pc-tab-btn.active{background:var(--black); color:#fff;}
     }
-    .customer-table tbody tr { border-bottom:1px solid var(--border); transition:background .12s; }
-    .customer-table tbody tr:last-child { border-bottom:none; }
-    .customer-table tbody tr:hover { background:#fafafa; }
-    .customer-table tbody td { padding:10px; color:var(--text); vertical-align:top; word-break:break-all; }
-    .customer-table td.name-cell { font-weight:700; color:var(--black); white-space:nowrap; }
-    .tel-link { color:var(--gold-dk); text-decoration:none; font-weight:600; white-space:nowrap; }
-    .tel-link:hover { text-decoration:underline; }
-    .customer-table thead th.care-th { background:#eaf3fb; color:var(--care-accent); }
-    .updated-row { background:#fffde8 !important; }
+    @media (max-width:640px){.pc-tabs{display:none;}}
 
-    /* ── 모바일 카드 ── */
-    .customer-cards { display:none; }
-    .cust-card {
-      border:1px solid var(--border); border-radius:var(--radius);
-      padding:16px; margin-bottom:14px; background:var(--surface);
+    /*━━━━━━━━━━━━━━━━━━━━━ HOME / DASHBOARD ━━━━━━━━━━━━━━━━━━━━━*/
+    .home-greeting{
+      padding:22px 0 6px;
     }
-    .cust-card.updated-card { border-left:3px solid var(--gold); }
-    .cust-card:last-child { margin-bottom:0; }
-    .cust-card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
-    .cust-name { font-size:17px; font-weight:800; color:var(--black); }
-    .cust-date { font-size:11px; color:var(--text-lt); margin-top:2px; }
-    .cust-section-title {
-      font-size:10px; font-weight:700; letter-spacing:1px; color:var(--gold);
-      text-transform:uppercase; margin:12px 0 7px; padding-bottom:4px;
+    .home-greeting-title{font-size:22px;font-weight:800;color:var(--black);letter-spacing:-.5px;}
+    .home-greeting-sub{font-size:13px;color:var(--text-dim);margin-top:3px;}
+
+    /* 통계 카드 그리드 */
+    .stat-grid{
+      display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:14px 0;
+    }
+    .stat-card{
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius); padding:14px 8px 12px;
+      text-align:center; box-shadow:var(--shadow);
+      cursor:pointer; transition:transform .12s, box-shadow .12s;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .stat-card:active{transform:scale(.96); box-shadow:none;}
+    .stat-num{font-size:24px;font-weight:800;color:var(--black);line-height:1.1;}
+    .stat-label{font-size:10px;color:var(--text-dim);margin-top:5px;font-weight:600;}
+
+    /* 차량관리 알림 */
+    .section-title{
+      font-size:13px; font-weight:700; color:var(--text-dim);
+      letter-spacing:.3px; margin:20px 0 10px;
+      display:flex; align-items:center; gap:6px;
+    }
+    .section-title .badge-dot{
+      width:6px;height:6px;border-radius:50%;background:var(--gold);
+    }
+
+    .care-grid{
+      display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:20px;
+    }
+    .care-card{
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:12px; padding:12px 8px 10px;
+      text-align:center; box-shadow:0 1px 8px rgba(0,0,0,.06);
+    }
+    .care-card.warn{border-top:3px solid #e07000;}
+    .care-card.alert{border-top:3px solid #c0392b;}
+    .care-card.info{border-top:3px solid var(--blue);}
+    .care-num{font-size:22px;font-weight:800;line-height:1.1;}
+    .care-label{font-size:9px;color:var(--text-dim);margin-top:4px;font-weight:600;}
+
+    /* 오늘/이번주 연락 */
+    .contact-section{margin-bottom:20px;}
+    .contact-list-empty{
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius); padding:20px; text-align:center;
+      color:var(--text-lt); font-size:13px;
+    }
+    .contact-item{
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius); padding:14px 16px; margin-bottom:8px;
+      display:flex; align-items:center; justify-content:space-between;
+      box-shadow:0 1px 6px rgba(0,0,0,.05);
+    }
+    .contact-item-left .c-name{font-size:15px;font-weight:700;color:var(--black);}
+    .contact-item-left .c-meta{font-size:12px;color:var(--text-dim);margin-top:2px;}
+    .contact-item-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+    .call-btn{
+      display:inline-flex; align-items:center; gap:4px;
+      padding:6px 12px; border-radius:20px;
+      background:var(--black); color:#fff;
+      font-size:12px;font-weight:700;text-decoration:none;
+      border:none; cursor:pointer;
+    }
+
+    /*━━━━━━━━━━━━━━━━━━━━━ 공통 카드/폼 ━━━━━━━━━━━━━━━━━━━━━*/
+    .view-header{
+      padding:18px 0 8px; display:flex; align-items:center; gap:10px;
+    }
+    .view-header-title{font-size:20px;font-weight:800;color:var(--black);}
+    .view-header-sub{font-size:12px;color:var(--text-dim);margin-top:2px;}
+
+    .form-card{
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius); overflow:hidden;
+      box-shadow:var(--shadow); margin-bottom:16px;
+    }
+    .form-card-header{
+      padding:14px 18px; background:var(--surface2);
+      border-bottom:1px solid var(--border);
+      font-size:14px;font-weight:700;color:var(--black);
+    }
+    .form-card-header.update{background:#edf5fc;border-bottom-color:#c5dff0;color:var(--blue);}
+    .form-body{padding:18px;}
+
+    .section-label{
+      font-size:11px;font-weight:700;letter-spacing:1px;
+      color:var(--gold);text-transform:uppercase;
+      margin:20px 0 10px;padding-bottom:5px;border-bottom:1px solid var(--border);
+    }
+    .section-label:first-child{margin-top:0;}
+    .section-label.care{color:var(--blue);border-bottom-color:#c5dff0;}
+    .section-label.update{color:var(--blue);}
+
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    .field{display:flex;flex-direction:column;gap:5px;}
+    .field.full{grid-column:1/-1;}
+    label{font-size:12px;font-weight:600;color:var(--text-dim);}
+    label .req{color:var(--gold);margin-left:2px;}
+
+    input[type="text"],input[type="tel"],input[type="date"],select,textarea{
+      width:100%;background:#fff;border:1px solid var(--border2);
+      border-radius:9px;color:var(--text);font-family:var(--font);
+      font-size:15px;padding:12px 14px;outline:none;
+      transition:border-color .18s,box-shadow .18s;
+      -webkit-appearance:none;appearance:none;
+    }
+    input:focus,select:focus,textarea:focus{
+      border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,150,58,.12);
+    }
+    select{
+      cursor:pointer;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888899' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;background-position:right 13px center;padding-right:36px;
+    }
+    select:disabled{background-color:#f5f5f8;color:var(--text-lt);cursor:not-allowed;}
+    textarea{resize:vertical;min-height:90px;}
+    input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.6;font-size:16px;}
+
+    .care-input{background:#f8fbff!important;border-color:#b8d4ea!important;}
+    .care-input:focus{border-color:var(--blue)!important;box-shadow:0 0 0 3px rgba(26,106,160,.1)!important;}
+
+    /* 저장 버튼 */
+    .btn-submit{
+      width:100%;margin-top:20px;padding:16px;border:none;
+      border-radius:var(--radius);background:var(--black);color:#fff;
+      font-family:var(--font);font-size:16px;font-weight:700;letter-spacing:.3px;
+      cursor:pointer;transition:background .18s,transform .1s;
+      position:relative;overflow:hidden;min-height:54px;
+    }
+    .btn-submit::after{
+      content:"";position:absolute;inset:0;
+      background:linear-gradient(135deg,rgba(184,150,58,.2) 0%,transparent 60%);
+      pointer-events:none;
+    }
+    .btn-submit:hover{background:#2a2a2a;}
+    .btn-submit:active{transform:scale(.99);}
+    .btn-submit:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+    .btn-submit.update-btn{background:var(--blue);}
+    .btn-submit.update-btn:hover{background:#155a8a;}
+
+    /* 상태 메시지 */
+    .status-msg{
+      display:none;margin-top:14px;padding:14px 16px;
+      border-radius:var(--radius);font-size:14px;font-weight:600;
+      text-align:center;animation:fadeIn .22s ease;
+    }
+    .status-msg.success{display:block;background:#edfaf3;border:1px solid #a8dfc0;color:var(--success);}
+    .status-msg.error{display:block;background:#fdf0ef;border:1px solid #f0b8b2;color:var(--danger);}
+
+    /*━━━━━━━━━━━━━━━━━━━━━ 상태 뱃지 ━━━━━━━━━━━━━━━━━━━━━*/
+    .status-badge{
+      display:inline-block;font-size:11px;font-weight:700;
+      padding:3px 9px;border-radius:20px;white-space:nowrap;
+    }
+    .status-badge.s0{background:#ebebf0;color:#444;}
+    .status-badge.s1{background:#e8e8ea;color:#3a3a45;}
+    .status-badge.s2{background:#fff0e0;color:#c05800;border:1px solid #ffd8a8;}
+    .status-badge.s3{background:#e3f0ff;color:#1055a8;border:1px solid #b0cef5;}
+    .status-badge.s4{background:#f0e5ff;color:#6020a0;border:1px solid #d5b8f5;}
+    .status-badge.s5{background:#fffbe0;color:#8a6b00;border:1px solid #ffe97a;}
+    .status-badge.s6{background:#e3f7ec;color:#0f6e35;border:1px solid #90ddb0;}
+    .status-badge.s7{background:#d4f0e0;color:#0a5528;border:1px solid #5fc890;}
+    .status-badge.s8{background:#ebebeb;color:#404040;border:1px solid #c8c8c8;}
+    .status-badge.s9{background:#fde8e8;color:#a01515;border:1px solid #f0a0a0;}
+
+    /*━━━━━━━━━━━━━━━━━━━━━ 고객 확인 프리뷰 ━━━━━━━━━━━━━━━━━━━━━*/
+    .customer-preview{
+      display:none;margin-top:10px;
+      background:#edf5fc;border:1px solid #b5d5f0;border-radius:var(--radius);padding:14px 16px;
+    }
+    .customer-preview.visible{display:block;animation:fadeIn .2s ease;}
+    .preview-name{font-size:16px;font-weight:800;color:var(--black);}
+    .preview-meta{font-size:12px;color:var(--text-dim);margin-top:3px;}
+    .preview-status{margin-top:8px;}
+    .customer-not-found{
+      display:none;margin-top:10px;
+      background:#fff3f3;border:1px solid #f0b8b8;border-radius:var(--radius);
+      padding:12px 16px;color:var(--danger);font-size:13px;font-weight:600;text-align:center;
+    }
+    .customer-not-found.visible{display:block;}
+
+    /*━━━━━━━━━━━━━━━━━━━━━ 고객목록 ━━━━━━━━━━━━━━━━━━━━━*/
+    /* 필터 바 */
+    .filter-bar{
+      display:flex;align-items:center;gap:8px;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius);padding:12px 16px;
+      margin:10px 0;box-shadow:0 1px 6px rgba(0,0,0,.05);
+    }
+    .filter-label{
+      font-size:13px;font-weight:700;color:var(--blue);flex:1;
+    }
+    .filter-clear{
+      padding:5px 12px;border-radius:20px;border:1px solid var(--border2);
+      background:var(--surface);font-size:12px;font-weight:600;
+      color:var(--text-dim);cursor:pointer;font-family:var(--font);
+      white-space:nowrap;
+    }
+
+    /* 검색 */
+    .search-bar{
+      display:flex;gap:8px;margin:10px 0;
+    }
+    .search-bar input{
+      flex:1;background:var(--surface);border:1px solid var(--border);
+      border-radius:24px;padding:11px 18px;font-size:14px;
+      box-shadow:0 1px 6px rgba(0,0,0,.05);
+    }
+    .search-bar input:focus{border-color:var(--gold);}
+
+    /* 고객 카드 */
+    .cust-card{
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius);padding:16px;margin-bottom:12px;
+      box-shadow:0 1px 8px rgba(0,0,0,.06);
+    }
+    .cust-card.updated{border-left:3px solid var(--gold);}
+    .cust-card-top{
+      display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;
+    }
+    .cust-name{font-size:17px;font-weight:800;color:var(--black);}
+    .cust-date{font-size:11px;color:var(--text-lt);margin-top:2px;}
+
+    .cust-info-row{
+      display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;
+    }
+    .cust-chip{
+      font-size:11px;font-weight:600;color:var(--text-dim);
+      background:var(--bg);border-radius:6px;padding:3px 8px;
+    }
+    .tel-link{color:var(--gold-dk);text-decoration:none;font-weight:700;}
+    .tel-link:hover{text-decoration:underline;}
+
+    /* 상세정보 접기/펼치기 */
+    .detail-toggle{
+      display:flex;align-items:center;gap:5px;width:100%;
+      background:#f5f5f8;border:1px solid var(--border);border-radius:8px;
+      padding:8px 13px;cursor:pointer;font-family:var(--font);
+      font-size:12px;font-weight:600;color:var(--text-dim);
+      margin-top:10px;transition:background .15s;
+    }
+    .detail-toggle:hover{background:#ebebf0;}
+    .detail-toggle .arr{transition:transform .2s;font-size:10px;margin-left:auto;}
+    .detail-toggle.open .arr{transform:rotate(180deg);}
+    .detail-body{display:none;margin-top:10px;}
+    .detail-body.open{display:block;}
+
+    .d-row{display:flex;gap:6px;margin-bottom:6px;font-size:13px;align-items:flex-start;}
+    .d-key{flex-shrink:0;width:86px;color:var(--text-dim);font-weight:600;font-size:12px;}
+    .d-val{color:var(--text);word-break:break-all;line-height:1.5;white-space:pre-wrap;}
+
+    .detail-section{
+      font-size:10px;font-weight:700;letter-spacing:1px;color:var(--gold);
+      text-transform:uppercase;margin:12px 0 7px;padding-bottom:4px;
       border-bottom:1px solid var(--border);
     }
-    .cust-section-title.care { color:var(--care-accent); border-bottom-color:#c5dff0; }
-    .cust-row { display:flex; gap:6px; margin-bottom:6px; font-size:13px; align-items:flex-start; }
-    .cust-key { flex-shrink:0; width:88px; color:var(--text-dim); font-weight:600; font-size:12px; }
-    .cust-val { color:var(--text); word-break:break-all; line-height:1.5; }
-    .consultation-text { white-space:pre-wrap; font-size:12px; line-height:1.6; }
+    .detail-section.care{color:var(--blue);border-bottom-color:#c5dff0;}
 
-    /* 접기/펼치기 */
-    .toggle-btn {
-      display:flex; align-items:center; gap:6px; width:100%;
-      background:#f0f6fb; border:1px solid #c5dff0; border-radius:8px;
-      padding:9px 13px; cursor:pointer; font-family:var(--font);
-      font-size:12px; font-weight:700; color:var(--care-accent);
-      margin-top:12px; transition:background .15s;
+    /* 차량관리 접기/펼치기 */
+    .care-toggle{
+      display:flex;align-items:center;gap:5px;width:100%;
+      background:#f0f6fb;border:1px solid #c5dff0;border-radius:8px;
+      padding:8px 13px;cursor:pointer;font-family:var(--font);
+      font-size:12px;font-weight:700;color:var(--blue);
+      margin-top:10px;transition:background .15s;
     }
-    .toggle-btn:hover { background:#e0effa; }
-    .toggle-btn .toggle-arrow { transition:transform .2s; font-size:11px; }
-    .toggle-btn.open .toggle-arrow { transform:rotate(180deg); }
-    .care-detail { display:none; margin-top:8px; }
-    .care-detail.open { display:block; }
+    .care-toggle:hover{background:#e0effa;}
+    .care-toggle .arr{transition:transform .2s;font-size:10px;margin-left:auto;}
+    .care-toggle.open .arr{transform:rotate(180deg);}
+    .care-detail{display:none;margin-top:8px;}
+    .care-detail.open{display:block;}
 
-    /* D-day 태그 */
-    .dday-tag {
-      display:inline-block; font-size:10px; font-weight:700;
-      padding:1px 6px; border-radius:6px; margin-left:4px; vertical-align:middle;
+    /* d-day */
+    .dday-tag{
+      display:inline-block;font-size:10px;font-weight:700;
+      padding:1px 6px;border-radius:6px;margin-left:4px;vertical-align:middle;
     }
-    .dday-tag.urgent { background:#fde8e8; color:#a01515; }
-    .dday-tag.warn   { background:#fff0d0; color:#b06000; }
-    .dday-tag.ok     { background:#e3f7ec; color:#0f6e35; }
+    .dday-tag.urgent{background:#fde8e8;color:#a01515;}
+    .dday-tag.warn{background:#fff0d0;color:#b06000;}
+    .dday-tag.ok{background:#e3f7ec;color:#0f6e35;}
 
-    /* ── 반응형 ── */
-    @media (max-width: 640px) {
-      .page-wrap { padding:14px 12px 60px; }
-      .dashboard { grid-template-columns:repeat(4,1fr); gap:7px; }
-      .dashboard.care-dash { grid-template-columns:repeat(4,1fr); gap:7px; }
-      .mode-tab { padding:14px 8px; font-size:13px; }
-      .mode-tab .tab-icon { font-size:18px; }
-      .grid-2 { grid-template-columns:1fr; }
-      .field.full { grid-column:1; }
-      .card-body { padding:16px; }
-      .card-header { padding:14px 16px; }
-      .customer-table-wrap { display:none; }
-      .customer-cards { display:block; padding:14px; }
-      .dash-card .dash-num { font-size:20px; }
-      .dash-card { padding:10px 6px 9px; }
-      .dash-card .dash-label { font-size:9px; }
-      .status-badge { font-size:12px; padding:4px 11px; }
-      input[type="date"] { font-size:16px; padding:12px 13px; }
-      textarea#addConsultation { min-height:140px; }
+    /* 빈 상태 */
+    .empty-state{
+      text-align:center;padding:48px 20px;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius);box-shadow:var(--shadow);
     }
-    @media (max-width: 400px) {
-      .dashboard { gap:5px; }
-      .dash-card .dash-num { font-size:18px; }
-      .dash-card .dash-label { font-size:8px; }
+    .empty-state .empty-icon{font-size:40px;margin-bottom:12px;}
+    .empty-state p{font-size:14px;color:var(--text-lt);}
+
+    /* 목록 헤더 */
+    .list-header{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:16px 0 4px;
+    }
+    .list-count-badge{
+      font-size:12px;font-weight:700;background:var(--gold);color:#fff;
+      border-radius:20px;padding:2px 10px;
+    }
+
+    /*━━━━━━━━━━━━━━━━━━━━━ 반응형 ━━━━━━━━━━━━━━━━━━━━━*/
+    @media (max-width:640px){
+      .page-wrap{padding:0 12px 100px;}
+      .grid-2{grid-template-columns:1fr;}
+      .field.full{grid-column:1;}
+      .form-body{padding:14px;}
+      .stat-grid{grid-template-columns:repeat(4,1fr);gap:7px;}
+      .stat-num{font-size:20px;}
+      .stat-card{padding:12px 6px 10px;}
+      .stat-label{font-size:9px;}
+      .care-grid{grid-template-columns:repeat(4,1fr);gap:6px;}
+      .care-num{font-size:20px;}
+      .care-label{font-size:8px;}
+      .care-card{padding:10px 5px 8px;}
+      input[type="date"]{font-size:16px;padding:13px 14px;}
+      textarea#addConsultation{min-height:140px;}
+      .status-badge{font-size:12px;padding:4px 10px;}
+    }
+    @media (max-width:380px){
+      .stat-grid{grid-template-columns:repeat(4,1fr);gap:5px;}
+      .stat-num{font-size:18px;}
+      .stat-label{font-size:8px;}
     }
   </style>
 </head>
 <body>
+
+<!-- 상단 헤더 -->
+<div class="app-header">
+  <div class="app-header-left">
+    <div class="app-logo">NJ</div>
+    <div>
+      <div class="app-title">노진규 고객관리</div>
+      <div class="app-sub">Mercedes-Benz 의정부</div>
+    </div>
+  </div>
+  <div class="view-badge" id="viewBadge">대시보드</div>
+</div>
+
 <div class="page-wrap">
 
-  <!-- 헤더 -->
-  <div class="site-header">
-    <div class="site-logo">NJ</div>
-    <div>
-      <div class="site-title">노진규 고객관리 시스템</div>
-      <div class="site-sub">Mercedes-Benz 의정부 전시장</div>
-    </div>
+  <!-- PC 탭 메뉴 -->
+  <div class="pc-tabs">
+    <button class="pc-tab-btn active" onclick="showView('home')">🏠 대시보드</button>
+    <button class="pc-tab-btn" onclick="showView('new')">✏️ 신규등록</button>
+    <button class="pc-tab-btn" onclick="showView('consult')">📋 추가상담</button>
+    <button class="pc-tab-btn" onclick="showView('list')">👥 고객목록</button>
   </div>
 
-  <!-- 고객 현황 대시보드 -->
-  <div class="dash-section-label">📊 고객 현황</div>
-  <div class="dashboard">
-    <div class="dash-card">
-      <div class="dash-num" id="d-total" style="color:var(--gold);">0</div>
-      <div class="dash-label">총 고객</div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-num" id="d-new" style="color:#3a3a45;">0</div>
-      <div class="dash-label">신규문의</div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-num" id="d-agrade" style="color:#c05800;">0</div>
-      <div class="dash-label">A급가망</div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-num" id="d-consult" style="color:#1055a8;">0</div>
-      <div class="dash-label">상담중</div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-num" id="d-likely" style="color:#6020a0;">0</div>
-      <div class="dash-label">계약유력</div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-num" id="d-contract" style="color:#0f6e35;">0</div>
-      <div class="dash-label">계약</div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-num" id="d-delivery" style="color:#0a5528;">0</div>
-      <div class="dash-label">출고</div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-num" id="d-cancel" style="color:#a01515;">0</div>
-      <div class="dash-label">해약</div>
-    </div>
-  </div>
+  <!-- ══════════════════ VIEW: 대시보드 ══════════════════ -->
+  <div class="view active" id="homeView">
 
-  <!-- 차량관리 대시보드 -->
-  <!--
-    TODO (추후 알림 기능 연동):
-    - 이번주 연락 고객: nextContact 기준 오늘~7일 이내 카카오/문자 발송 예정
-    - 보험만기: insuranceExpireDate 기준 30일 전 알림 예정
-    - 자동차검사: inspectionDueDate 기준 30일 전 알림 예정
-    - 금융종료: financeEndDate 기준 90일 전 알림 예정
-    - 재구매: repurchaseExpectedDate 기준 90일 전 알림 예정
-  -->
-  <div class="dash-section-label care">🚗 차량관리 / 재구매 알림</div>
-  <div class="dashboard care-dash">
-    <div class="dash-card care-card">
-      <div class="dash-num" id="dc-week" style="color:#1055a8;">0</div>
-      <div class="dash-label">이번주 연락</div>
+    <div class="home-greeting">
+      <div class="home-greeting-title">안녕하세요, 진규 부장님 👋</div>
+      <div class="home-greeting-sub" id="todayDateStr">오늘도 좋은 하루 되세요</div>
     </div>
-    <div class="dash-card care-card warn">
-      <div class="dash-num" id="dc-insurance" style="color:#e07000;">0</div>
-      <div class="dash-label">보험만기 30일</div>
-    </div>
-    <div class="dash-card care-card warn">
-      <div class="dash-num" id="dc-inspect" style="color:#e07000;">0</div>
-      <div class="dash-label">검사 30일</div>
-    </div>
-    <div class="dash-card care-card warn">
-      <div class="dash-num" id="dc-finance" style="color:#c05800;">0</div>
-      <div class="dash-label">금융종료 90일</div>
-    </div>
-    <div class="dash-card care-card">
-      <div class="dash-num" id="dc-1yr" style="color:#555;">0</div>
-      <div class="dash-label">출고 1년↑</div>
-    </div>
-    <div class="dash-card care-card alert">
-      <div class="dash-num" id="dc-3yr" style="color:#a01515;">0</div>
-      <div class="dash-label">출고 3년↑</div>
-    </div>
-    <div class="dash-card care-card warn">
-      <div class="dash-num" id="dc-repurchase" style="color:#6020a0;">0</div>
-      <div class="dash-label">재구매 예상</div>
-    </div>
-  </div>
 
-  <!-- ══ 모드 탭 ══ -->
-  <div class="mode-tabs" role="tablist">
-    <button class="mode-tab active" id="tab-new" onclick="switchMode('new')" role="tab" aria-selected="true">
-      <span class="tab-icon">✏️</span>
-      <span>신규고객 등록</span>
-      <span class="tab-sub">새 고객 정보 입력</span>
-    </button>
-    <button class="mode-tab update-mode" id="tab-update" onclick="switchMode('update')" role="tab" aria-selected="false">
-      <span class="tab-icon">📋</span>
-      <span>기존고객 추가상담</span>
-      <span class="tab-sub">상담내용 누적 저장</span>
-    </button>
-  </div>
-
-  <!-- ══ 신규고객 등록 폼 ══ -->
-  <div id="form-new" class="card">
-    <div class="card-header">
-      <span class="card-header-title">✏️ 신규 고객 등록</span>
-    </div>
-    <div class="card-body">
-
-      <!-- ① 고객 기본 정보 -->
-      <div class="section-label">고객 기본 정보</div>
-      <div class="grid-2">
-        <div class="field">
-          <label>고객명 <span class="req">*</span></label>
-          <input type="text" id="customerName" placeholder="홍길동" />
-        </div>
-        <div class="field">
-          <label>휴대폰번호 <span class="req">*</span></label>
-          <input type="tel" id="phone" placeholder="010-0000-0000" maxlength="13" />
-        </div>
-        <div class="field">
-          <!-- birthDate는 향후 생일 알림 기능에 사용 예정 -->
-          <label>생년월일</label>
-          <input type="date" id="birthDate" />
-        </div>
+    <!-- 고객 현황 카드 -->
+    <div class="section-title"><span class="badge-dot"></span> 고객 현황</div>
+    <div class="stat-grid">
+      <div class="stat-card" onclick="goListFiltered('')" title="전체 고객">
+        <div class="stat-num" id="d-total" style="color:var(--gold);">0</div>
+        <div class="stat-label">전체</div>
       </div>
-
-      <!-- ② 차량 & 구매 정보 -->
-      <div class="section-label">차량 & 구매 정보</div>
-      <div class="grid-2">
-        <div class="field">
-          <label>관심차종</label>
-          <select id="carCategory" onchange="onCategoryChange()">
-            <option value="">— 차종 선택 —</option>
-            <option>A-Class</option><option>CLA</option><option>GLA / GLB</option>
-            <option>C-Class</option><option>E-Class</option>
-            <option>S-Class MY26</option><option>S-Class MY27</option>
-            <option>CLE</option><option>GLC</option><option>GLE</option>
-            <option>GLS</option><option>G-Class</option>
-            <option>AMG GT · SL</option><option>EQ</option>
-            <option>Mercedes-Maybach</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>세부모델</label>
-          <select id="carModel" disabled>
-            <option value="">— 차종을 먼저 선택하세요 —</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>구매방식</label>
-          <select id="purchaseType">
-            <option value="">— 선택 —</option>
-            <option>일시불</option><option>할부</option>
-            <option>리스</option><option>장기렌트</option><option>미정</option>
-          </select>
-        </div>
+      <div class="stat-card" onclick="goListFiltered('신규문의')">
+        <div class="stat-num" id="d-new" style="color:#3a3a45;">0</div>
+        <div class="stat-label">신규문의</div>
       </div>
-
-      <!-- ③ 보유차종 -->
-      <div class="section-label">보유차종 정보</div>
-      <div class="grid-2">
-        <div class="field">
-          <label>보유차종 모델명</label>
-          <input type="text" id="ownedCarModel" placeholder="예: BMW 5시리즈" />
-        </div>
-        <div class="field">
-          <label>주행거리</label>
-          <input type="text" id="ownedCarMileage" placeholder="예: 35,000km" />
-        </div>
-        <div class="field">
-          <label>사고유무</label>
-          <select id="accidentHistory">
-            <option value="">— 선택 —</option>
-            <option>무사고</option><option>단순교환</option>
-            <option>사고있음</option><option>모름</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>차량번호</label>
-          <input type="text" id="carNumber" placeholder="예: 123가4567" />
-        </div>
+      <div class="stat-card" onclick="goListFiltered('A급가망')">
+        <div class="stat-num" id="d-agrade" style="color:#c05800;">0</div>
+        <div class="stat-label">A급가망</div>
       </div>
-
-      <!-- ④ 상담 & 상태 -->
-      <div class="section-label">상담 & 상태 정보</div>
-      <div class="grid-2">
-        <div class="field">
-          <label>현재상태</label>
-          <select id="status">
-            <option value="">— 선택 —</option>
-            <option>신규문의</option><option>A급가망</option><option>상담중</option>
-            <option>계약유력</option><option>구매보류</option><option>계약</option>
-            <option>출고</option><option>상담종료</option><option>해약</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>유입경로</label>
-          <select id="leadSource">
-            <option value="">— 선택 —</option>
-            <option>전시장방문및전화</option><option>GETCHA</option>
-            <option>지인소개</option><option>에이전시</option><option>유튜브</option>
-            <option>기존고객</option><option>고객소개</option>
-            <option>블로그</option><option>인스타그램</option>
-          </select>
-        </div>
-        <div class="field full">
-          <label>상담내용</label>
-          <textarea id="consultation" placeholder="상담 내용을 간략히 입력하세요."></textarea>
-        </div>
-        <div class="field">
-          <label>다음연락일</label>
-          <input type="date" id="nextContact" />
-        </div>
-        <div class="field">
-          <label>메모</label>
-          <input type="text" id="memo" placeholder="기타 특이사항" />
-        </div>
+      <div class="stat-card" onclick="goListFiltered('상담중')">
+        <div class="stat-num" id="d-consult" style="color:#1055a8;">0</div>
+        <div class="stat-label">상담중</div>
       </div>
-
-      <!-- ⑤ 차량관리 -->
-      <div class="section-label care-label">🚗 차량관리 / 재구매관리</div>
-      <div class="grid-2">
-        <div class="field">
-          <label>구매예정일</label>
-          <input type="date" id="expectedPurchaseDate" class="care-date" />
-        </div>
-        <div class="field">
-          <label>계약일</label>
-          <input type="date" id="contractDate" class="care-date" />
-        </div>
-        <div class="field">
-          <label>출고일</label>
-          <input type="date" id="deliveryDate" class="care-date" />
-        </div>
-        <div class="field">
-          <label>보험만기일</label>
-          <input type="date" id="insuranceExpireDate" class="care-date" />
-        </div>
-        <div class="field">
-          <label>자동차검사 예정일</label>
-          <input type="date" id="inspectionDueDate" class="care-date" />
-        </div>
-        <div class="field">
-          <label>할부/리스/렌트 종료일</label>
-          <input type="date" id="financeEndDate" class="care-date" />
-        </div>
-        <div class="field">
-          <label>보증만료일</label>
-          <input type="date" id="warrantyEndDate" class="care-date" />
-        </div>
-        <div class="field">
-          <label>재구매 예상시점</label>
-          <input type="date" id="repurchaseExpectedDate" class="care-date" />
-        </div>
-        <div class="field full">
-          <label>차량관리 메모</label>
-          <textarea id="vehicleCareMemo" placeholder="차량관리 관련 특이사항 등을 입력하세요."></textarea>
-        </div>
+      <div class="stat-card" onclick="goListFiltered('계약유력')">
+        <div class="stat-num" id="d-likely" style="color:#6020a0;">0</div>
+        <div class="stat-label">계약유력</div>
       </div>
-
-      <button class="btn-submit" id="submitBtn" onclick="submitNew()">고객 정보 저장</button>
-      <div id="status-msg"></div>
+      <div class="stat-card" onclick="goListFiltered('계약')">
+        <div class="stat-num" id="d-contract" style="color:#0f6e35;">0</div>
+        <div class="stat-label">계약</div>
+      </div>
+      <div class="stat-card" onclick="goListFiltered('출고')">
+        <div class="stat-num" id="d-delivery" style="color:#0a5528;">0</div>
+        <div class="stat-label">출고</div>
+      </div>
+      <div class="stat-card" onclick="goListFiltered('해약')">
+        <div class="stat-num" id="d-cancel" style="color:#a01515;">0</div>
+        <div class="stat-label">해약</div>
+      </div>
     </div>
-  </div>
 
-  <!-- ══ 기존고객 추가상담 폼 ══ -->
-  <div id="form-update" class="card" style="display:none;">
-    <div class="card-header update-header">
-      <span class="card-header-title">📋 기존고객 추가상담</span>
+    <!-- 차량관리 알림 -->
+    <!--
+      TODO (추후 알림 연동):
+      - 보험만기 30일 전: 카카오 알림톡/문자 발송 예정
+      - 자동차검사 30일 전: 문자 발송 예정
+      - 금융종료 90일 전: 상담 연락 예정
+      - 재구매 90일 전: 재구매 상담 연락 예정
+    -->
+    <div class="section-title"><span class="badge-dot"></span> 차량관리 알림</div>
+    <div class="care-grid">
+      <div class="care-card info">
+        <div class="care-num" id="dc-week" style="color:var(--blue);">0</div>
+        <div class="care-label">이번주연락</div>
+      </div>
+      <div class="care-card warn">
+        <div class="care-num" id="dc-insurance" style="color:#e07000;">0</div>
+        <div class="care-label">보험만기30일</div>
+      </div>
+      <div class="care-card warn">
+        <div class="care-num" id="dc-inspect" style="color:#e07000;">0</div>
+        <div class="care-label">검사30일</div>
+      </div>
+      <div class="care-card warn">
+        <div class="care-num" id="dc-finance" style="color:#c05800;">0</div>
+        <div class="care-label">금융종료90일</div>
+      </div>
+      <div class="care-card">
+        <div class="care-num" id="dc-1yr" style="color:#555;">0</div>
+        <div class="care-label">출고1년↑</div>
+      </div>
+      <div class="care-card alert">
+        <div class="care-num" id="dc-3yr" style="color:#a01515;">0</div>
+        <div class="care-label">출고3년↑</div>
+      </div>
+      <div class="care-card warn">
+        <div class="care-num" id="dc-repurchase" style="color:#6020a0;">0</div>
+        <div class="care-label">재구매예상</div>
+      </div>
     </div>
-    <div class="card-body">
 
-      <div class="section-label update-label">고객 확인</div>
-      <div class="grid-2">
-        <div class="field">
-          <label>고객명</label>
-          <input type="text" id="u-customerName" placeholder="홍길동" class="update-input" />
-        </div>
-        <div class="field">
-          <label>휴대폰번호 <span class="req">*</span></label>
-          <input type="tel" id="u-phone" placeholder="010-0000-0000" maxlength="13"
-                 class="update-input" oninput="onUpdatePhoneInput(this)" />
-        </div>
-      </div>
-
-      <!-- 고객 확인 결과 -->
-      <div class="customer-preview" id="customer-preview">
-        <div class="preview-name" id="preview-name">—</div>
-        <div class="preview-meta" id="preview-meta">—</div>
-        <div class="preview-status" id="preview-status"></div>
-      </div>
-      <div class="customer-not-found" id="customer-not-found">
-        ⚠ 기존 고객을 찾을 수 없습니다. 신규고객으로 등록해주세요.
-      </div>
-
-      <div class="section-label update-label" style="margin-top:22px;">추가상담 내용</div>
-      <div class="grid-2">
-        <div class="field">
-          <label>현재상태</label>
-          <select id="u-status" class="update-input">
-            <option value="">— 선택 (변경 시) —</option>
-            <option>신규문의</option><option>A급가망</option><option>상담중</option>
-            <option>계약유력</option><option>구매보류</option><option>계약</option>
-            <option>출고</option><option>상담종료</option><option>해약</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>다음연락일</label>
-          <input type="date" id="u-nextContact" class="update-input" />
-        </div>
-        <div class="field full">
-          <label>추가상담내용 <span class="req">*</span></label>
-          <textarea id="addConsultation" class="update-input"
-                    placeholder="이번 상담에서 나눈 내용을 입력하세요.&#10;날짜/시간은 자동으로 붙습니다." style="min-height:130px;"></textarea>
-        </div>
-        <div class="field full">
-          <label>메모 업데이트</label>
-          <input type="text" id="u-memo" placeholder="메모 변경 시 입력 (비워두면 유지)" class="update-input" />
-        </div>
-      </div>
-
-      <button class="btn-submit update-btn" id="updateBtn" onclick="submitUpdate()">추가상담 저장</button>
-      <div id="status-msg-update"></div>
+    <!-- 오늘 연락할 고객 -->
+    <div class="section-title"><span class="badge-dot"></span> 오늘 연락할 고객</div>
+    <div class="contact-section" id="todayContactList">
+      <div class="contact-list-empty">오늘 연락할 고객이 없습니다</div>
     </div>
-  </div>
 
-  <!-- 고객 목록 -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-header-title">👥 고객 목록</span>
-      <span class="card-header-badge" id="list-count">0명</span>
+    <!-- 이번주 연락할 고객 -->
+    <div class="section-title"><span class="badge-dot"></span> 이번주 연락할 고객</div>
+    <div class="contact-section" id="weekContactList">
+      <div class="contact-list-empty">이번주 연락할 고객이 없습니다</div>
     </div>
-    <div class="card-body" style="padding:0;">
 
-      <!-- PC 테이블 -->
-      <div class="customer-table-wrap" style="overflow-x:auto;">
-        <table class="customer-table">
-          <thead>
-            <tr>
-              <th>고객명</th><th>휴대폰번호</th><th>생년월일</th>
-              <th>관심차종</th><th>세부모델</th>
-              <th>보유차종</th><th>주행거리</th><th>사고</th><th>차량번호</th>
-              <th>구매방식</th><th>현재상태</th><th>유입경로</th>
-              <th>다음연락일</th><th>상담내용</th><th>메모</th>
-              <th class="care-th">구매예정일</th><th class="care-th">계약일</th>
-              <th class="care-th">출고일</th><th class="care-th">보험만기일</th>
-              <th class="care-th">검사예정일</th><th class="care-th">금융종료일</th>
-              <th class="care-th">보증만료일</th><th class="care-th">재구매예상</th>
-              <th class="care-th">차량관리메모</th>
-              <th>등록일시</th><th>수정일시</th>
-            </tr>
-          </thead>
-          <tbody id="customer-tbody"></tbody>
-        </table>
-        <div id="list-empty" style="display:none;">아직 등록된 고객이 없습니다.</div>
+  </div><!-- /homeView -->
+
+  <!-- ══════════════════ VIEW: 신규고객 등록 ══════════════════ -->
+  <div class="view" id="newView">
+    <div class="view-header">
+      <div>
+        <div class="view-header-title">✏️ 신규고객 등록</div>
+        <div class="view-header-sub">새 고객 정보를 입력하세요</div>
       </div>
+    </div>
 
-      <!-- 모바일 카드 -->
-      <div class="customer-cards" id="customer-cards">
-        <div id="list-empty-mobile" style="display:none;text-align:center;color:#888;font-size:14px;padding:24px 0;">
-          아직 등록된 고객이 없습니다.
+    <div class="form-card">
+      <div class="form-card-header">고객 기본 정보</div>
+      <div class="form-body">
+        <div class="grid-2">
+          <div class="field">
+            <label>고객명 <span class="req">*</span></label>
+            <input type="text" id="customerName" placeholder="홍길동"/>
+          </div>
+          <div class="field">
+            <label>휴대폰번호 <span class="req">*</span></label>
+            <input type="tel" id="phone" placeholder="010-0000-0000" maxlength="13"/>
+          </div>
+          <div class="field">
+            <!-- birthDate는 향후 생일 알림 기능에 사용 예정 -->
+            <label>생년월일</label>
+            <input type="date" id="birthDate"/>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+
+    <div class="form-card">
+      <div class="form-card-header">차량 & 구매 정보</div>
+      <div class="form-body">
+        <div class="grid-2">
+          <div class="field">
+            <label>관심차종</label>
+            <select id="carCategory" onchange="onCategoryChange()">
+              <option value="">— 차종 선택 —</option>
+              <option>A-Class</option><option>CLA</option><option>GLA / GLB</option>
+              <option>C-Class</option><option>E-Class</option>
+              <option>S-Class MY26</option><option>S-Class MY27</option>
+              <option>CLE</option><option>GLC</option><option>GLE</option>
+              <option>GLS</option><option>G-Class</option>
+              <option>AMG GT · SL</option><option>EQ</option>
+              <option>Mercedes-Maybach</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>세부모델</label>
+            <select id="carModel" disabled>
+              <option value="">— 차종을 먼저 선택하세요 —</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>구매방식</label>
+            <select id="purchaseType">
+              <option value="">— 선택 —</option>
+              <option>일시불</option><option>할부</option>
+              <option>리스</option><option>장기렌트</option><option>미정</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>현재상태</label>
+            <select id="status">
+              <option value="">— 선택 —</option>
+              <option>신규문의</option><option>A급가망</option><option>상담중</option>
+              <option>계약유력</option><option>구매보류</option><option>계약</option>
+              <option>출고</option><option>상담종료</option><option>해약</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>유입경로</label>
+            <select id="leadSource">
+              <option value="">— 선택 —</option>
+              <option>전시장방문및전화</option><option>GETCHA</option>
+              <option>지인소개</option><option>에이전시</option><option>유튜브</option>
+              <option>기존고객</option><option>고객소개</option>
+              <option>블로그</option><option>인스타그램</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-card-header">보유차종 정보</div>
+      <div class="form-body">
+        <div class="grid-2">
+          <div class="field">
+            <label>보유차종 모델명</label>
+            <input type="text" id="ownedCarModel" placeholder="예: BMW 5시리즈"/>
+          </div>
+          <div class="field">
+            <label>주행거리</label>
+            <input type="text" id="ownedCarMileage" placeholder="예: 35,000km"/>
+          </div>
+          <div class="field">
+            <label>사고유무</label>
+            <select id="accidentHistory">
+              <option value="">— 선택 —</option>
+              <option>무사고</option><option>단순교환</option>
+              <option>사고있음</option><option>모름</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>차량번호</label>
+            <input type="text" id="carNumber" placeholder="예: 123가4567"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-card-header">상담 내용</div>
+      <div class="form-body">
+        <div class="grid-2">
+          <div class="field full">
+            <label>상담내용</label>
+            <textarea id="consultation" placeholder="상담 내용을 간략히 입력하세요."></textarea>
+          </div>
+          <div class="field">
+            <label>다음연락일</label>
+            <input type="date" id="nextContact"/>
+          </div>
+          <div class="field">
+            <label>메모</label>
+            <input type="text" id="memo" placeholder="기타 특이사항"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-card-header">🚗 차량관리 / 재구매관리</div>
+      <div class="form-body">
+        <div class="grid-2">
+          <div class="field"><label>구매예정일</label><input type="date" id="expectedPurchaseDate" class="care-input"/></div>
+          <div class="field"><label>계약일</label><input type="date" id="contractDate" class="care-input"/></div>
+          <div class="field"><label>출고일</label><input type="date" id="deliveryDate" class="care-input"/></div>
+          <div class="field"><label>보험만기일</label><input type="date" id="insuranceExpireDate" class="care-input"/></div>
+          <div class="field"><label>자동차검사 예정일</label><input type="date" id="inspectionDueDate" class="care-input"/></div>
+          <div class="field"><label>할부/리스/렌트 종료일</label><input type="date" id="financeEndDate" class="care-input"/></div>
+          <div class="field"><label>보증만료일</label><input type="date" id="warrantyEndDate" class="care-input"/></div>
+          <div class="field"><label>재구매 예상시점</label><input type="date" id="repurchaseExpectedDate" class="care-input"/></div>
+          <div class="field full">
+            <label>차량관리 메모</label>
+            <textarea id="vehicleCareMemo" placeholder="차량관리 관련 특이사항 등"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-submit" id="submitBtn" onclick="submitNew()">고객 정보 저장</button>
+    <div class="status-msg" id="status-msg"></div>
+  </div><!-- /newView -->
+
+  <!-- ══════════════════ VIEW: 기존상담 입력 ══════════════════ -->
+  <div class="view" id="consultView">
+    <div class="view-header">
+      <div>
+        <div class="view-header-title">📋 기존고객 추가상담</div>
+        <div class="view-header-sub">상담내용이 자동으로 누적됩니다</div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-card-header update">고객 확인</div>
+      <div class="form-body">
+        <div class="grid-2">
+          <div class="field">
+            <label>고객명</label>
+            <input type="text" id="u-customerName" placeholder="홍길동"/>
+          </div>
+          <div class="field">
+            <label>휴대폰번호 <span class="req">*</span></label>
+            <input type="tel" id="u-phone" placeholder="010-0000-0000" maxlength="13"
+                   oninput="onUpdatePhoneInput(this)"/>
+          </div>
+        </div>
+        <div class="customer-preview" id="customer-preview">
+          <div class="preview-name" id="preview-name">—</div>
+          <div class="preview-meta" id="preview-meta">—</div>
+          <div class="preview-status" id="preview-status"></div>
+        </div>
+        <div class="customer-not-found" id="customer-not-found">
+          ⚠ 기존 고객을 찾을 수 없습니다. 신규고객으로 등록해주세요.
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-card-header update">추가상담 내용</div>
+      <div class="form-body">
+        <div class="grid-2">
+          <div class="field">
+            <label>현재상태</label>
+            <select id="u-status">
+              <option value="">— 선택 (변경 시) —</option>
+              <option>신규문의</option><option>A급가망</option><option>상담중</option>
+              <option>계약유력</option><option>구매보류</option><option>계약</option>
+              <option>출고</option><option>상담종료</option><option>해약</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>다음연락일</label>
+            <input type="date" id="u-nextContact"/>
+          </div>
+          <div class="field full">
+            <label>추가상담내용 <span class="req">*</span></label>
+            <textarea id="addConsultation"
+              placeholder="이번 상담에서 나눈 내용을 입력하세요.&#10;날짜와 시간은 자동으로 붙습니다." style="min-height:130px;"></textarea>
+          </div>
+          <div class="field full">
+            <label>메모 업데이트</label>
+            <input type="text" id="u-memo" placeholder="메모 변경 시 입력 (비워두면 유지)"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-submit update-btn" id="updateBtn" onclick="submitUpdate()">추가상담 저장</button>
+    <div class="status-msg" id="status-msg-update"></div>
+  </div><!-- /consultView -->
+
+  <!-- ══════════════════ VIEW: 고객목록 ══════════════════ -->
+  <div class="view" id="listView">
+
+    <div class="list-header">
+      <div>
+        <div class="view-header-title">👥 고객목록</div>
+      </div>
+      <div class="list-count-badge" id="list-count">0명</div>
+    </div>
+
+    <!-- 검색 -->
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="🔍 이름 또는 전화번호 검색"
+             oninput="renderCustomerList()"/>
+    </div>
+
+    <!-- 필터 표시 -->
+    <div class="filter-bar" id="filterBar" style="display:none;">
+      <div class="filter-label" id="filterLabel">전체 고객</div>
+      <button class="filter-clear" onclick="clearFilter()">전체 보기 ✕</button>
+    </div>
+
+    <!-- 고객 카드 목록 -->
+    <div id="customerListContainer"></div>
+
+  </div><!-- /listView -->
 
 </div><!-- /.page-wrap -->
 
+<!-- 하단 네비 바 (모바일 전용) -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="nav-btn active" id="nav-home" onclick="showView('home')" aria-label="홈">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-label">홈</span>
+  </button>
+  <button class="nav-btn" id="nav-consult" onclick="showView('consult')" aria-label="상담">
+    <span class="nav-icon">📋</span>
+    <span class="nav-label">상담</span>
+  </button>
+  <!-- 가운데 + 버튼 -->
+  <button class="nav-btn-plus" id="nav-plus" onclick="showView('new')" aria-label="신규등록">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 4v16M4 12h16" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+  </button>
+  <button class="nav-btn" id="nav-list" onclick="showView('list')" aria-label="고객목록">
+    <span class="nav-icon">👥</span>
+    <span class="nav-label">고객목록</span>
+  </button>
+  <button class="nav-btn" id="nav-more" onclick="showView('home')" aria-label="더보기">
+    <span class="nav-icon">⋯</span>
+    <span class="nav-label">더보기</span>
+  </button>
+</nav>
+
 <script>
 // ============================================================
-// localStorage 키
+// LS 키 / 상수
 // ============================================================
 var LS_KEY = "nj_customers";
+var currentFilter = ""; // 고객목록 필터
+
+// ============================================================
+// 화면 전환
+// ============================================================
+var VIEW_NAMES = {home:"대시보드",new:"신규등록",consult:"추가상담",list:"고객목록"};
+var VIEW_IDS   = {home:"homeView",new:"newView",consult:"consultView",list:"listView"};
+var NAV_IDS    = {home:"nav-home",new:"nav-plus",consult:"nav-consult",list:"nav-list"};
+
+function showView(v){
+  // 뷰 전환
+  Object.values(VIEW_IDS).forEach(function(id){
+    var el=document.getElementById(id);
+    if(el){ el.classList.remove("active"); }
+  });
+  var target=document.getElementById(VIEW_IDS[v]);
+  if(target){ target.classList.add("active"); }
+
+  // 뱃지
+  document.getElementById("viewBadge").textContent = VIEW_NAMES[v]||"";
+
+  // 하단바 active
+  ["home","consult","list"].forEach(function(k){
+    var btn=document.getElementById(NAV_IDS[k]);
+    if(btn) btn.classList.toggle("active", k===v);
+  });
+  var plus=document.getElementById("nav-plus");
+  if(plus) plus.classList.toggle("active", v==="new");
+
+  // PC 탭 active
+  var pcBtns=document.querySelectorAll(".pc-tab-btn");
+  var order=["home","new","consult","list"];
+  pcBtns.forEach(function(btn,i){
+    btn.classList.toggle("active", order[i]===v);
+  });
+
+  // 특정 화면 초기화
+  if(v==="list") renderCustomerList();
+  if(v==="home") renderHomeContacts();
+
+  window.scrollTo({top:0, behavior:"smooth"});
+  hideMsg("status-msg");
+  hideMsg("status-msg-update");
+}
+
+// 대시보드 카드 클릭 → 필터된 고객목록
+function goListFiltered(status){
+  currentFilter = status;
+  showView("list");
+}
+
+function clearFilter(){
+  currentFilter="";
+  document.getElementById("filterBar").style.display="none";
+  renderCustomerList();
+}
 
 // ============================================================
 // 차종 데이터
@@ -719,338 +944,333 @@ var CAR_MODELS = {
   "EQ":["EQA 250 Progressive","EQA 250 AMG Line","EQB 300 4MATIC Progressive","EQB 300 4MATIC AMG Line","EQE 350+ SUV","EQE 350+","EQE 500 4MATIC SUV","EQS 450 4MATIC SUV","EQS 580 4MATIC SUV","G 580 with EQ Technology"],
   "Mercedes-Maybach":["── MY26 ──","Mercedes-Maybach S 580","Mercedes-Maybach S 680","Mercedes-Maybach S 680 V12 Edition","Mercedes-Maybach SL 680","Mercedes-Maybach GLS 600","Mercedes-Maybach GLS 600 MANUFAKTUR","Mercedes-Maybach EQS 680 SUV","── MY27 ──","Mercedes-Maybach S 580","Mercedes-Maybach S 580 MANUFAKTUR","Mercedes-Maybach S 680"]
 };
-
-function isSeparator(v){ return v.indexOf("──") !== -1; }
+function isSep(v){return v.indexOf("──")!==-1;}
 
 function onCategoryChange(){
-  var cat = document.getElementById("carCategory").value;
-  var sel = document.getElementById("carModel");
-  sel.innerHTML = ""; sel.disabled = true;
-  if(!cat){ sel.innerHTML='<option value="">— 차종을 먼저 선택하세요 —</option>'; return; }
-  sel.innerHTML = '<option value="">— 세부모델 선택 —</option>';
+  var cat=document.getElementById("carCategory").value;
+  var sel=document.getElementById("carModel");
+  sel.innerHTML=""; sel.disabled=true;
+  if(!cat){sel.innerHTML='<option value="">— 차종을 먼저 선택하세요 —</option>';return;}
+  sel.innerHTML='<option value="">— 세부모델 선택 —</option>';
   (CAR_MODELS[cat]||[]).forEach(function(m){
-    var opt = document.createElement("option");
-    if(isSeparator(m)){ opt.value=""; opt.disabled=true; opt.style.color="#aaa"; opt.style.fontStyle="italic"; }
-    else { opt.value=m; }
-    opt.textContent=m; sel.appendChild(opt);
+    var o=document.createElement("option");
+    if(isSep(m)){o.value="";o.disabled=true;o.style.color="#aaa";o.style.fontStyle="italic";}
+    else{o.value=m;}
+    o.textContent=m; sel.appendChild(o);
   });
-  sel.disabled = false;
-}
-
-// ============================================================
-// 모드 전환
-// ============================================================
-var currentMode = "new";
-
-function switchMode(mode){
-  currentMode = mode;
-  document.getElementById("form-new").style.display    = mode==="new"    ? "" : "none";
-  document.getElementById("form-update").style.display = mode==="update" ? "" : "none";
-  document.getElementById("tab-new").classList.toggle("active", mode==="new");
-  document.getElementById("tab-update").classList.toggle("active", mode==="update");
-  document.getElementById("tab-new").setAttribute("aria-selected", mode==="new");
-  document.getElementById("tab-update").setAttribute("aria-selected", mode==="update");
-  hideMsg("status-msg");
-  hideMsg("status-msg-update");
+  sel.disabled=false;
 }
 
 // ============================================================
 // 상태 관련
 // ============================================================
-var STATUS_MIGRATE = {
+var STATUS_MIGRATE={
   "신규 문의":"신규문의","상담 진행 중":"상담중","견적 발송":"상담중",
   "시승 예정":"상담중","시승 완료":"상담중","계약 진행 중":"계약유력",
   "계약 완료":"계약","출고 완료":"출고","장기 보류":"구매보류","취소 / 이탈":"해약"
 };
-function migrateStatus(s){ if(!s) return s; return STATUS_MIGRATE[s]||s; }
-function statusClass(s){
-  var v=migrateStatus(s);
-  if(v==="신규문의") return"s1"; if(v==="A급가망")  return"s2";
-  if(v==="상담중")   return"s3"; if(v==="계약유력") return"s4";
-  if(v==="구매보류") return"s5"; if(v==="계약")     return"s6";
-  if(v==="출고")     return"s7"; if(v==="상담종료") return"s8";
-  if(v==="해약")     return"s9"; return"s0";
+function ms(s){if(!s)return s;return STATUS_MIGRATE[s]||s;}
+function sc(s){
+  var v=ms(s);
+  if(v==="신규문의")return"s1";if(v==="A급가망")return"s2";
+  if(v==="상담중")return"s3";if(v==="계약유력")return"s4";
+  if(v==="구매보류")return"s5";if(v==="계약")return"s6";
+  if(v==="출고")return"s7";if(v==="상담종료")return"s8";
+  if(v==="해약")return"s9";return"s0";
 }
 
 // ============================================================
 // 날짜 유틸
 // ============================================================
-function today(){
-  var s = new Date().toLocaleDateString("ko-KR",{timeZone:"Asia/Seoul"})
+function todayDate(){
+  var s=new Date().toLocaleDateString("ko-KR",{timeZone:"Asia/Seoul"})
     .replace(/\./g,"-").replace(/\s/g,"").replace(/-$/,"");
   return new Date(s);
 }
-function parseDate(s){
-  if(!s) return null;
-  var p=s.split("-"); if(p.length<3) return null;
+function parseDt(s){
+  if(!s)return null;
+  var p=s.split("-");if(p.length<3)return null;
   return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));
 }
 function daysFrom(ds){
-  var d=parseDate(ds); if(!d) return null;
-  return Math.round((d-today())/86400000);
+  var d=parseDt(ds);if(!d)return null;
+  return Math.round((d-todayDate())/86400000);
 }
-function ddayTag(days){
-  if(days===null) return "";
-  if(days<0)  return '<span class="dday-tag urgent">D+'+Math.abs(days)+'</span>';
-  if(days===0)return '<span class="dday-tag urgent">D-Day</span>';
-  if(days<=30)return '<span class="dday-tag warn">D-'+days+'</span>';
-  return '<span class="dday-tag ok">D-'+days+'</span>';
+function ddTag(days){
+  if(days===null)return"";
+  if(days<0)return'<span class="dday-tag urgent">D+'+Math.abs(days)+'</span>';
+  if(days===0)return'<span class="dday-tag urgent">D-Day</span>';
+  if(days<=30)return'<span class="dday-tag warn">D-'+days+'</span>';
+  return'<span class="dday-tag ok">D-'+days+'</span>';
 }
-
-// ============================================================
-// 현재 날짜시간 (KST)
-// ============================================================
-function getNowKST(){ return new Date().toLocaleString("ko-KR",{timeZone:"Asia/Seoul"}); }
-
-// 상담 타임스탬프 포맷: [2026-06-05 14:30 추가상담]
-function getConsultTimestamp(){
-  var d = new Date();
-  var kst = new Date(d.getTime() + 9*3600000);
-  var y=kst.getUTCFullYear();
-  var mo=String(kst.getUTCMonth()+1).padStart(2,"0");
-  var day=String(kst.getUTCDate()).padStart(2,"0");
-  var h=String(kst.getUTCHours()).padStart(2,"0");
-  var mi=String(kst.getUTCMinutes()).padStart(2,"0");
-  return "["+y+"-"+mo+"-"+day+" "+h+":"+mi+" 추가상담]";
+function getNowKST(){return new Date().toLocaleString("ko-KR",{timeZone:"Asia/Seoul"});}
+function getConsultTs(){
+  var d=new Date(),k=new Date(d.getTime()+9*3600000);
+  var y=k.getUTCFullYear(),mo=String(k.getUTCMonth()+1).padStart(2,"0");
+  var dy=String(k.getUTCDate()).padStart(2,"0"),h=String(k.getUTCHours()).padStart(2,"0");
+  var mi=String(k.getUTCMinutes()).padStart(2,"0");
+  return "["+y+"-"+mo+"-"+dy+" "+h+":"+mi+" 추가상담]";
 }
 
 // ============================================================
 // localStorage
 // ============================================================
-function loadCustomers(){ try{ return JSON.parse(localStorage.getItem(LS_KEY))||[]; }catch(e){ return[]; } }
-function saveCustomers(list){ localStorage.setItem(LS_KEY,JSON.stringify(list)); }
-
-// 전화번호 정규화 (비교용)
-function normalizePhone(p){ return (p||"").replace(/\D/g,""); }
-
-// localStorage에서 전화번호로 고객 찾기
+function loadCustomers(){try{return JSON.parse(localStorage.getItem(LS_KEY))||[];}catch(e){return[];}}
+function saveCustomers(l){localStorage.setItem(LS_KEY,JSON.stringify(l));}
+function normPhone(p){return(p||"").replace(/\D/g,"");}
 function findByPhone(phone){
-  var list=loadCustomers();
-  var np=normalizePhone(phone);
-  for(var i=0;i<list.length;i++){
-    if(normalizePhone(list[i].phone)===np) return {index:i, customer:list[i]};
-  }
+  var list=loadCustomers(),np=normPhone(phone);
+  for(var i=0;i<list.length;i++){if(normPhone(list[i].phone)===np)return{idx:i,c:list[i]};}
   return null;
 }
 
 // ============================================================
-// 차량관리 대시보드 계산
+// 대시보드 데이터 계산
 // ============================================================
-function calcCareDashboard(list){
-  var now=today(), dc={week:0,insurance:0,inspect:0,finance:0,yr1:0,yr3:0,repurchase:0};
-  list.forEach(function(c){
-    var nd=parseDate(c.nextContact);
-    if(nd){ var d=Math.round((nd-now)/86400000); if(d>=0&&d<=7) dc.week++; }
-    var ins=daysFrom(c.insuranceExpireDate);
-    if(ins!==null&&ins>=0&&ins<=30) dc.insurance++;
-    var ins2=daysFrom(c.inspectionDueDate);
-    if(ins2!==null&&ins2>=0&&ins2<=30) dc.inspect++;
-    var fin=daysFrom(c.financeEndDate);
-    if(fin!==null&&fin>=0&&fin<=90) dc.finance++;
-    var del=parseDate(c.deliveryDate);
-    if(del){ var el=Math.round((now-del)/86400000); if(el>=365) dc.yr1++; if(el>=1095) dc.yr3++; }
-    var rep=daysFrom(c.repurchaseExpectedDate);
-    if(rep!==null&&rep>=0&&rep<=90) dc.repurchase++;
+function calcDash(list){
+  var d={total:list.length,newInq:0,agrade:0,consult:0,likely:0,contract:0,delivery:0,cancel:0};
+  var c={week:0,insurance:0,inspect:0,finance:0,yr1:0,yr3:0,repurchase:0};
+  var now=todayDate();
+
+  list.forEach(function(x){
+    var v=ms(x.status);
+    if(v==="신규문의")d.newInq++;else if(v==="A급가망")d.agrade++;
+    else if(v==="상담중")d.consult++;else if(v==="계약유력")d.likely++;
+    else if(v==="계약")d.contract++;else if(v==="출고")d.delivery++;
+    else if(v==="해약")d.cancel++;
+
+    var nd=parseDt(x.nextContact);
+    if(nd){var df=Math.round((nd-now)/86400000);if(df>=0&&df<=7)c.week++;}
+    var ins=daysFrom(x.insuranceExpireDate);if(ins!==null&&ins>=0&&ins<=30)c.insurance++;
+    var ins2=daysFrom(x.inspectionDueDate);if(ins2!==null&&ins2>=0&&ins2<=30)c.inspect++;
+    var fin=daysFrom(x.financeEndDate);if(fin!==null&&fin>=0&&fin<=90)c.finance++;
+    var del=parseDt(x.deliveryDate);
+    if(del){var el=Math.round((now-del)/86400000);if(el>=365)c.yr1++;if(el>=1095)c.yr3++;}
+    var rep=daysFrom(x.repurchaseExpectedDate);if(rep!==null&&rep>=0&&rep<=90)c.repurchase++;
   });
-  return dc;
+  return{d:d,c:c};
+}
+
+function updateDashboard(){
+  var list=loadCustomers();
+  var r=calcDash(list);
+  var d=r.d,c=r.c;
+  document.getElementById("d-total").textContent=d.total;
+  document.getElementById("d-new").textContent=d.newInq;
+  document.getElementById("d-agrade").textContent=d.agrade;
+  document.getElementById("d-consult").textContent=d.consult;
+  document.getElementById("d-likely").textContent=d.likely;
+  document.getElementById("d-contract").textContent=d.contract;
+  document.getElementById("d-delivery").textContent=d.delivery;
+  document.getElementById("d-cancel").textContent=d.cancel;
+  document.getElementById("dc-week").textContent=c.week;
+  document.getElementById("dc-insurance").textContent=c.insurance;
+  document.getElementById("dc-inspect").textContent=c.inspect;
+  document.getElementById("dc-finance").textContent=c.finance;
+  document.getElementById("dc-1yr").textContent=c.yr1;
+  document.getElementById("dc-3yr").textContent=c.yr3;
+  document.getElementById("dc-repurchase").textContent=c.repurchase;
+  document.getElementById("list-count").textContent=d.total+"명";
 }
 
 // ============================================================
-// 대시보드 업데이트
+// 대시보드 오늘/이번주 연락 고객 렌더링
 // ============================================================
-function updateDashboard(list){
-  var total=list.length,newInq=0,agrade=0,consult=0,likely=0,contract=0,delivery=0,cancel=0;
+function renderHomeContacts(){
+  var list=loadCustomers();
+  var now=todayDate();
+  var today=[],week=[];
+
   list.forEach(function(c){
-    var v=migrateStatus(c.status);
-    if(v==="신규문의") newInq++; else if(v==="A급가망") agrade++;
-    else if(v==="상담중") consult++; else if(v==="계약유력") likely++;
-    else if(v==="계약") contract++; else if(v==="출고") delivery++;
-    else if(v==="해약") cancel++;
+    var nd=parseDt(c.nextContact);
+    if(!nd)return;
+    var df=Math.round((nd-now)/86400000);
+    if(df===0) today.push({c:c,df:df});
+    else if(df>0&&df<=7) week.push({c:c,df:df});
   });
-  document.getElementById("d-total").textContent    = total;
-  document.getElementById("d-new").textContent      = newInq;
-  document.getElementById("d-agrade").textContent   = agrade;
-  document.getElementById("d-consult").textContent  = consult;
-  document.getElementById("d-likely").textContent   = likely;
-  document.getElementById("d-contract").textContent = contract;
-  document.getElementById("d-delivery").textContent = delivery;
-  document.getElementById("d-cancel").textContent   = cancel;
-  document.getElementById("list-count").textContent = total+"명";
-  var dc=calcCareDashboard(list);
-  document.getElementById("dc-week").textContent      = dc.week;
-  document.getElementById("dc-insurance").textContent = dc.insurance;
-  document.getElementById("dc-inspect").textContent   = dc.inspect;
-  document.getElementById("dc-finance").textContent   = dc.finance;
-  document.getElementById("dc-1yr").textContent       = dc.yr1;
-  document.getElementById("dc-3yr").textContent       = dc.yr3;
-  document.getElementById("dc-repurchase").textContent= dc.repurchase;
+
+  // 오늘
+  var todayEl=document.getElementById("todayContactList");
+  if(today.length===0){
+    todayEl.innerHTML='<div class="contact-list-empty">오늘 연락할 고객이 없습니다</div>';
+  } else {
+    todayEl.innerHTML=today.map(function(x){return contactCard(x.c,x.df);}).join("");
+  }
+
+  // 이번주 (오늘 제외)
+  var weekEl=document.getElementById("weekContactList");
+  if(week.length===0){
+    weekEl.innerHTML='<div class="contact-list-empty">이번주 추가 연락 고객이 없습니다</div>';
+  } else {
+    week.sort(function(a,b){return a.df-b.df;});
+    weekEl.innerHTML=week.map(function(x){return contactCard(x.c,x.df);}).join("");
+  }
+}
+
+function contactCard(c,df){
+  var cat=c.carCategory||c.carModel||"—";
+  var statusDisp=ms(c.status)||c.status||"—";
+  return '<div class="contact-item">'+
+    '<div class="contact-item-left">'+
+      '<div class="c-name">'+esc(c.customerName)+'</div>'+
+      '<div class="c-meta">'+esc(cat)+(c.carModel&&c.carCategory?" · "+esc(c.carModel):"")+
+        ' | <span class="status-badge '+sc(c.status)+'">'+esc(statusDisp)+'</span>'+
+        ' | D-'+df+'일</div>'+
+    '</div>'+
+    '<div class="contact-item-right">'+
+      '<a class="call-btn" href="tel:'+esc(c.phone)+'">📞 전화</a>'+
+    '</div>'+
+  '</div>';
 }
 
 // ============================================================
-// PC 테이블 렌더링
+// 고객목록 렌더링 (필터+검색 통합)
 // ============================================================
-function renderTable(list){
-  var tbody=document.getElementById("customer-tbody");
-  var empty=document.getElementById("list-empty");
-  tbody.innerHTML="";
-  if(list.length===0){ empty.style.display="block"; return; }
-  empty.style.display="none";
+function renderCustomerList(){
+  var list=loadCustomers();
+  var searchQ=(document.getElementById("searchInput")||{}).value||"";
+  searchQ=searchQ.trim().toLowerCase();
 
-  // 수정일시 있으면 최신순, 없으면 등록일시 기준
-  var sorted=list.slice().sort(function(a,b){
+  // 필터바 표시
+  var filterBar=document.getElementById("filterBar");
+  var filterLabel=document.getElementById("filterLabel");
+  if(currentFilter){
+    filterBar.style.display="flex";
+    filterLabel.textContent=currentFilter+" 고객";
+  } else {
+    filterBar.style.display="none";
+  }
+
+  // 필터 적용
+  var filtered=list.filter(function(c){
+    if(currentFilter){
+      var v=ms(c.status)||c.status||"";
+      if(v!==currentFilter) return false;
+    }
+    if(searchQ){
+      var name=(c.customerName||"").toLowerCase();
+      var phone=normPhone(c.phone);
+      if(name.indexOf(searchQ)<0 && phone.indexOf(searchQ.replace(/\D/g,""))<0) return false;
+    }
+    return true;
+  });
+
+  // 최신 수정/등록 순 정렬
+  filtered.sort(function(a,b){
     var ta=a.updatedAt||a.registeredAt||"";
     var tb=b.updatedAt||b.registeredAt||"";
     return tb.localeCompare(ta);
   });
 
-  sorted.forEach(function(c){
-    var cat   = c.carCategory||c.carModel||"";
-    var model = c.carCategory ? (c.carModel||"") : "";
-    var isUpdated = !!c.updatedAt;
-    var tr=document.createElement("tr");
-    if(isUpdated) tr.className="updated-row";
-    tr.innerHTML=
-      '<td class="name-cell">'+esc(c.customerName)+'</td>'+
-      '<td><a class="tel-link" href="tel:'+esc(c.phone)+'">'+esc(c.phone)+'</a></td>'+
-      '<td>'+esc(c.birthDate||"")+'</td>'+
-      '<td>'+esc(cat)+'</td>'+
-      '<td style="font-size:11px;">'+esc(model)+'</td>'+
-      '<td>'+esc(c.ownedCarModel||"")+'</td>'+
-      '<td>'+esc(c.ownedCarMileage||"")+'</td>'+
-      '<td>'+esc(c.accidentHistory||"")+'</td>'+
-      '<td>'+esc(c.carNumber||"")+'</td>'+
-      '<td>'+esc(c.purchaseType||"")+'</td>'+
-      '<td><span class="status-badge '+statusClass(c.status)+'">'+esc(migrateStatus(c.status)||c.status)+'</span></td>'+
-      '<td>'+esc(c.leadSource||"")+'</td>'+
-      '<td>'+esc(c.nextContact||"")+'</td>'+
-      '<td style="max-width:180px;white-space:pre-wrap;word-break:break-all;font-size:11px;">'+esc(c.consultation||"")+'</td>'+
-      '<td>'+esc(c.memo||"")+'</td>'+
-      '<td style="background:#f8fbff;">'+esc(c.expectedPurchaseDate||"")+'</td>'+
-      '<td style="background:#f8fbff;">'+esc(c.contractDate||"")+'</td>'+
-      '<td style="background:#f8fbff;">'+esc(c.deliveryDate||"")+'</td>'+
-      '<td style="background:#f8fbff;">'+esc(c.insuranceExpireDate||"")+'</td>'+
-      '<td style="background:#f8fbff;">'+esc(c.inspectionDueDate||"")+'</td>'+
-      '<td style="background:#f8fbff;">'+esc(c.financeEndDate||"")+'</td>'+
-      '<td style="background:#f8fbff;">'+esc(c.warrantyEndDate||"")+'</td>'+
-      '<td style="background:#f8fbff;">'+esc(c.repurchaseExpectedDate||"")+'</td>'+
-      '<td style="background:#f8fbff;max-width:140px;white-space:pre-wrap;word-break:break-all;font-size:11px;">'+esc(c.vehicleCareMemo||"")+'</td>'+
-      '<td style="white-space:nowrap;font-size:11px;color:#888;">'+esc(c.registeredAt||"")+'</td>'+
-      '<td style="white-space:nowrap;font-size:11px;color:'+( isUpdated ? "#1a6aa0" : "#aaa" )+';">'+esc(c.updatedAt||"")+'</td>';
-    tbody.appendChild(tr);
-  });
+  document.getElementById("list-count").textContent=filtered.length+"명";
+
+  var container=document.getElementById("customerListContainer");
+  if(filtered.length===0){
+    container.innerHTML='<div class="empty-state">'+
+      '<div class="empty-icon">🔍</div>'+
+      '<p>'+(currentFilter||searchQ?"조건에 맞는 고객이 없습니다":"아직 등록된 고객이 없습니다")+'</p>'+
+    '</div>';
+    return;
+  }
+
+  container.innerHTML=filtered.map(function(c,idx){return buildCustCard(c,idx);}).join("");
 }
 
-// ============================================================
-// 모바일 카드 렌더링
-// ============================================================
-function renderCards(list){
-  var wrap=document.getElementById("customer-cards");
-  var empty=document.getElementById("list-empty-mobile");
-  Array.from(wrap.querySelectorAll(".cust-card")).forEach(function(el){ el.remove(); });
-  if(list.length===0){ empty.style.display="block"; return; }
-  empty.style.display="none";
+function buildCustCard(c,idx){
+  var cat=c.carCategory||c.carModel||"";
+  var model=c.carCategory?(c.carModel||""):"";
+  var statusDisp=ms(c.status)||c.status||"—";
+  var isUpdated=!!c.updatedAt;
+  var detailId="det-"+idx;
+  var careId="care-"+idx;
 
-  var sorted=list.slice().sort(function(a,b){
-    var ta=a.updatedAt||a.registeredAt||"";
-    var tb=b.updatedAt||b.registeredAt||"";
-    return tb.localeCompare(ta);
-  });
+  var hasCare=c.expectedPurchaseDate||c.contractDate||c.deliveryDate||
+    c.insuranceExpireDate||c.inspectionDueDate||c.financeEndDate||
+    c.warrantyEndDate||c.repurchaseExpectedDate||c.vehicleCareMemo;
 
-  sorted.forEach(function(c,idx){
-    var cat   = c.carCategory||c.carModel||"";
-    var model = c.carCategory ? (c.carModel||"") : "";
-    var statusDisp=migrateStatus(c.status)||c.status;
-    var isUpdated=!!c.updatedAt;
-    var div=document.createElement("div");
-    div.className="cust-card"+(isUpdated?" updated-card":"");
+  var html='<div class="cust-card'+(isUpdated?" updated":"")+'">';
 
-    var html=
-      '<div class="cust-card-top">'+
-        '<div>'+
-          '<div class="cust-name">'+esc(c.customerName)+'</div>'+
-          '<div class="cust-date">'+
-            (isUpdated
-              ? '수정: '+esc(c.updatedAt)
-              : '등록: '+esc(c.registeredAt||""))+
-          '</div>'+
-        '</div>'+
-        '<span class="status-badge '+statusClass(c.status)+'">'+esc(statusDisp)+'</span>'+
-      '</div>';
+  // 상단
+  html+='<div class="cust-card-top">'+
+    '<div>'+
+      '<div class="cust-name">'+esc(c.customerName)+'</div>'+
+      '<div class="cust-date">'+(isUpdated?"수정: "+esc(c.updatedAt):"등록: "+esc(c.registeredAt||""))+'</div>'+
+    '</div>'+
+    '<span class="status-badge '+sc(c.status)+'">'+esc(statusDisp)+'</span>'+
+  '</div>';
 
-    // 기본 정보
-    html+='<div class="cust-section-title">기본 정보</div>';
-    html+=row("휴대폰",'<a class="tel-link" href="tel:'+esc(c.phone)+'">'+esc(c.phone)+'</a>');
-    if(c.birthDate)   html+=row("생년월일",c.birthDate);
-    if(c.leadSource)  html+=row("유입경로",c.leadSource);
-    if(c.nextContact) html+=row("다음연락일",c.nextContact);
+  // 핵심 정보
+  html+='<div class="cust-info-row">';
+  if(c.phone) html+='<a class="tel-link" href="tel:'+esc(c.phone)+'">📞 '+esc(c.phone)+'</a>';
+  if(cat)     html+='<span class="cust-chip">'+esc(cat)+'</span>';
+  if(model)   html+='<span class="cust-chip">'+esc(model)+'</span>';
+  if(c.nextContact) html+='<span class="cust-chip">📅 '+esc(c.nextContact)+'</span>';
+  if(c.leadSource)  html+='<span class="cust-chip">'+esc(c.leadSource)+'</span>';
+  html+='</div>';
 
-    // 차량 정보
-    html+='<div class="cust-section-title">차량 정보</div>';
-    if(cat)               html+=row("관심차종",cat);
-    if(model)             html+=row("세부모델",model);
-    if(c.purchaseType)    html+=row("구매방식",c.purchaseType);
-    if(c.ownedCarModel)   html+=row("보유차종",c.ownedCarModel);
-    if(c.ownedCarMileage) html+=row("주행거리",c.ownedCarMileage);
-    if(c.accidentHistory) html+=row("사고유무",c.accidentHistory);
-    if(c.carNumber)       html+=row("차량번호",c.carNumber);
+  // 상세 접기/펼치기
+  html+='<button class="detail-toggle" onclick="toggleDetail(this,\''+detailId+'\')" aria-expanded="false">'+
+    '상세정보 보기 <span class="arr">▼</span>'+
+  '</button>';
+  html+='<div class="detail-body" id="'+detailId+'">';
 
-    // 상담 내용 (pre-wrap 처리)
-    if(c.consultation||c.memo){
-      html+='<div class="cust-section-title">상담</div>';
-      if(c.consultation){
-        html+='<div class="cust-row"><span class="cust-key">상담내용</span>'+
-          '<span class="cust-val consultation-text">'+esc(c.consultation)+'</span></div>';
-      }
-      if(c.memo) html+=row("메모",c.memo);
+  // 기본
+  html+='<div class="detail-section">기본 정보</div>';
+  if(c.birthDate)     html+=drow("생년월일",c.birthDate);
+  if(c.purchaseType)  html+=drow("구매방식",c.purchaseType);
+  if(c.ownedCarModel) html+=drow("보유차종",c.ownedCarModel);
+  if(c.ownedCarMileage)html+=drow("주행거리",c.ownedCarMileage);
+  if(c.accidentHistory)html+=drow("사고유무",c.accidentHistory);
+  if(c.carNumber)     html+=drow("차량번호",c.carNumber);
+
+  // 상담
+  if(c.consultation||c.memo){
+    html+='<div class="detail-section">상담</div>';
+    if(c.consultation) html+='<div class="d-row"><span class="d-key">상담내용</span><span class="d-val">'+esc(c.consultation)+'</span></div>';
+    if(c.memo)         html+=drow("메모",c.memo);
+  }
+
+  // 차량관리 (하위 접기)
+  if(hasCare){
+    html+='<button class="care-toggle" onclick="toggleCare(this,\''+careId+'\')" aria-expanded="false">'+
+      '🚗 차량관리 정보 보기 <span class="arr">▼</span>'+
+    '</button>';
+    html+='<div class="care-detail" id="'+careId+'">';
+    html+='<div class="detail-section care">차량관리 / 재구매</div>';
+    if(c.expectedPurchaseDate) html+=drow("구매예정일",c.expectedPurchaseDate);
+    if(c.contractDate)         html+=drow("계약일",c.contractDate);
+    if(c.deliveryDate){
+      var dEl=Math.abs(daysFrom(c.deliveryDate)||0);
+      var dlbl=c.deliveryDate+(dEl>=1095?'<span class="dday-tag urgent"> 3년↑</span>':dEl>=365?'<span class="dday-tag warn"> 1년↑</span>':"");
+      html+='<div class="d-row"><span class="d-key">출고일</span><span class="d-val">'+dlbl+'</span></div>';
     }
+    if(c.insuranceExpireDate){ var iD=daysFrom(c.insuranceExpireDate); html+=drow("보험만기일",esc(c.insuranceExpireDate)+ddTag(iD)); }
+    if(c.inspectionDueDate){   var inD=daysFrom(c.inspectionDueDate);  html+=drow("검사예정일",esc(c.inspectionDueDate)+ddTag(inD)); }
+    if(c.financeEndDate){      var fD=daysFrom(c.financeEndDate);       html+=drow("금융종료일",esc(c.financeEndDate)+ddTag(fD)); }
+    if(c.warrantyEndDate)      html+=drow("보증만료일",c.warrantyEndDate);
+    if(c.repurchaseExpectedDate){ var rD=daysFrom(c.repurchaseExpectedDate); html+=drow("재구매예상",esc(c.repurchaseExpectedDate)+ddTag(rD)); }
+    if(c.vehicleCareMemo)      html+=drow("관리메모",c.vehicleCareMemo);
+    html+='</div>';
+  }
 
-    // 차량관리 접기/펼치기
-    var careId="care-detail-"+idx;
-    var hasCare=c.expectedPurchaseDate||c.contractDate||c.deliveryDate||
-      c.insuranceExpireDate||c.inspectionDueDate||c.financeEndDate||
-      c.warrantyEndDate||c.repurchaseExpectedDate||c.vehicleCareMemo;
+  html+='</div>'; // /detail-body
+  html+='</div>'; // /cust-card
+  return html;
+}
 
-    if(hasCare){
-      html+=
-        '<button class="toggle-btn" onclick="toggleCare(this,\''+careId+'\')" aria-expanded="false">'+
-          '<span>🚗 차량관리 정보 보기</span><span class="toggle-arrow">▼</span>'+
-        '</button>'+
-        '<div class="care-detail" id="'+careId+'">';
-      html+='<div class="cust-section-title care">차량관리 / 재구매</div>';
-      if(c.expectedPurchaseDate) html+=row("구매예정일",c.expectedPurchaseDate);
-      if(c.contractDate)         html+=row("계약일",c.contractDate);
-      if(c.deliveryDate){
-        var delDays=daysFrom(c.deliveryDate), delLbl=c.deliveryDate;
-        if(delDays!==null&&delDays<0){
-          var el=Math.abs(delDays);
-          if(el>=1095) delLbl+=' <span class="dday-tag urgent">3년↑</span>';
-          else if(el>=365) delLbl+=' <span class="dday-tag warn">1년↑</span>';
-        }
-        html+='<div class="cust-row"><span class="cust-key">출고일</span><span class="cust-val">'+delLbl+'</span></div>';
-      }
-      if(c.insuranceExpireDate){
-        var iD=daysFrom(c.insuranceExpireDate);
-        html+='<div class="cust-row"><span class="cust-key">보험만기일</span><span class="cust-val">'+esc(c.insuranceExpireDate)+ddayTag(iD)+'</span></div>';
-      }
-      if(c.inspectionDueDate){
-        var inD=daysFrom(c.inspectionDueDate);
-        html+='<div class="cust-row"><span class="cust-key">검사예정일</span><span class="cust-val">'+esc(c.inspectionDueDate)+ddayTag(inD)+'</span></div>';
-      }
-      if(c.financeEndDate){
-        var fD=daysFrom(c.financeEndDate);
-        html+='<div class="cust-row"><span class="cust-key">금융종료일</span><span class="cust-val">'+esc(c.financeEndDate)+ddayTag(fD)+'</span></div>';
-      }
-      if(c.warrantyEndDate) html+=row("보증만료일",c.warrantyEndDate);
-      if(c.repurchaseExpectedDate){
-        var rD=daysFrom(c.repurchaseExpectedDate);
-        html+='<div class="cust-row"><span class="cust-key">재구매예상</span><span class="cust-val">'+esc(c.repurchaseExpectedDate)+ddayTag(rD)+'</span></div>';
-      }
-      if(c.vehicleCareMemo) html+=row("관리메모",c.vehicleCareMemo);
-      html+='</div>';
-    }
+function drow(k,v){
+  if(!v) return"";
+  return'<div class="d-row"><span class="d-key">'+k+'</span><span class="d-val">'+v+'</span></div>';
+}
 
-    div.innerHTML=html; wrap.appendChild(div);
-  });
+function toggleDetail(btn,id){
+  var d=document.getElementById(id);
+  var open=d.classList.contains("open");
+  d.classList.toggle("open",!open);
+  btn.classList.toggle("open",!open);
+  btn.querySelector(".arr").textContent=open?"▼":"▲";
+  btn.firstChild.textContent=open?"상세정보 보기 ":"상세정보 닫기 ";
+  btn.setAttribute("aria-expanded",!open);
 }
 
 function toggleCare(btn,id){
@@ -1058,137 +1278,114 @@ function toggleCare(btn,id){
   var open=d.classList.contains("open");
   d.classList.toggle("open",!open);
   btn.classList.toggle("open",!open);
-  btn.querySelector("span:first-child").textContent=open?"🚗 차량관리 정보 보기":"🚗 차량관리 정보 닫기";
   btn.setAttribute("aria-expanded",!open);
-}
-
-function row(key,val){
-  if(!val) return "";
-  return '<div class="cust-row"><span class="cust-key">'+key+'</span><span class="cust-val">'+val+'</span></div>';
-}
-
-function esc(str){
-  if(!str) return "";
-  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  btn.childNodes[0].textContent=open?"🚗 차량관리 정보 보기 ":"🚗 차량관리 정보 닫기 ";
 }
 
 // ============================================================
-// 전체 화면 갱신
+// HTML 이스케이프
 // ============================================================
-function refreshUI(){
-  var list=loadCustomers();
-  updateDashboard(list);
-  renderTable(list);
-  renderCards(list);
+function esc(s){
+  if(!s)return"";
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
-refreshUI();
 
 // ============================================================
 // 전화번호 자동 하이픈
 // ============================================================
-function formatPhone(el){
+function fmtPhone(el){
   var v=el.value.replace(/\D/g,"");
-  if(v.length<=3) el.value=v;
-  else if(v.length<=7) el.value=v.slice(0,3)+"-"+v.slice(3);
+  if(v.length<=3)el.value=v;
+  else if(v.length<=7)el.value=v.slice(0,3)+"-"+v.slice(3);
   else el.value=v.slice(0,3)+"-"+v.slice(3,7)+"-"+v.slice(7,11);
 }
-document.getElementById("phone").addEventListener("input",function(){ formatPhone(this); });
-document.getElementById("u-phone").addEventListener("input",function(){ formatPhone(this); });
+document.getElementById("phone").addEventListener("input",function(){fmtPhone(this);});
+document.getElementById("u-phone").addEventListener("input",function(){fmtPhone(this);});
 
 // ============================================================
-// 추가상담 탭 — 전화번호 입력 시 localStorage에서 고객 미리보기
+// 추가상담 — 전화번호 입력 시 고객 프리뷰
 // ============================================================
-var previewDebounce = null;
-
+var previewTimer=null;
 function onUpdatePhoneInput(el){
-  formatPhone(el);
-  clearTimeout(previewDebounce);
-  previewDebounce = setTimeout(function(){
-    var phone = el.value;
-    var np = normalizePhone(phone);
-    var found = document.getElementById("customer-preview");
-    var notFound = document.getElementById("customer-not-found");
-    found.classList.remove("visible");
-    notFound.classList.remove("visible");
-
-    if(np.length < 10) return; // 최소 10자리 이상일 때만 검색
-
-    var result = findByPhone(phone);
+  fmtPhone(el);
+  clearTimeout(previewTimer);
+  previewTimer=setTimeout(function(){
+    var np=normPhone(el.value);
+    var prev=document.getElementById("customer-preview");
+    var nf=document.getElementById("customer-not-found");
+    prev.classList.remove("visible"); nf.classList.remove("visible");
+    if(np.length<10)return;
+    var result=findByPhone(el.value);
     if(result){
-      var c = result.customer;
-      var statusDisp = migrateStatus(c.status)||c.status||"—";
-      document.getElementById("preview-name").textContent = c.customerName||"—";
-      document.getElementById("preview-meta").textContent =
-        (c.carCategory ? c.carCategory+(c.carModel?" · "+c.carModel:"") : "차종 미등록") +
-        " | 유입: "+(c.leadSource||"—");
-      document.getElementById("preview-status").innerHTML =
-        '<span class="status-badge '+statusClass(c.status)+'">'+esc(statusDisp)+'</span>'+
-        ' <span style="font-size:12px;color:#888;margin-left:6px;">최근상담: '+(c.updatedAt||c.registeredAt||"—")+'</span>';
-      // 고객명 자동 채우기
-      if(!document.getElementById("u-customerName").value){
-        document.getElementById("u-customerName").value = c.customerName||"";
-      }
-      found.classList.add("visible");
-    } else if(np.length >= 11) {
-      // 11자리 완성 후에만 not found 표시
-      notFound.classList.add("visible");
+      var c=result.c;
+      document.getElementById("preview-name").textContent=c.customerName||"—";
+      document.getElementById("preview-meta").textContent=
+        (c.carCategory?c.carCategory+(c.carModel?" · "+c.carModel:""):"차종 미등록")+
+        " | "+(c.leadSource||"—");
+      document.getElementById("preview-status").innerHTML=
+        '<span class="status-badge '+sc(c.status)+'">'+esc(ms(c.status)||c.status||"—")+'</span>'+
+        ' <span style="font-size:12px;color:#888;margin-left:6px;">'+esc(c.updatedAt||c.registeredAt||"")+'</span>';
+      var nameEl=document.getElementById("u-customerName");
+      if(!nameEl.value) nameEl.value=c.customerName||"";
+      prev.classList.add("visible");
+    } else if(np.length>=11){
+      nf.classList.add("visible");
     }
-  }, 400);
+  },400);
 }
 
 // ============================================================
 // 메시지 헬퍼
 // ============================================================
 function showMsg(id,type,text){
-  var el=document.getElementById(id);
-  el.className=type; el.textContent=text;
+  var el=document.getElementById(id);if(!el)return;
+  el.className="status-msg "+type; el.textContent=text;
   el.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 function hideMsg(id){
-  var el=document.getElementById(id);
-  if(el){ el.className=""; el.textContent=""; }
+  var el=document.getElementById(id);if(!el)return;
+  el.className="status-msg"; el.textContent="";
 }
 
 // ============================================================
-// 신규 고객 저장 (action: "new")
+// 신규 고객 저장
 // ============================================================
 function getNewFormData(){
-  return {
-    action:                "new",
-    registeredAt:          getNowKST(),
-    customerName:          document.getElementById("customerName").value.trim(),
-    phone:                 document.getElementById("phone").value.trim(),
-    birthDate:             document.getElementById("birthDate").value,
-    carCategory:           document.getElementById("carCategory").value,
-    carModel:              document.getElementById("carModel").value,
-    ownedCarModel:         document.getElementById("ownedCarModel").value.trim(),
-    ownedCarMileage:       document.getElementById("ownedCarMileage").value.trim(),
-    accidentHistory:       document.getElementById("accidentHistory").value,
-    carNumber:             document.getElementById("carNumber").value.trim(),
-    purchaseType:          document.getElementById("purchaseType").value,
-    status:                document.getElementById("status").value,
-    leadSource:            document.getElementById("leadSource").value,
-    consultation:          document.getElementById("consultation").value.trim(),
-    nextContact:           document.getElementById("nextContact").value,
-    memo:                  document.getElementById("memo").value.trim(),
-    expectedPurchaseDate:  document.getElementById("expectedPurchaseDate").value,
-    contractDate:          document.getElementById("contractDate").value,
-    deliveryDate:          document.getElementById("deliveryDate").value,
-    insuranceExpireDate:   document.getElementById("insuranceExpireDate").value,
-    inspectionDueDate:     document.getElementById("inspectionDueDate").value,
-    financeEndDate:        document.getElementById("financeEndDate").value,
-    warrantyEndDate:       document.getElementById("warrantyEndDate").value,
+  return{
+    action:"new", registeredAt:getNowKST(),
+    customerName:document.getElementById("customerName").value.trim(),
+    phone:document.getElementById("phone").value.trim(),
+    birthDate:document.getElementById("birthDate").value,
+    carCategory:document.getElementById("carCategory").value,
+    carModel:document.getElementById("carModel").value,
+    ownedCarModel:document.getElementById("ownedCarModel").value.trim(),
+    ownedCarMileage:document.getElementById("ownedCarMileage").value.trim(),
+    accidentHistory:document.getElementById("accidentHistory").value,
+    carNumber:document.getElementById("carNumber").value.trim(),
+    purchaseType:document.getElementById("purchaseType").value,
+    status:document.getElementById("status").value,
+    leadSource:document.getElementById("leadSource").value,
+    consultation:document.getElementById("consultation").value.trim(),
+    nextContact:document.getElementById("nextContact").value,
+    memo:document.getElementById("memo").value.trim(),
+    expectedPurchaseDate:document.getElementById("expectedPurchaseDate").value,
+    contractDate:document.getElementById("contractDate").value,
+    deliveryDate:document.getElementById("deliveryDate").value,
+    insuranceExpireDate:document.getElementById("insuranceExpireDate").value,
+    inspectionDueDate:document.getElementById("inspectionDueDate").value,
+    financeEndDate:document.getElementById("financeEndDate").value,
+    warrantyEndDate:document.getElementById("warrantyEndDate").value,
     repurchaseExpectedDate:document.getElementById("repurchaseExpectedDate").value,
-    vehicleCareMemo:       document.getElementById("vehicleCareMemo").value.trim()
+    vehicleCareMemo:document.getElementById("vehicleCareMemo").value.trim()
   };
 }
 
 function resetNewForm(){
-  var ids=["customerName","phone","birthDate","ownedCarModel","ownedCarMileage","accidentHistory","carNumber",
-    "purchaseType","status","leadSource","consultation","nextContact","memo",
+  var ids=["customerName","phone","birthDate","ownedCarModel","ownedCarMileage","accidentHistory",
+    "carNumber","purchaseType","status","leadSource","consultation","nextContact","memo",
     "expectedPurchaseDate","contractDate","deliveryDate","insuranceExpireDate",
     "inspectionDueDate","financeEndDate","warrantyEndDate","repurchaseExpectedDate","vehicleCareMemo"];
-  ids.forEach(function(id){ document.getElementById(id).value=""; });
+  ids.forEach(function(id){document.getElementById(id).value="";});
   document.getElementById("carCategory").value="";
   var sel=document.getElementById("carModel");
   sel.innerHTML='<option value="">— 차종을 먼저 선택하세요 —</option>'; sel.disabled=true;
@@ -1197,33 +1394,20 @@ function resetNewForm(){
 function submitNew(){
   hideMsg("status-msg");
   var data=getNewFormData();
-  if(!data.customerName){ showMsg("status-msg","error","⚠ 고객명을 입력해주세요."); return; }
-  if(!data.phone)        { showMsg("status-msg","error","⚠ 휴대폰번호를 입력해주세요."); return; }
+  if(!data.customerName){showMsg("status-msg","error","⚠ 고객명을 입력해주세요.");return;}
+  if(!data.phone){showMsg("status-msg","error","⚠ 휴대폰번호를 입력해주세요.");return;}
 
   var btn=document.getElementById("submitBtn");
   btn.disabled=true; btn.textContent="저장 중…";
 
-  fetch(SCRIPT_URL,{
-    method:"POST", mode:"no-cors",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify(data)
-  })
+  fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
   .then(function(){
-    // localStorage upsert (신규도 중복 방지)
     var list=loadCustomers();
-    var np=normalizePhone(data.phone);
-    var idx=-1;
-    for(var i=0;i<list.length;i++){
-      if(normalizePhone(list[i].phone)===np){ idx=i; break; }
-    }
-    if(idx>=0){
-      // 같은 번호가 있으면 덮어쓰기 (신규 재등록 케이스)
-      list[idx]=data;
-    } else {
-      list.push(data);
-    }
+    var np=normPhone(data.phone),idx=-1;
+    for(var i=0;i<list.length;i++){if(normPhone(list[i].phone)===np){idx=i;break;}}
+    if(idx>=0)list[idx]=data; else list.push(data);
     saveCustomers(list);
-    refreshUI();
+    updateDashboard();
     showMsg("status-msg","success","✅ 저장되었습니다. 구글시트에 기록되었습니다.");
     resetNewForm();
   })
@@ -1231,89 +1415,78 @@ function submitNew(){
     showMsg("status-msg","error","❌ 저장에 실패했습니다. 인터넷 연결을 확인해주세요.");
     console.error(err);
   })
-  .finally(function(){ btn.disabled=false; btn.textContent="고객 정보 저장"; });
+  .finally(function(){btn.disabled=false;btn.textContent="고객 정보 저장";});
 }
 
 // ============================================================
-// 추가상담 저장 (action: "update")
+// 추가상담 저장
 // ============================================================
-function getUpdateFormData(){
-  return {
-    action:          "update",
-    updatedAt:       getNowKST(),
-    customerName:    document.getElementById("u-customerName").value.trim(),
-    phone:           document.getElementById("u-phone").value.trim(),
-    addConsultation: document.getElementById("addConsultation").value.trim(),
-    status:          document.getElementById("u-status").value,
-    nextContact:     document.getElementById("u-nextContact").value,
-    memo:            document.getElementById("u-memo").value.trim()
-  };
-}
-
-function resetUpdateForm(){
-  ["u-customerName","u-status","u-nextContact","u-memo","addConsultation"]
-    .forEach(function(id){ document.getElementById(id).value=""; });
-  document.getElementById("u-phone").value="";
-  document.getElementById("customer-preview").classList.remove("visible");
-  document.getElementById("customer-not-found").classList.remove("visible");
-}
-
 function submitUpdate(){
   hideMsg("status-msg-update");
-  var data=getUpdateFormData();
+  var phone=document.getElementById("u-phone").value.trim();
+  var addC=document.getElementById("addConsultation").value.trim();
+  if(!phone){showMsg("status-msg-update","error","⚠ 휴대폰번호를 입력해주세요.");return;}
+  if(!addC){showMsg("status-msg-update","error","⚠ 추가상담내용을 입력해주세요.");return;}
 
-  if(!data.phone)          { showMsg("status-msg-update","error","⚠ 휴대폰번호를 입력해주세요."); return; }
-  if(!data.addConsultation){ showMsg("status-msg-update","error","⚠ 추가상담내용을 입력해주세요."); return; }
-
-  // 타임스탬프 붙이기
-  data.consultationEntry = getConsultTimestamp()+"\n"+data.addConsultation;
+  var now=getNowKST();
+  var entry=getConsultTs()+"\n"+addC;
+  var payload={
+    action:"update", updatedAt:now,
+    customerName:document.getElementById("u-customerName").value.trim(),
+    phone:phone,
+    consultationEntry:entry,
+    status:document.getElementById("u-status").value,
+    nextContact:document.getElementById("u-nextContact").value,
+    memo:document.getElementById("u-memo").value.trim()
+  };
 
   var btn=document.getElementById("updateBtn");
   btn.disabled=true; btn.textContent="저장 중…";
 
-  fetch(SCRIPT_URL,{
-    method:"POST", mode:"no-cors",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify(data)
-  })
+  fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})
   .then(function(){
-    // localStorage 업데이트
     var list=loadCustomers();
-    var np=normalizePhone(data.phone);
-    var found=false;
+    var np=normPhone(phone),found=false;
     for(var i=0;i<list.length;i++){
-      if(normalizePhone(list[i].phone)===np){
-        // 상담내용 누적
+      if(normPhone(list[i].phone)===np){
         var prev=list[i].consultation||"";
-        list[i].consultation = prev
-          ? prev+"\n\n"+data.consultationEntry
-          : data.consultationEntry;
-        // 최신 정보 업데이트
-        if(data.status)      list[i].status      = data.status;
-        if(data.nextContact) list[i].nextContact  = data.nextContact;
-        if(data.memo)        list[i].memo         = data.memo;
-        list[i].updatedAt = data.updatedAt;
-        found=true;
-        break;
+        list[i].consultation=prev?prev+"\n\n"+entry:entry;
+        if(payload.status)      list[i].status=payload.status;
+        if(payload.nextContact) list[i].nextContact=payload.nextContact;
+        if(payload.memo)        list[i].memo=payload.memo;
+        list[i].updatedAt=now;
+        found=true; break;
       }
     }
-    if(!found){
-      // localStorage에 없어도 구글시트는 저장됨 — 화면에 안내
-      showMsg("status-msg-update","success",
-        "✅ 구글시트에 저장되었습니다. (화면 목록은 신규 등록 시 표시됩니다)");
-    } else {
-      saveCustomers(list);
-      refreshUI();
-      showMsg("status-msg-update","success","✅ 추가상담이 저장되었습니다. 구글시트에 상담내용이 누적되었습니다.");
-    }
-    resetUpdateForm();
+    if(found){saveCustomers(list); updateDashboard();}
+    showMsg("status-msg-update","success","✅ 추가상담이 저장되었습니다.");
+    // 폼 초기화
+    ["u-customerName","u-phone","u-status","u-nextContact","u-memo","addConsultation"]
+      .forEach(function(id){document.getElementById(id).value="";});
+    document.getElementById("customer-preview").classList.remove("visible");
+    document.getElementById("customer-not-found").classList.remove("visible");
   })
   .catch(function(err){
     showMsg("status-msg-update","error","❌ 저장에 실패했습니다. 인터넷 연결을 확인해주세요.");
     console.error(err);
   })
-  .finally(function(){ btn.disabled=false; btn.textContent="추가상담 저장"; });
+  .finally(function(){btn.disabled=false;btn.textContent="추가상담 저장";});
 }
+
+// ============================================================
+// 오늘 날짜 표시
+// ============================================================
+(function(){
+  var d=new Date();
+  var str=d.toLocaleDateString("ko-KR",{timeZone:"Asia/Seoul",year:"numeric",month:"long",day:"numeric",weekday:"long"});
+  document.getElementById("todayDateStr").textContent=str;
+})();
+
+// ============================================================
+// 초기 실행
+// ============================================================
+updateDashboard();
+renderHomeContacts();
 </script>
 </body>
 </html>
