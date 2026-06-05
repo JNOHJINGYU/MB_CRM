@@ -8,7 +8,7 @@
   <script>
     // ============================================================
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyay9hS6FeVYx-fJgckj5O7EzWoAzIUofjdFWx9YZqJ4pxR_Ny6sVvv8LksoS5TylhZhg/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxswUgpfFoncBTJ_MUaLx7dcT4pbZXvVNhiQqYj75xwAXqfs-GuCPU6w_YbT2jVVbDelQ/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
     // ============================================================
   </script>
@@ -43,13 +43,14 @@
       font-family: var(--font);
       font-size: 15px;
       line-height: 1.6;
+      overflow-x: hidden;
     }
 
     /* ── 페이지 레이아웃 ────────────────────────────────────── */
     .page-wrap {
       max-width: 780px;
       margin: 0 auto;
-      padding: 28px 16px 72px;
+      padding: 20px 14px 72px;
     }
 
     /* ── 상단 헤더 ──────────────────────────────────────────── */
@@ -57,10 +58,10 @@
       display: flex;
       align-items: center;
       gap: 14px;
-      padding: 20px 24px;
+      padding: 18px 22px;
       background: var(--black);
       border-radius: 14px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       box-shadow: var(--shadow);
     }
 
@@ -74,41 +75,44 @@
       flex-shrink: 0;
     }
 
-    .site-title { font-size: 18px; font-weight: 700; color: #ffffff; letter-spacing: -.3px; }
+    .site-title { font-size: 17px; font-weight: 700; color: #ffffff; letter-spacing: -.3px; }
     .site-sub   { font-size: 12px; color: #aaaaaa; margin-top: 1px; }
 
     /* ── 대시보드 ───────────────────────────────────────────── */
     .dashboard {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 10px;
-      margin-bottom: 20px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 9px;
+      margin-bottom: 16px;
     }
 
     .dash-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 16px 12px 14px;
+      padding: 14px 10px 12px;
       text-align: center;
       box-shadow: var(--shadow);
     }
 
     .dash-card .dash-num {
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 800;
       color: var(--black);
       line-height: 1.1;
     }
 
     .dash-card .dash-label {
-      font-size: 11px;
+      font-size: 10px;
       color: var(--text-dim);
       margin-top: 4px;
       font-weight: 600;
     }
 
-    .dash-card.accent .dash-num { color: var(--gold); }
+    .dash-card.accent       .dash-num { color: var(--gold); }
+    .dash-card.accent-blue  .dash-num { color: #1a6fb8; }
+    .dash-card.accent-green .dash-num { color: #1a8a4a; }
+    .dash-card.accent-red   .dash-num { color: #c0392b; }
 
     /* ── 카드 공통 ──────────────────────────────────────────── */
     .card {
@@ -117,11 +121,11 @@
       border-radius: 14px;
       overflow: hidden;
       box-shadow: var(--shadow);
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
     .card-header {
-      padding: 18px 24px;
+      padding: 16px 22px;
       border-bottom: 1px solid var(--border);
       background: var(--surface2);
       display: flex;
@@ -146,7 +150,7 @@
       margin-left: auto;
     }
 
-    .card-body { padding: 24px; }
+    .card-body { padding: 22px; }
 
     /* ── 섹션 레이블 ────────────────────────────────────────── */
     .section-label {
@@ -166,7 +170,7 @@
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 14px;
+      gap: 13px;
     }
 
     .field { display: flex; flex-direction: column; gap: 5px; }
@@ -193,8 +197,8 @@
       border-radius: 8px;
       color: var(--text);
       font-family: var(--font);
-      font-size: 14px;
-      padding: 10px 13px;
+      font-size: 15px;
+      padding: 11px 13px;
       outline: none;
       transition: border-color .18s, box-shadow .18s;
       -webkit-appearance: none;
@@ -214,8 +218,6 @@
       padding-right: 34px;
     }
 
-    textarea { resize: vertical; min-height: 84px; }
-
     select:disabled {
       background-color: #f5f5f8;
       color: var(--text-lt);
@@ -223,25 +225,28 @@
       opacity: 1;
     }
 
+    textarea { resize: vertical; min-height: 88px; }
+
     input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: .5; }
 
     /* ── 저장 버튼 ──────────────────────────────────────────── */
     .btn-submit {
       width: 100%;
-      margin-top: 24px;
-      padding: 14px;
+      margin-top: 22px;
+      padding: 16px;
       border: none;
       border-radius: var(--radius);
       background: var(--black);
       color: #ffffff;
       font-family: var(--font);
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 700;
       letter-spacing: .4px;
       cursor: pointer;
       transition: background .18s, transform .1s;
       position: relative;
       overflow: hidden;
+      min-height: 52px;
     }
 
     .btn-submit::after {
@@ -287,7 +292,25 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* ── 고객목록 ───────────────────────────────────────────── */
+    /* ── 상태 뱃지 ──────────────────────────────────────────── */
+    .status-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .status-badge.s0  { background:#f0f0f5; color:#555; }
+    .status-badge.s1  { background:#e8f4ff; color:#1a6fb8; }   /* 신규문의 */
+    .status-badge.s2  { background:#fff4e0; color:#c47a00; }   /* 상담중 */
+    .status-badge.s3  { background:#fdf0ff; color:#8a3db0; }   /* 구매보류 */
+    .status-badge.s4  { background:#e6fff2; color:#1a8a4a; }   /* 계약 */
+    .status-badge.s5  { background:#f3e8ff; color:#7a3db8; }   /* 출고 */
+    .status-badge.s6  { background:#ffe8e8; color:#b83030; }   /* 해약 */
+
+    /* ── 고객목록 빈 상태 ──────────────────────────────────── */
     #list-empty {
       text-align: center;
       color: var(--text-lt);
@@ -295,11 +318,11 @@
       padding: 32px 0;
     }
 
-    /* PC: 테이블 */
+    /* ── PC 테이블 ──────────────────────────────────────────── */
     .customer-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 13px;
+      font-size: 12px;
     }
 
     .customer-table thead th {
@@ -307,8 +330,8 @@
       color: var(--text-dim);
       font-weight: 700;
       font-size: 11px;
-      letter-spacing: .5px;
-      padding: 10px 12px;
+      letter-spacing: .4px;
+      padding: 10px 10px;
       text-align: left;
       border-bottom: 1px solid var(--border);
       white-space: nowrap;
@@ -323,45 +346,30 @@
     .customer-table tbody tr:hover { background: #fafafa; }
 
     .customer-table tbody td {
-      padding: 11px 12px;
+      padding: 10px 10px;
       color: var(--text);
       vertical-align: top;
+      word-break: break-all;
     }
 
-    .customer-table td.name-cell { font-weight: 700; color: var(--black); }
+    .customer-table td.name-cell { font-weight: 700; color: var(--black); white-space: nowrap; }
 
     .tel-link {
       color: var(--gold-dk);
       text-decoration: none;
       font-weight: 600;
+      white-space: nowrap;
     }
     .tel-link:hover { text-decoration: underline; }
 
-    /* 상태 뱃지 */
-    .status-badge {
-      display: inline-block;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 20px;
-      white-space: nowrap;
-    }
-
-    .status-badge.s0  { background:#f0f0f5; color:#555; }
-    .status-badge.s1  { background:#e8f4ff; color:#1a6fb8; }
-    .status-badge.s2  { background:#fff4e0; color:#c47a00; }
-    .status-badge.s3  { background:#e6fff2; color:#1a8a4a; }
-    .status-badge.s4  { background:#f3e8ff; color:#7a3db8; }
-    .status-badge.s5  { background:#ffe8e8; color:#b83030; }
-
-    /* 모바일: 카드 리스트 */
+    /* ── 모바일 카드 ────────────────────────────────────────── */
     .customer-cards { display: none; }
 
     .cust-card {
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 16px;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       background: var(--surface);
     }
 
@@ -371,51 +379,67 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
 
-    .cust-name { font-size: 16px; font-weight: 800; color: var(--black); }
+    .cust-name { font-size: 17px; font-weight: 800; color: var(--black); }
     .cust-date { font-size: 11px; color: var(--text-lt); margin-top: 2px; }
+
+    .cust-section-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin: 12px 0 7px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
 
     .cust-row {
       display: flex;
       gap: 6px;
-      margin-bottom: 5px;
+      margin-bottom: 6px;
       font-size: 13px;
       align-items: flex-start;
     }
 
     .cust-key {
       flex-shrink: 0;
-      width: 76px;
+      width: 82px;
       color: var(--text-dim);
       font-weight: 600;
       font-size: 12px;
     }
 
-    .cust-val { color: var(--text); word-break: break-all; }
+    .cust-val { color: var(--text); word-break: break-all; line-height: 1.5; }
 
     /* ── 반응형 ─────────────────────────────────────────────── */
-    @media (max-width: 600px) {
+    @media (max-width: 640px) {
+      .page-wrap { padding: 14px 12px 60px; }
+
+      /* 대시보드: 모바일 3열 */
       .dashboard {
         grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
       }
 
-      .dashboard .dash-card:nth-child(4),
-      .dashboard .dash-card:nth-child(5) {
-        grid-column: span 1;
-      }
-
+      /* 폼 1열 */
       .grid-2 { grid-template-columns: 1fr; }
       .field.full { grid-column: 1; }
-      .card-body { padding: 18px; }
+      .card-body { padding: 16px; }
+      .card-header { padding: 14px 16px; }
 
       /* 테이블 숨기고 카드 표시 */
       .customer-table-wrap { display: none; }
-      .customer-cards { display: block; }
+      .customer-cards { display: block; padding: 14px; }
+
+      .dash-card .dash-num { font-size: 22px; }
+      .dash-card .dash-label { font-size: 10px; }
     }
 
-    @media (max-width: 420px) {
+    @media (max-width: 400px) {
+      /* 대시보드: 초소형 2열 */
       .dashboard { grid-template-columns: repeat(2, 1fr); }
       .dashboard .dash-card:first-child { grid-column: span 2; }
     }
@@ -434,26 +458,38 @@
   </div>
 
   <!-- ── 대시보드 ──────────────────────────────────────────── -->
+  <!--
+    대시보드 카드: 총 고객 / 신규문의 / 상담중 / 구매보류 / 계약 / 출고 / 해약
+    모바일: grid-template-columns repeat(3,1fr) → repeat(2,1fr) 자동 조정
+  -->
   <div class="dashboard">
     <div class="dash-card accent">
       <div class="dash-num" id="d-total">0</div>
-      <div class="dash-label">총 고객 수</div>
+      <div class="dash-label">총 고객</div>
     </div>
     <div class="dash-card">
-      <div class="dash-num" id="d-new">0</div>
-      <div class="dash-label">신규 문의</div>
+      <div class="dash-num accent-blue" id="d-new">0</div>
+      <div class="dash-label">신규문의</div>
     </div>
     <div class="dash-card">
-      <div class="dash-num" id="d-consult">0</div>
-      <div class="dash-label">상담 진행 중</div>
+      <div class="dash-num" id="d-consult" style="color:#c47a00;">0</div>
+      <div class="dash-label">상담중</div>
     </div>
     <div class="dash-card">
-      <div class="dash-num" id="d-contract">0</div>
-      <div class="dash-label">계약 완료</div>
+      <div class="dash-num" id="d-hold" style="color:#8a3db0;">0</div>
+      <div class="dash-label">구매보류</div>
     </div>
     <div class="dash-card">
-      <div class="dash-num" id="d-delivery">0</div>
-      <div class="dash-label">출고 완료</div>
+      <div class="dash-num" id="d-contract" style="color:#1a8a4a;">0</div>
+      <div class="dash-label">계약</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-num" id="d-delivery" style="color:#7a3db8;">0</div>
+      <div class="dash-label">출고</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-num" id="d-cancel" style="color:#b83030;">0</div>
+      <div class="dash-label">해약</div>
     </div>
   </div>
 
@@ -477,6 +513,12 @@
           <div class="field">
             <label>휴대폰번호 <span class="req">*</span></label>
             <input type="tel" id="phone" placeholder="010-0000-0000" maxlength="13" />
+          </div>
+
+          <div class="field">
+            <!-- birthDate는 향후 생일 알림 기능에 사용 예정 -->
+            <label>생년월일</label>
+            <input type="date" id="birthDate" />
           </div>
 
         </div>
@@ -528,7 +570,39 @@
 
         </div>
 
-        <!-- ③ 상담 & 상태 정보 -->
+        <!-- ③ 보유차종 정보 -->
+        <div class="section-label">보유차종 정보</div>
+        <div class="grid-2">
+
+          <div class="field">
+            <label>보유차종 모델명</label>
+            <input type="text" id="ownedCarModel" placeholder="예: BMW 5시리즈" />
+          </div>
+
+          <div class="field">
+            <label>주행거리</label>
+            <input type="text" id="ownedCarMileage" placeholder="예: 35,000km" />
+          </div>
+
+          <div class="field">
+            <label>사고유무</label>
+            <select id="accidentHistory">
+              <option value="">— 선택 —</option>
+              <option>무사고</option>
+              <option>단순교환</option>
+              <option>사고있음</option>
+              <option>모름</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>차량번호</label>
+            <input type="text" id="carNumber" placeholder="예: 123가4567" />
+          </div>
+
+        </div>
+
+        <!-- ④ 상담 & 상태 정보 -->
         <div class="section-label">상담 & 상태 정보</div>
         <div class="grid-2">
 
@@ -536,16 +610,12 @@
             <label>현재상태</label>
             <select id="status">
               <option value="">— 선택 —</option>
-              <option>신규 문의</option>
-              <option>상담 진행 중</option>
-              <option>견적 발송</option>
-              <option>시승 예정</option>
-              <option>시승 완료</option>
-              <option>계약 진행 중</option>
-              <option>계약 완료</option>
-              <option>출고 완료</option>
-              <option>장기 보류</option>
-              <option>취소 / 이탈</option>
+              <option>신규문의</option>
+              <option>상담중</option>
+              <option>구매보류</option>
+              <option>계약</option>
+              <option>출고</option>
+              <option>해약</option>
             </select>
           </div>
 
@@ -553,16 +623,15 @@
             <label>유입경로</label>
             <select id="leadSource">
               <option value="">— 선택 —</option>
-              <option>전시장 방문</option>
-              <option>전화 문의</option>
-              <option>카카오톡</option>
-              <option>홈페이지</option>
-              <option>인스타그램</option>
+              <option>전시장방문및전화</option>
+              <option>GETCHA</option>
+              <option>지인소개</option>
+              <option>에이전시</option>
               <option>유튜브</option>
-              <option>네이버 블로그</option>
-              <option>지인 소개</option>
-              <option>기존 고객</option>
-              <option>기타</option>
+              <option>기존고객</option>
+              <option>고객소개</option>
+              <option>블로그</option>
+              <option>인스타그램</option>
             </select>
           </div>
 
@@ -610,8 +679,13 @@
             <tr>
               <th>고객명</th>
               <th>휴대폰번호</th>
+              <th>생년월일</th>
               <th>관심차종</th>
               <th>세부모델</th>
+              <th>보유차종</th>
+              <th>주행거리</th>
+              <th>사고</th>
+              <th>차량번호</th>
               <th>구매방식</th>
               <th>현재상태</th>
               <th>유입경로</th>
@@ -621,15 +695,13 @@
               <th>등록일시</th>
             </tr>
           </thead>
-          <tbody id="customer-tbody">
-            <!-- JS로 렌더링 -->
-          </tbody>
+          <tbody id="customer-tbody"></tbody>
         </table>
         <div id="list-empty" style="display:none;">아직 등록된 고객이 없습니다.</div>
       </div>
 
       <!-- 모바일 카드 -->
-      <div class="customer-cards" id="customer-cards" style="padding:16px;">
+      <div class="customer-cards" id="customer-cards">
         <div id="list-empty-mobile" style="display:none; text-align:center; color:#888; font-size:14px; padding:24px 0;">
           아직 등록된 고객이 없습니다.
         </div>
@@ -643,8 +715,7 @@
 <script>
 // ============================================================
 // 화면 고객목록은 브라우저 localStorage 저장용이며
-// 구글시트 원본과 다를 수 있음
-// (구글시트가 최종 원본 데이터입니다)
+// 구글시트 원본과 다를 수 있음 (구글시트가 최종 원본 데이터입니다)
 // ============================================================
 
 var LS_KEY = "nj_customers";
@@ -798,7 +869,6 @@ function onCategoryChange() {
   var cat = document.getElementById("carCategory").value;
   var sel = document.getElementById("carModel");
 
-  // 초기화
   sel.innerHTML = "";
   sel.disabled = true;
 
@@ -828,18 +898,29 @@ function onCategoryChange() {
   sel.disabled = false;
 }
 
-// ── 상태 뱃지 클래스 매핑 ────────────────────────────────────
+// ============================================================
+// 상태 뱃지 클래스 매핑 (새 상태값 기준)
+// ============================================================
 function statusClass(s) {
   if (!s) return "s0";
-  if (s === "신규 문의")     return "s1";
-  if (s === "상담 진행 중")  return "s2";
-  if (s.indexOf("계약 완료") !== -1) return "s3";
-  if (s.indexOf("출고 완료") !== -1) return "s4";
-  if (s.indexOf("취소") !== -1 || s.indexOf("이탈") !== -1) return "s5";
+  if (s === "신규문의")  return "s1";
+  if (s === "상담중")    return "s2";
+  if (s === "구매보류")  return "s3";
+  if (s === "계약")      return "s4";
+  if (s === "출고")      return "s5";
+  if (s === "해약")      return "s6";
+  // 구형 데이터 호환
+  if (s.indexOf("신규") !== -1)  return "s1";
+  if (s.indexOf("상담") !== -1)  return "s2";
+  if (s.indexOf("계약") !== -1)  return "s4";
+  if (s.indexOf("출고") !== -1)  return "s5";
+  if (s.indexOf("취소") !== -1 || s.indexOf("이탈") !== -1 || s.indexOf("해약") !== -1) return "s6";
   return "s0";
 }
 
-// ── localStorage에서 고객 목록 로드 ──────────────────────────
+// ============================================================
+// localStorage 로드 / 저장
+// ============================================================
 function loadCustomers() {
   try {
     return JSON.parse(localStorage.getItem(LS_KEY)) || [];
@@ -848,28 +929,35 @@ function loadCustomers() {
   }
 }
 
-// ── localStorage에 고객 목록 저장 ────────────────────────────
 function saveCustomers(list) {
   localStorage.setItem(LS_KEY, JSON.stringify(list));
 }
 
-// ── 대시보드 업데이트 ─────────────────────────────────────────
+// ============================================================
+// 대시보드 업데이트 (새 상태값 기준)
+// ============================================================
 function updateDashboard(list) {
   var total    = list.length;
-  var newInq   = list.filter(function(c){ return c.status === "신규 문의"; }).length;
-  var consult  = list.filter(function(c){ return c.status === "상담 진행 중"; }).length;
-  var contract = list.filter(function(c){ return c.status === "계약 완료"; }).length;
-  var delivery = list.filter(function(c){ return c.status === "출고 완료"; }).length;
+  var newInq   = list.filter(function(c){ return c.status === "신규문의"  || c.status === "신규 문의"; }).length;
+  var consult  = list.filter(function(c){ return c.status === "상담중"    || c.status === "상담 진행 중"; }).length;
+  var hold     = list.filter(function(c){ return c.status === "구매보류"  || c.status === "장기 보류"; }).length;
+  var contract = list.filter(function(c){ return c.status === "계약"      || c.status === "계약 완료" || c.status === "계약 진행 중"; }).length;
+  var delivery = list.filter(function(c){ return c.status === "출고"      || c.status === "출고 완료"; }).length;
+  var cancel   = list.filter(function(c){ return c.status === "해약"      || c.status === "취소 / 이탈"; }).length;
 
   document.getElementById("d-total").textContent    = total;
   document.getElementById("d-new").textContent      = newInq;
   document.getElementById("d-consult").textContent  = consult;
+  document.getElementById("d-hold").textContent     = hold;
   document.getElementById("d-contract").textContent = contract;
   document.getElementById("d-delivery").textContent = delivery;
+  document.getElementById("d-cancel").textContent   = cancel;
   document.getElementById("list-count").textContent = total + "명";
 }
 
-// ── 고객 목록 렌더링 (PC 테이블) ─────────────────────────────
+// ============================================================
+// PC 테이블 렌더링
+// ============================================================
 function renderTable(list) {
   var tbody = document.getElementById("customer-tbody");
   var empty = document.getElementById("list-empty");
@@ -881,35 +969,41 @@ function renderTable(list) {
   }
   empty.style.display = "none";
 
-  // 최신 등록순 (배열 역순)
   var sorted = list.slice().reverse();
   sorted.forEach(function(c) {
+    // 구형 데이터 호환: carCategory 없으면 carModel을 차종으로 표시
+    var catDisplay   = c.carCategory || c.carModel || "";
+    var modelDisplay = c.carCategory ? (c.carModel || "") : "";
+
     var tr = document.createElement("tr");
-    // carCategory + carModel 분리 지원 (구형 데이터 호환)
-    var categoryDisplay = c.carCategory || c.carModel || "";
-    var subModelDisplay = c.carModel && c.carCategory ? c.carModel : "";
     tr.innerHTML =
       '<td class="name-cell">' + esc(c.customerName) + '</td>' +
       '<td><a class="tel-link" href="tel:' + esc(c.phone) + '">' + esc(c.phone) + '</a></td>' +
-      '<td>' + esc(categoryDisplay) + '</td>' +
-      '<td style="font-size:12px;color:#555;">' + esc(subModelDisplay) + '</td>' +
-      '<td>' + esc(c.purchaseType) + '</td>' +
+      '<td>' + esc(c.birthDate || "") + '</td>' +
+      '<td>' + esc(catDisplay) + '</td>' +
+      '<td style="font-size:11px;">' + esc(modelDisplay) + '</td>' +
+      '<td>' + esc(c.ownedCarModel || "") + '</td>' +
+      '<td>' + esc(c.ownedCarMileage || "") + '</td>' +
+      '<td>' + esc(c.accidentHistory || "") + '</td>' +
+      '<td>' + esc(c.carNumber || "") + '</td>' +
+      '<td>' + esc(c.purchaseType || "") + '</td>' +
       '<td><span class="status-badge ' + statusClass(c.status) + '">' + esc(c.status) + '</span></td>' +
-      '<td>' + esc(c.leadSource) + '</td>' +
-      '<td>' + esc(c.nextContact) + '</td>' +
-      '<td style="max-width:140px;word-break:break-all;">' + esc(c.consultation) + '</td>' +
-      '<td>' + esc(c.memo) + '</td>' +
-      '<td style="white-space:nowrap;font-size:12px;color:#888;">' + esc(c.registeredAt) + '</td>';
+      '<td>' + esc(c.leadSource || "") + '</td>' +
+      '<td>' + esc(c.nextContact || "") + '</td>' +
+      '<td style="max-width:160px;white-space:pre-wrap;word-break:break-all;">' + esc(c.consultation || "") + '</td>' +
+      '<td>' + esc(c.memo || "") + '</td>' +
+      '<td style="white-space:nowrap;font-size:11px;color:#888;">' + esc(c.registeredAt || "") + '</td>';
     tbody.appendChild(tr);
   });
 }
 
-// ── 고객 목록 렌더링 (모바일 카드) ───────────────────────────
+// ============================================================
+// 모바일 카드 렌더링
+// ============================================================
 function renderCards(list) {
   var wrap  = document.getElementById("customer-cards");
   var empty = document.getElementById("list-empty-mobile");
 
-  // 카드들만 제거 (empty div 유지)
   Array.from(wrap.querySelectorAll(".cust-card")).forEach(function(el){ el.remove(); });
 
   if (list.length === 0) {
@@ -920,26 +1014,50 @@ function renderCards(list) {
 
   var sorted = list.slice().reverse();
   sorted.forEach(function(c) {
-    var categoryDisplay = c.carCategory || c.carModel || "";
-    var subModelDisplay = c.carModel && c.carCategory ? c.carModel : "";
+    var catDisplay   = c.carCategory || c.carModel || "";
+    var modelDisplay = c.carCategory ? (c.carModel || "") : "";
+
     var div = document.createElement("div");
     div.className = "cust-card";
-    div.innerHTML =
+
+    var html =
       '<div class="cust-card-top">' +
         '<div>' +
           '<div class="cust-name">' + esc(c.customerName) + '</div>' +
-          '<div class="cust-date">' + esc(c.registeredAt) + '</div>' +
+          '<div class="cust-date">' + esc(c.registeredAt || "") + '</div>' +
         '</div>' +
         '<span class="status-badge ' + statusClass(c.status) + '">' + esc(c.status) + '</span>' +
-      '</div>' +
-      row("휴대폰", '<a class="tel-link" href="tel:' + esc(c.phone) + '">' + esc(c.phone) + '</a>') +
-      row("관심차종", categoryDisplay) +
-      (subModelDisplay ? row("세부모델", subModelDisplay) : "") +
-      row("구매방식", c.purchaseType) +
-      row("유입경로", c.leadSource) +
-      row("다음연락일", c.nextContact) +
-      (c.consultation ? row("상담내용", c.consultation) : "") +
-      (c.memo         ? row("메모", c.memo) : "");
+      '</div>';
+
+    // 기본 정보
+    html += '<div class="cust-section-title">기본 정보</div>';
+    html += row("휴대폰", '<a class="tel-link" href="tel:' + esc(c.phone) + '">' + esc(c.phone) + '</a>');
+    if (c.birthDate) html += row("생년월일", c.birthDate);
+    html += row("유입경로", c.leadSource || "");
+
+    // 차량 정보
+    html += '<div class="cust-section-title">차량 정보</div>';
+    if (catDisplay)   html += row("관심차종", catDisplay);
+    if (modelDisplay) html += row("세부모델", modelDisplay);
+    html += row("구매방식", c.purchaseType || "");
+
+    // 보유차종
+    var hasOwned = c.ownedCarModel || c.ownedCarMileage || c.accidentHistory || c.carNumber;
+    if (hasOwned) {
+      html += '<div class="cust-section-title">보유차종</div>';
+      if (c.ownedCarModel)    html += row("모델명",    c.ownedCarModel);
+      if (c.ownedCarMileage)  html += row("주행거리",  c.ownedCarMileage);
+      if (c.accidentHistory)  html += row("사고유무",  c.accidentHistory);
+      if (c.carNumber)        html += row("차량번호",  c.carNumber);
+    }
+
+    // 상담 정보
+    html += '<div class="cust-section-title">상담</div>';
+    if (c.nextContact)   html += row("다음연락일", c.nextContact);
+    if (c.consultation)  html += row("상담내용",  c.consultation);
+    if (c.memo)          html += row("메모",      c.memo);
+
+    div.innerHTML = html;
     wrap.appendChild(div);
   });
 }
@@ -949,17 +1067,21 @@ function row(key, val) {
   return '<div class="cust-row"><span class="cust-key">' + key + '</span><span class="cust-val">' + val + '</span></div>';
 }
 
-// ── HTML 이스케이프 ───────────────────────────────────────────
+// ============================================================
+// HTML 이스케이프
+// ============================================================
 function esc(str) {
   if (!str) return "";
   return String(str)
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;");
+    .replace(/&/g,  "&amp;")
+    .replace(/</g,  "&lt;")
+    .replace(/>/g,  "&gt;")
+    .replace(/"/g,  "&quot;");
 }
 
-// ── 전체 화면 갱신 ────────────────────────────────────────────
+// ============================================================
+// 전체 화면 갱신
+// ============================================================
 function refreshUI() {
   var list = loadCustomers();
   updateDashboard(list);
@@ -967,18 +1089,18 @@ function refreshUI() {
   renderCards(list);
 }
 
-// ── 페이지 로드 시 초기 렌더링 ───────────────────────────────
+// 페이지 로드 시 초기 렌더링
 refreshUI();
 
 // ============================================================
-// 유틸: 현재 날짜시간 (한국 형식) — 기존 그대로 유지
+// 유틸: 현재 날짜시간 (한국 형식)
 // ============================================================
 function getNowKST() {
   return new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
 }
 
 // ============================================================
-// 유틸: 전화번호 자동 하이픈 — 기존 그대로 유지
+// 유틸: 전화번호 자동 하이픈
 // ============================================================
 document.getElementById("phone").addEventListener("input", function () {
   var v = this.value.replace(/\D/g, "");
@@ -992,7 +1114,7 @@ document.getElementById("phone").addEventListener("input", function () {
 });
 
 // ============================================================
-// 메시지 표시 헬퍼 — 기존 그대로 유지
+// 메시지 표시 헬퍼
 // ============================================================
 function showMsg(type, text) {
   var el = document.getElementById("status-msg");
@@ -1008,23 +1130,34 @@ function hideMsg() {
 }
 
 // ============================================================
-// 폼 데이터 수집 & 유효성 검사
-// carCategory: 관심차종 (1차)
-// carModel:    세부모델 (2차) ← 구글시트 기존 컬럼명 유지
+// 폼 데이터 수집
+// 컬럼 구조:
+//   A 등록일시 / B 고객명 / C 휴대폰번호 / D 생년월일
+//   E 관심차종(carCategory) / F 세부모델(carModel)
+//   G 보유차종모델명 / H 주행거리 / I 사고유무 / J 차량번호
+//   K 구매방식 / L 현재상태 / M 유입경로
+//   N 상담내용 / O 다음연락일 / P 메모
+//
+// birthDate는 향후 생일 알림 기능에 사용 예정
 // ============================================================
 function getFormData() {
   return {
-    registeredAt:  getNowKST(),
-    customerName:  document.getElementById("customerName").value.trim(),
-    phone:         document.getElementById("phone").value.trim(),
-    carCategory:   document.getElementById("carCategory").value,   // 관심차종 컬럼
-    carModel:      document.getElementById("carModel").value,      // 세부모델 컬럼
-    purchaseType:  document.getElementById("purchaseType").value,
-    status:        document.getElementById("status").value,
-    leadSource:    document.getElementById("leadSource").value,
-    consultation:  document.getElementById("consultation").value.trim(),
-    nextContact:   document.getElementById("nextContact").value,
-    memo:          document.getElementById("memo").value.trim()
+    registeredAt:     getNowKST(),
+    customerName:     document.getElementById("customerName").value.trim(),
+    phone:            document.getElementById("phone").value.trim(),
+    birthDate:        document.getElementById("birthDate").value,          // 생년월일 (향후 생일 알림 기능에 사용 예정)
+    carCategory:      document.getElementById("carCategory").value,        // 관심차종 (1차)
+    carModel:         document.getElementById("carModel").value,           // 세부모델 (2차)
+    ownedCarModel:    document.getElementById("ownedCarModel").value.trim(),
+    ownedCarMileage:  document.getElementById("ownedCarMileage").value.trim(),
+    accidentHistory:  document.getElementById("accidentHistory").value,
+    carNumber:        document.getElementById("carNumber").value.trim(),
+    purchaseType:     document.getElementById("purchaseType").value,
+    status:           document.getElementById("status").value,
+    leadSource:       document.getElementById("leadSource").value,
+    consultation:     document.getElementById("consultation").value.trim(),
+    nextContact:      document.getElementById("nextContact").value,
+    memo:             document.getElementById("memo").value.trim()
   };
 }
 
@@ -1038,8 +1171,12 @@ function validate(data) {
 // 폼 초기화
 // ============================================================
 function resetForm() {
-  ["customerName","phone","purchaseType","status",
-   "leadSource","consultation","nextContact","memo"].forEach(function(id) {
+  var ids = [
+    "customerName","phone","birthDate",
+    "ownedCarModel","ownedCarMileage","accidentHistory","carNumber",
+    "purchaseType","status","leadSource","consultation","nextContact","memo"
+  ];
+  ids.forEach(function(id) {
     document.getElementById(id).value = "";
   });
   document.getElementById("carCategory").value = "";
