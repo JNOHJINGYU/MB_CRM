@@ -8,32 +8,31 @@
   <script>
     // ============================================================
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwGQHWxvIv_jmfP-VW84_YWJ4pD5we72f9ubTAuOX4da3kSw-9ct02JwyioHRcTNHwHNQ/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxswUgpfFoncBTJ_MUaLx7dcT4pbZXvVNhiQqYj75xwAXqfs-GuCPU6w_YbT2jVVbDelQ/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
-    // ============================================================
   </script>
 
   <style>
-    /* ── 리셋 ──────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:        #f4f4f6;
-      --surface:   #ffffff;
-      --surface2:  #fafafa;
-      --border:    #e0e0e6;
-      --border2:   #d0d0da;
-      --gold:      #b8963a;
-      --gold-dk:   #9a7a28;
-      --black:     #111111;
-      --text:      #1a1a1a;
-      --text-dim:  #555566;
-      --text-lt:   #888899;
-      --danger:    #c0392b;
-      --success:   #27864e;
-      --radius:    10px;
-      --shadow:    0 2px 12px rgba(0,0,0,.08);
-      --font:      'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+      --bg:       #f4f4f6;
+      --surface:  #ffffff;
+      --surface2: #fafafa;
+      --border:   #e0e0e6;
+      --border2:  #d0d0da;
+      --gold:     #b8963a;
+      --gold-dk:  #9a7a28;
+      --black:    #111111;
+      --text:     #1a1a1a;
+      --text-dim: #555566;
+      --text-lt:  #888899;
+      --danger:   #c0392b;
+      --success:  #27864e;
+      --radius:   10px;
+      --shadow:   0 2px 12px rgba(0,0,0,.08);
+      --font:     'Noto Sans KR','Apple SD Gothic Neo',sans-serif;
+      --care-accent: #1a6aa0;
     }
 
     html, body {
@@ -46,419 +45,263 @@
       overflow-x: hidden;
     }
 
-    /* ── 페이지 레이아웃 ────────────────────────────────────── */
-    .page-wrap {
-      max-width: 780px;
-      margin: 0 auto;
-      padding: 20px 14px 72px;
-    }
+    .page-wrap { max-width: 780px; margin: 0 auto; padding: 20px 14px 72px; }
 
-    /* ── 상단 헤더 ──────────────────────────────────────────── */
+    /* ── 상단 헤더 ── */
     .site-header {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 18px 22px;
-      background: var(--black);
-      border-radius: 14px;
-      margin-bottom: 16px;
-      box-shadow: var(--shadow);
+      display: flex; align-items: center; gap: 14px;
+      padding: 18px 22px; background: var(--black);
+      border-radius: 14px; margin-bottom: 16px; box-shadow: var(--shadow);
     }
-
     .site-logo {
-      width: 40px; height: 40px;
-      border-radius: 50%;
+      width: 40px; height: 40px; border-radius: 50%;
       border: 2px solid var(--gold);
       display: flex; align-items: center; justify-content: center;
-      font-size: 15px; font-weight: 800;
-      color: var(--gold);
-      flex-shrink: 0;
+      font-size: 15px; font-weight: 800; color: var(--gold); flex-shrink: 0;
     }
+    .site-title { font-size: 17px; font-weight: 700; color: #fff; letter-spacing: -.3px; }
+    .site-sub   { font-size: 12px; color: #aaa; margin-top: 1px; }
 
-    .site-title { font-size: 17px; font-weight: 700; color: #ffffff; letter-spacing: -.3px; }
-    .site-sub   { font-size: 12px; color: #aaaaaa; margin-top: 1px; }
+    /* ── 대시보드 공통 ── */
+    .dash-section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 1px;
+      color: var(--text-dim); margin-bottom: 8px; padding-left: 2px;
+    }
+    .dash-section-label.care { color: var(--care-accent); }
 
-    /* ── 대시보드 ───────────────────────────────────────────── */
     .dashboard {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 9px;
+      gap: 9px; margin-bottom: 8px;
+    }
+    .dashboard.care-dash {
+      grid-template-columns: repeat(4, 1fr);
       margin-bottom: 16px;
     }
 
     .dash-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 10px 12px;
-      text-align: center;
-      box-shadow: var(--shadow);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 10px 12px;
+      text-align: center; box-shadow: var(--shadow);
     }
+    .dash-card.care-card { border-left: 3px solid var(--care-accent); }
+    .dash-card.care-card.warn { border-left-color: #e07000; }
+    .dash-card.care-card.alert { border-left-color: #c0392b; }
 
-    .dash-card .dash-num {
-      font-size: 26px;
-      font-weight: 800;
-      color: var(--black);
-      line-height: 1.1;
-    }
+    .dash-num  { font-size: 26px; font-weight: 800; color: var(--black); line-height: 1.1; }
+    .dash-label { font-size: 10px; color: var(--text-dim); margin-top: 4px; font-weight: 600; }
 
-    .dash-card .dash-label {
-      font-size: 10px;
-      color: var(--text-dim);
-      margin-top: 4px;
-      font-weight: 600;
-    }
-
-    .dash-card.accent       .dash-num { color: var(--gold); }
-    .dash-card.accent-blue  .dash-num { color: #1a6fb8; }
-    .dash-card.accent-green .dash-num { color: #1a8a4a; }
-    .dash-card.accent-red   .dash-num { color: #c0392b; }
-
-    /* ── 카드 공통 ──────────────────────────────────────────── */
+    /* ── 카드 공통 ── */
     .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: var(--shadow);
-      margin-bottom: 16px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden;
+      box-shadow: var(--shadow); margin-bottom: 16px;
     }
-
     .card-header {
-      padding: 16px 22px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface2);
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      padding: 16px 22px; border-bottom: 1px solid var(--border);
+      background: var(--surface2); display: flex; align-items: center; gap: 8px;
     }
-
-    .card-header-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--black);
-      letter-spacing: -.2px;
-    }
-
+    .card-header-title { font-size: 15px; font-weight: 700; color: var(--black); letter-spacing: -.2px; }
     .card-header-badge {
-      font-size: 11px;
-      background: var(--gold);
-      color: #fff;
-      border-radius: 20px;
-      padding: 1px 8px;
-      font-weight: 700;
-      margin-left: auto;
+      font-size: 11px; background: var(--gold); color: #fff;
+      border-radius: 20px; padding: 1px 8px; font-weight: 700; margin-left: auto;
     }
-
     .card-body { padding: 22px; }
 
-    /* ── 섹션 레이블 ────────────────────────────────────────── */
+    /* ── 섹션 레이블 ── */
     .section-label {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1.2px;
-      color: var(--gold);
-      text-transform: uppercase;
-      margin: 22px 0 12px;
-      padding-bottom: 6px;
-      border-bottom: 1px solid var(--border);
+      font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
+      color: var(--gold); text-transform: uppercase;
+      margin: 22px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border);
     }
-
     .section-label:first-child { margin-top: 0; }
+    .section-label.care-label { color: var(--care-accent); border-bottom-color: #c5dff0; }
 
-    /* ── 그리드 & 필드 ──────────────────────────────────────── */
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 13px;
-    }
-
+    /* ── 그리드 & 필드 ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
     .field { display: flex; flex-direction: column; gap: 5px; }
     .field.full { grid-column: 1 / -1; }
-
-    label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-dim);
-      letter-spacing: .2px;
-    }
-
+    label { font-size: 12px; font-weight: 600; color: var(--text-dim); letter-spacing: .2px; }
     label .req { color: var(--gold); margin-left: 2px; }
 
-    /* ── 입력 요소 ──────────────────────────────────────────── */
-    input[type="text"],
-    input[type="tel"],
-    input[type="date"],
-    select,
-    textarea {
-      width: 100%;
-      background: #ffffff;
-      border: 1px solid var(--border2);
-      border-radius: 8px;
-      color: var(--text);
-      font-family: var(--font);
-      font-size: 15px;
-      padding: 11px 13px;
-      outline: none;
+    /* ── 입력 요소 ── */
+    input[type="text"], input[type="tel"], input[type="date"], select, textarea {
+      width: 100%; background: #fff; border: 1px solid var(--border2);
+      border-radius: 8px; color: var(--text); font-family: var(--font);
+      font-size: 15px; padding: 11px 13px; outline: none;
       transition: border-color .18s, box-shadow .18s;
-      -webkit-appearance: none;
-      appearance: none;
+      -webkit-appearance: none; appearance: none;
     }
-
     input:focus, select:focus, textarea:focus {
-      border-color: var(--gold);
-      box-shadow: 0 0 0 3px rgba(184,150,58,.12);
+      border-color: var(--gold); box-shadow: 0 0 0 3px rgba(184,150,58,.12);
     }
-
     select {
       cursor: pointer;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888899' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
-      padding-right: 34px;
+      background-repeat: no-repeat; background-position: right 12px center; padding-right: 34px;
     }
-
-    select:disabled {
-      background-color: #f5f5f8;
-      color: var(--text-lt);
-      cursor: not-allowed;
-      opacity: 1;
-    }
-
+    select:disabled { background-color: #f5f5f8; color: var(--text-lt); cursor: not-allowed; opacity: 1; }
     textarea { resize: vertical; min-height: 88px; }
+    input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: .6; font-size: 16px; }
 
-    input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: .5; }
+    /* 차량관리 날짜 입력 강조 */
+    .care-date { background: #f8fbff !important; border-color: #b8d4ea !important; }
+    .care-date:focus { border-color: var(--care-accent) !important; box-shadow: 0 0 0 3px rgba(26,106,160,.1) !important; }
 
-    /* ── 저장 버튼 ──────────────────────────────────────────── */
+    /* ── 저장 버튼 ── */
     .btn-submit {
-      width: 100%;
-      margin-top: 22px;
-      padding: 16px;
-      border: none;
-      border-radius: var(--radius);
-      background: var(--black);
-      color: #ffffff;
-      font-family: var(--font);
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: .4px;
-      cursor: pointer;
+      width: 100%; margin-top: 22px; padding: 16px; border: none;
+      border-radius: var(--radius); background: var(--black); color: #fff;
+      font-family: var(--font); font-size: 16px; font-weight: 700;
+      letter-spacing: .4px; cursor: pointer;
       transition: background .18s, transform .1s;
-      position: relative;
-      overflow: hidden;
-      min-height: 52px;
+      position: relative; overflow: hidden; min-height: 52px;
     }
-
     .btn-submit::after {
-      content: "";
-      position: absolute;
-      inset: 0;
+      content: ""; position: absolute; inset: 0;
       background: linear-gradient(135deg, rgba(184,150,58,.18) 0%, transparent 60%);
       pointer-events: none;
     }
-
     .btn-submit:hover  { background: #2a2a2a; }
     .btn-submit:active { transform: scale(.99); }
     .btn-submit:disabled { opacity: .5; cursor: not-allowed; transform: none; }
 
-    /* ── 상태 메시지 ────────────────────────────────────────── */
+    /* ── 상태 메시지 ── */
     #status-msg {
-      display: none;
-      margin-top: 14px;
-      padding: 12px 16px;
-      border-radius: var(--radius);
-      font-size: 14px;
-      font-weight: 600;
-      text-align: center;
-      animation: fadeIn .22s ease;
+      display: none; margin-top: 14px; padding: 12px 16px;
+      border-radius: var(--radius); font-size: 14px; font-weight: 600;
+      text-align: center; animation: fadeIn .22s ease;
     }
+    #status-msg.success { display: block; background: #edfaf3; border: 1px solid #a8dfc0; color: var(--success); }
+    #status-msg.error   { display: block; background: #fdf0ef; border: 1px solid #f0b8b2; color: var(--danger); }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
 
-    #status-msg.success {
-      display: block;
-      background: #edfaf3;
-      border: 1px solid #a8dfc0;
-      color: var(--success);
-    }
-
-    #status-msg.error {
-      display: block;
-      background: #fdf0ef;
-      border: 1px solid #f0b8b2;
-      color: var(--danger);
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-5px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ── 상태 뱃지 ──────────────────────────────────────────── */
+    /* ── 상태 뱃지 ── */
     .status-badge {
-      display: inline-block;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 9px;
-      border-radius: 20px;
-      white-space: nowrap;
-      letter-spacing: .1px;
+      display: inline-block; font-size: 11px; font-weight: 700;
+      padding: 3px 9px; border-radius: 20px; white-space: nowrap; letter-spacing: .1px;
+    }
+    .status-badge.s0 { background:#ebebf0; color:#444455; }
+    .status-badge.s1 { background:#e6e6e8; color:#3a3a45; }
+    .status-badge.s2 { background:#fff0e0; color:#c05800; border:1px solid #ffd8a8; }
+    .status-badge.s3 { background:#e3f0ff; color:#1055a8; border:1px solid #b0cef5; }
+    .status-badge.s4 { background:#f0e5ff; color:#6020a0; border:1px solid #d5b8f5; }
+    .status-badge.s5 { background:#fffbe0; color:#8a6b00; border:1px solid #ffe97a; }
+    .status-badge.s6 { background:#e3f7ec; color:#0f6e35; border:1px solid #90ddb0; }
+    .status-badge.s7 { background:#d4f0e0; color:#0a5528; border:1px solid #5fc890; }
+    .status-badge.s8 { background:#ebebeb; color:#404040; border:1px solid #c8c8c8; }
+    .status-badge.s9 { background:#fde8e8; color:#a01515; border:1px solid #f0a0a0; }
+
+    /* ── 알림 뱃지 (차량관리 대시보드) ── */
+    .alert-badge {
+      display: inline-block; font-size: 9px; font-weight: 800;
+      padding: 1px 5px; border-radius: 10px; vertical-align: middle; margin-left: 3px;
+      background: #e03030; color: #fff;
     }
 
-    @media (max-width: 640px) {
-      .status-badge { font-size: 12px; padding: 4px 11px; }
-    }
+    /* ── 고객목록 빈 상태 ── */
+    #list-empty { text-align:center; color:var(--text-lt); font-size:14px; padding:32px 0; }
 
-    .status-badge.s0  { background:#ebebf0; color:#444455; }
-    .status-badge.s1  { background:#e6e6e8; color:#3a3a45; }                                         /* 신규문의 — 회색 */
-    .status-badge.s2  { background:#fff0e0; color:#c05800; border:1px solid #ffd8a8; }               /* A급가망 — 주황 */
-    .status-badge.s3  { background:#e3f0ff; color:#1055a8; border:1px solid #b0cef5; }               /* 상담중 — 파랑 */
-    .status-badge.s4  { background:#f0e5ff; color:#6020a0; border:1px solid #d5b8f5; }               /* 계약유력 — 보라 */
-    .status-badge.s5  { background:#fffbe0; color:#8a6b00; border:1px solid #ffe97a; }               /* 구매보류 — 노랑 */
-    .status-badge.s6  { background:#e3f7ec; color:#0f6e35; border:1px solid #90ddb0; }               /* 계약 — 초록 */
-    .status-badge.s7  { background:#d4f0e0; color:#0a5528; border:1px solid #5fc890; }               /* 출고 — 진초록 */
-    .status-badge.s8  { background:#ebebeb; color:#404040; border:1px solid #c8c8c8; }               /* 상담종료 — 진회색 */
-    .status-badge.s9  { background:#fde8e8; color:#a01515; border:1px solid #f0a0a0; }               /* 해약 — 빨강 */
-
-    /* ── 고객목록 빈 상태 ──────────────────────────────────── */
-    #list-empty {
-      text-align: center;
-      color: var(--text-lt);
-      font-size: 14px;
-      padding: 32px 0;
-    }
-
-    /* ── PC 테이블 ──────────────────────────────────────────── */
-    .customer-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-    }
-
+    /* ── PC 테이블 ── */
+    .customer-table { width:100%; border-collapse:collapse; font-size:12px; }
     .customer-table thead th {
-      background: #f0f0f5;
-      color: var(--text-dim);
-      font-weight: 700;
-      font-size: 11px;
-      letter-spacing: .4px;
-      padding: 10px 10px;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
+      background:#f0f0f5; color:var(--text-dim); font-weight:700;
+      font-size:11px; letter-spacing:.4px; padding:10px; text-align:left;
+      border-bottom:1px solid var(--border); white-space:nowrap;
     }
-
-    .customer-table tbody tr {
-      border-bottom: 1px solid var(--border);
-      transition: background .12s;
-    }
-
-    .customer-table tbody tr:last-child { border-bottom: none; }
-    .customer-table tbody tr:hover { background: #fafafa; }
-
+    .customer-table tbody tr { border-bottom:1px solid var(--border); transition:background .12s; }
+    .customer-table tbody tr:last-child { border-bottom:none; }
+    .customer-table tbody tr:hover { background:#fafafa; }
     .customer-table tbody td {
-      padding: 10px 10px;
-      color: var(--text);
-      vertical-align: top;
-      word-break: break-all;
+      padding:10px; color:var(--text); vertical-align:top; word-break:break-all;
     }
+    .customer-table td.name-cell { font-weight:700; color:var(--black); white-space:nowrap; }
+    .tel-link { color:var(--gold-dk); text-decoration:none; font-weight:600; white-space:nowrap; }
+    .tel-link:hover { text-decoration:underline; }
 
-    .customer-table td.name-cell { font-weight: 700; color: var(--black); white-space: nowrap; }
+    /* 차량관리 행 구분 */
+    .customer-table thead th.care-th { background:#eaf3fb; color:var(--care-accent); }
 
-    .tel-link {
-      color: var(--gold-dk);
-      text-decoration: none;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-    .tel-link:hover { text-decoration: underline; }
-
-    /* ── 모바일 카드 ────────────────────────────────────────── */
-    .customer-cards { display: none; }
+    /* ── 모바일 카드 ── */
+    .customer-cards { display:none; }
 
     .cust-card {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px;
-      margin-bottom: 14px;
-      background: var(--surface);
+      border:1px solid var(--border); border-radius:var(--radius);
+      padding:16px; margin-bottom:14px; background:var(--surface);
     }
-
-    .cust-card:last-child { margin-bottom: 0; }
-
+    .cust-card:last-child { margin-bottom:0; }
     .cust-card-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 12px;
+      display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;
     }
-
-    .cust-name { font-size: 17px; font-weight: 800; color: var(--black); }
-    .cust-date { font-size: 11px; color: var(--text-lt); margin-top: 2px; }
+    .cust-name { font-size:17px; font-weight:800; color:var(--black); }
+    .cust-date { font-size:11px; color:var(--text-lt); margin-top:2px; }
 
     .cust-section-title {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      color: var(--gold);
-      text-transform: uppercase;
-      margin: 12px 0 7px;
-      padding-bottom: 4px;
-      border-bottom: 1px solid var(--border);
+      font-size:10px; font-weight:700; letter-spacing:1px; color:var(--gold);
+      text-transform:uppercase; margin:12px 0 7px; padding-bottom:4px;
+      border-bottom:1px solid var(--border);
     }
+    .cust-section-title.care { color:var(--care-accent); border-bottom-color:#c5dff0; }
 
-    .cust-row {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 6px;
-      font-size: 13px;
-      align-items: flex-start;
+    .cust-row { display:flex; gap:6px; margin-bottom:6px; font-size:13px; align-items:flex-start; }
+    .cust-key { flex-shrink:0; width:88px; color:var(--text-dim); font-weight:600; font-size:12px; }
+    .cust-val { color:var(--text); word-break:break-all; line-height:1.5; }
+
+    /* ── 접기/펼치기 (차량관리 정보) ── */
+    .toggle-btn {
+      display:flex; align-items:center; gap:6px;
+      width:100%; background:#f0f6fb; border:1px solid #c5dff0;
+      border-radius:8px; padding:9px 13px; cursor:pointer;
+      font-family:var(--font); font-size:12px; font-weight:700;
+      color:var(--care-accent); margin-top:12px;
+      transition:background .15s;
     }
+    .toggle-btn:hover { background:#e0effa; }
+    .toggle-btn .toggle-arrow { transition:transform .2s; font-size:11px; }
+    .toggle-btn.open .toggle-arrow { transform:rotate(180deg); }
 
-    .cust-key {
-      flex-shrink: 0;
-      width: 82px;
-      color: var(--text-dim);
-      font-weight: 600;
-      font-size: 12px;
+    .care-detail { display:none; margin-top:8px; }
+    .care-detail.open { display:block; }
+
+    /* ── D-day 태그 ── */
+    .dday-tag {
+      display:inline-block; font-size:10px; font-weight:700;
+      padding:1px 6px; border-radius:6px; margin-left:4px;
+      vertical-align:middle;
     }
+    .dday-tag.urgent { background:#fde8e8; color:#a01515; }
+    .dday-tag.warn   { background:#fff0d0; color:#b06000; }
+    .dday-tag.ok     { background:#e3f7ec; color:#0f6e35; }
 
-    .cust-val { color: var(--text); word-break: break-all; line-height: 1.5; }
-
-    /* ── 반응형 ─────────────────────────────────────────────── */
+    /* ── 반응형 ── */
     @media (max-width: 640px) {
-      .page-wrap { padding: 14px 12px 60px; }
-
-      /* 대시보드: 모바일 4열 × 2행 */
-      .dashboard {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 7px;
-      }
-
-      /* 폼 1열 */
-      .grid-2 { grid-template-columns: 1fr; }
-      .field.full { grid-column: 1; }
-      .card-body { padding: 16px; }
-      .card-header { padding: 14px 16px; }
-
-      /* 테이블 숨기고 카드 표시 */
-      .customer-table-wrap { display: none; }
-      .customer-cards { display: block; padding: 14px; }
-
-      .dash-card .dash-num { font-size: 20px; }
-      .dash-card { padding: 10px 6px 9px; }
-      .dash-card .dash-label { font-size: 9px; }
+      .page-wrap { padding:14px 12px 60px; }
+      .dashboard { grid-template-columns:repeat(4,1fr); gap:7px; }
+      .dashboard.care-dash { grid-template-columns:repeat(4,1fr); gap:7px; }
+      .grid-2 { grid-template-columns:1fr; }
+      .field.full { grid-column:1; }
+      .card-body { padding:16px; }
+      .card-header { padding:14px 16px; }
+      .customer-table-wrap { display:none; }
+      .customer-cards { display:block; padding:14px; }
+      .dash-card .dash-num { font-size:20px; }
+      .dash-card { padding:10px 6px 9px; }
+      .dash-card .dash-label { font-size:9px; }
+      .status-badge { font-size:12px; padding:4px 11px; }
+      input[type="date"] { font-size:16px; padding:12px 13px; }
     }
-
     @media (max-width: 400px) {
-      /* 초소형: 4열 유지, 숫자 크기 조정 */
-      .dashboard { gap: 5px; }
-      .dash-card .dash-num { font-size: 18px; }
-      .dash-card .dash-label { font-size: 8px; }
+      .dashboard { gap:5px; }
+      .dashboard.care-dash { gap:5px; }
+      .dash-card .dash-num { font-size:18px; }
+      .dash-card .dash-label { font-size:8px; }
     }
   </style>
 </head>
 <body>
 <div class="page-wrap">
 
-  <!-- ── 상단 헤더 ─────────────────────────────────────────── -->
+  <!-- 상단 헤더 -->
   <div class="site-header">
     <div class="site-logo">NJ</div>
     <div>
@@ -467,12 +310,8 @@
     </div>
   </div>
 
-  <!-- ── 대시보드 ──────────────────────────────────────────── -->
-  <!--
-    카드 순서: 총고객 / 신규문의 / A급가망 / 상담중 / 계약유력 / 계약 / 출고 / 해약
-    구매보류·상담종료는 카드 없음 — 데이터는 저장되어 통계 계산 가능
-    모바일: 4열 × 2행 자동 정렬
-  -->
+  <!-- ══ 고객현황 대시보드 ══ -->
+  <div class="dash-section-label">📊 고객 현황</div>
   <div class="dashboard">
     <div class="dash-card">
       <div class="dash-num" id="d-total" style="color:var(--gold);">0</div>
@@ -508,7 +347,50 @@
     </div>
   </div>
 
-  <!-- ── 신규 고객 등록 폼 ──────────────────────────────────── -->
+  <!-- ══ 차량관리 대시보드 ══ -->
+  <!--
+    TODO (추후 알림 기능 연동):
+    - 각 카드의 숫자를 클릭하면 해당 고객 목록을 필터링해서 보여주는 기능 추가 예정
+    - 카카오톡/문자/이메일 알림 발송: 각 카드의 고객 목록을 가져와 알림 API에 연동 예정
+    - 이번주 연락 고객: nextContact 기준으로 오늘~7일 이내 고객에게 자동 문자 발송 예정
+    - 보험만기: insuranceExpireDate 기준 30일 전 카카오 알림톡 발송 예정
+    - 자동차검사: inspectionDueDate 기준 30일 전 문자 발송 예정
+    - 금융종료: financeEndDate 기준 90일 전 상담 연락 예정
+    - 재구매: repurchaseExpectedDate 기준 90일 전 재구매 상담 연락 예정
+  -->
+  <div class="dash-section-label care">🚗 차량관리 / 재구매 알림</div>
+  <div class="dashboard care-dash">
+    <div class="dash-card care-card">
+      <div class="dash-num" id="dc-week" style="color:#1055a8;">0</div>
+      <div class="dash-label">이번주 연락</div>
+    </div>
+    <div class="dash-card care-card warn">
+      <div class="dash-num" id="dc-insurance" style="color:#e07000;">0</div>
+      <div class="dash-label">보험만기 30일</div>
+    </div>
+    <div class="dash-card care-card warn">
+      <div class="dash-num" id="dc-inspect" style="color:#e07000;">0</div>
+      <div class="dash-label">검사 30일</div>
+    </div>
+    <div class="dash-card care-card warn">
+      <div class="dash-num" id="dc-finance" style="color:#c05800;">0</div>
+      <div class="dash-label">금융종료 90일</div>
+    </div>
+    <div class="dash-card care-card">
+      <div class="dash-num" id="dc-1yr" style="color:#555;">0</div>
+      <div class="dash-label">출고 1년↑</div>
+    </div>
+    <div class="dash-card care-card alert">
+      <div class="dash-num" id="dc-3yr" style="color:#a01515;">0</div>
+      <div class="dash-label">출고 3년↑</div>
+    </div>
+    <div class="dash-card care-card warn">
+      <div class="dash-num" id="dc-repurchase" style="color:#6020a0;">0</div>
+      <div class="dash-label">재구매 예상</div>
+    </div>
+  </div>
+
+  <!-- ══ 신규 고객 등록 폼 ══ -->
   <div class="card">
     <div class="card-header">
       <span class="card-header-title">✏️ 신규 고객 등록</span>
@@ -519,29 +401,24 @@
         <!-- ① 고객 기본 정보 -->
         <div class="section-label">고객 기본 정보</div>
         <div class="grid-2">
-
           <div class="field">
             <label>고객명 <span class="req">*</span></label>
             <input type="text" id="customerName" placeholder="홍길동" />
           </div>
-
           <div class="field">
             <label>휴대폰번호 <span class="req">*</span></label>
             <input type="tel" id="phone" placeholder="010-0000-0000" maxlength="13" />
           </div>
-
           <div class="field">
             <!-- birthDate는 향후 생일 알림 기능에 사용 예정 -->
             <label>생년월일</label>
             <input type="date" id="birthDate" />
           </div>
-
         </div>
 
         <!-- ② 차량 & 구매 정보 -->
         <div class="section-label">차량 & 구매 정보</div>
         <div class="grid-2">
-
           <div class="field">
             <label>관심차종</label>
             <select id="carCategory" onchange="onCategoryChange()">
@@ -563,14 +440,12 @@
               <option>Mercedes-Maybach</option>
             </select>
           </div>
-
           <div class="field">
             <label>세부모델</label>
             <select id="carModel" disabled>
               <option value="">— 차종을 먼저 선택하세요 —</option>
             </select>
           </div>
-
           <div class="field">
             <label>구매방식</label>
             <select id="purchaseType">
@@ -582,23 +457,19 @@
               <option>미정</option>
             </select>
           </div>
-
         </div>
 
         <!-- ③ 보유차종 정보 -->
         <div class="section-label">보유차종 정보</div>
         <div class="grid-2">
-
           <div class="field">
             <label>보유차종 모델명</label>
             <input type="text" id="ownedCarModel" placeholder="예: BMW 5시리즈" />
           </div>
-
           <div class="field">
             <label>주행거리</label>
             <input type="text" id="ownedCarMileage" placeholder="예: 35,000km" />
           </div>
-
           <div class="field">
             <label>사고유무</label>
             <select id="accidentHistory">
@@ -609,18 +480,15 @@
               <option>모름</option>
             </select>
           </div>
-
           <div class="field">
             <label>차량번호</label>
             <input type="text" id="carNumber" placeholder="예: 123가4567" />
           </div>
-
         </div>
 
         <!-- ④ 상담 & 상태 정보 -->
         <div class="section-label">상담 & 상태 정보</div>
         <div class="grid-2">
-
           <div class="field">
             <label>현재상태</label>
             <select id="status">
@@ -636,7 +504,6 @@
               <option>해약</option>
             </select>
           </div>
-
           <div class="field">
             <label>유입경로</label>
             <select id="leadSource">
@@ -652,46 +519,79 @@
               <option>인스타그램</option>
             </select>
           </div>
-
           <div class="field full">
             <label>상담내용</label>
             <textarea id="consultation" placeholder="상담 내용을 간략히 입력하세요."></textarea>
           </div>
-
           <div class="field">
             <label>다음연락일</label>
             <input type="date" id="nextContact" />
           </div>
-
           <div class="field">
             <label>메모</label>
             <input type="text" id="memo" placeholder="기타 특이사항" />
           </div>
+        </div>
 
+        <!-- ⑤ 차량관리 / 재구매관리 -->
+        <div class="section-label care-label">🚗 차량관리 / 재구매관리</div>
+        <div class="grid-2">
+          <div class="field">
+            <label>구매예정일</label>
+            <input type="date" id="expectedPurchaseDate" class="care-date" />
+          </div>
+          <div class="field">
+            <label>계약일</label>
+            <input type="date" id="contractDate" class="care-date" />
+          </div>
+          <div class="field">
+            <label>출고일</label>
+            <input type="date" id="deliveryDate" class="care-date" />
+          </div>
+          <div class="field">
+            <label>보험만기일</label>
+            <input type="date" id="insuranceExpireDate" class="care-date" />
+          </div>
+          <div class="field">
+            <label>자동차검사 예정일</label>
+            <input type="date" id="inspectionDueDate" class="care-date" />
+          </div>
+          <div class="field">
+            <label>할부/리스/렌트 종료일</label>
+            <input type="date" id="financeEndDate" class="care-date" />
+          </div>
+          <div class="field">
+            <label>보증만료일</label>
+            <input type="date" id="warrantyEndDate" class="care-date" />
+          </div>
+          <div class="field">
+            <label>재구매 예상시점</label>
+            <input type="date" id="repurchaseExpectedDate" class="care-date" />
+          </div>
+          <div class="field full">
+            <label>차량관리 메모</label>
+            <textarea id="vehicleCareMemo" placeholder="차량관리 관련 특이사항, 선호 연락 시간 등을 입력하세요."></textarea>
+          </div>
         </div>
 
         <!-- 저장 버튼 -->
-        <button class="btn-submit" id="submitBtn" onclick="submitForm()">
-          고객 정보 저장
-        </button>
-
-        <!-- 상태 메시지 -->
+        <button class="btn-submit" id="submitBtn" onclick="submitForm()">고객 정보 저장</button>
         <div id="status-msg"></div>
 
-      </div><!-- /#customer-form -->
-    </div><!-- /.card-body -->
-  </div><!-- /.card (폼) -->
+      </div>
+    </div>
+  </div>
 
-  <!-- ── 고객 목록 ──────────────────────────────────────────── -->
+  <!-- ══ 고객 목록 ══ -->
   <div class="card">
     <div class="card-header">
       <span class="card-header-title">👥 고객 목록</span>
       <span class="card-header-badge" id="list-count">0명</span>
     </div>
-    <div class="card-body" style="padding: 0;">
+    <div class="card-body" style="padding:0;">
 
       <!-- PC 테이블 -->
-      <div class="customer-table-wrap">
+      <div class="customer-table-wrap" style="overflow-x:auto;">
         <table class="customer-table">
           <thead>
             <tr>
@@ -710,6 +610,15 @@
               <th>다음연락일</th>
               <th>상담내용</th>
               <th>메모</th>
+              <th class="care-th">구매예정일</th>
+              <th class="care-th">계약일</th>
+              <th class="care-th">출고일</th>
+              <th class="care-th">보험만기일</th>
+              <th class="care-th">검사예정일</th>
+              <th class="care-th">금융종료일</th>
+              <th class="care-th">보증만료일</th>
+              <th class="care-th">재구매예상</th>
+              <th class="care-th">차량관리메모</th>
               <th>등록일시</th>
             </tr>
           </thead>
@@ -720,279 +629,171 @@
 
       <!-- 모바일 카드 -->
       <div class="customer-cards" id="customer-cards">
-        <div id="list-empty-mobile" style="display:none; text-align:center; color:#888; font-size:14px; padding:24px 0;">
+        <div id="list-empty-mobile" style="display:none;text-align:center;color:#888;font-size:14px;padding:24px 0;">
           아직 등록된 고객이 없습니다.
         </div>
       </div>
 
     </div>
-  </div><!-- /.card (목록) -->
+  </div>
 
 </div><!-- /.page-wrap -->
 
 <script>
 // ============================================================
-// 화면 고객목록은 브라우저 localStorage 저장용이며
-// 구글시트 원본과 다를 수 있음 (구글시트가 최종 원본 데이터입니다)
+// localStorage — 구글시트가 최종 원본, 화면 표시 보조용
 // ============================================================
-
 var LS_KEY = "nj_customers";
 
 // ============================================================
 // 차종별 세부모델 데이터
 // ============================================================
 var CAR_MODELS = {
-  "A-Class": [
-    "A 220 Hatch",
-    "A 220 Sedan",
-    "Mercedes-AMG A 35 4MATIC",
-    "Mercedes-AMG A 45 S 4MATIC+"
-  ],
-  "CLA": [
-    "CLA 250 4MATIC AMG Line",
-    "Mercedes-AMG CLA 45 S 4MATIC+",
-    "Mercedes-AMG CLA 45 S 4MATIC+ Final Edition"
-  ],
-  "GLA / GLB": [
-    "GLA 250 4MATIC AMG Line",
-    "GLB 200 d",
-    "GLB 250 4MATIC",
-    "Mercedes-AMG GLB 35 4MATIC"
-  ],
-  "C-Class": [
-    "C 200 AVANTGARDE",
-    "C 200 AMG Line"
-  ],
-  "E-Class": [
-    "E 200 AVANTGARDE",
-    "E 200 EXCLUSIVE",
-    "E 200 AMG Line",
-    "E 200 AMG Line RoF Edition",
-    "E 220 d 4MATIC EXCLUSIVE",
-    "E 300 4MATIC EXCLUSIVE",
-    "E 300 4MATIC AMG Line",
-    "E 300 4MATIC 140주년 Edition",
-    "E 350 e 4MATIC EXCLUSIVE",
-    "E 450 4MATIC AMG Line",
-    "E 450 4MATIC EXCLUSIVE",
-    "Mercedes-AMG E 53 HYBRID 4MATIC+"
-  ],
-  "S-Class MY26": [
-    "S 350 d 4MATIC",
-    "S 450 4MATIC SWB",
-    "S 450 4MATIC Long",
-    "S 500 4MATIC",
-    "S 580 4MATIC",
-    "Mercedes-AMG S 63 E Performance"
-  ],
-  "S-Class MY27": [
-    "S 350 d 4MATIC",
-    "S 450 4MATIC",
-    "S 450 4MATIC Long Exclusive",
-    "S 450 4MATIC Long AMG Line",
-    "S 500 4MATIC Long",
-    "S 580 4MATIC Long"
-  ],
-  "CLE": [
-    "── Coupé ──",
-    "CLE 200 Coupé AMG Line",
-    "CLE 450 4MATIC Coupé AMG Line",
-    "Mercedes-AMG CLE 53 4MATIC+ Coupé",
-    "── Cabriolet ──",
-    "CLE 200 Cabriolet AMG Line",
-    "CLE 450 4MATIC Cabriolet AMG Line",
-    "Mercedes-AMG CLE 53 4MATIC+ Cabriolet"
-  ],
-  "GLC": [
-    "── SUV ──",
-    "GLC 220 d 4MATIC",
-    "GLC 300 4MATIC AVANTGARDE",
-    "GLC 300 4MATIC AMG Line",
-    "Mercedes-AMG GLC 43 4MATIC",
-    "── Coupé ──",
-    "GLC 300 4MATIC Coupé AVANTGARDE",
-    "GLC 300 4MATIC Coupé AMG Line",
-    "Mercedes-AMG GLC 43 4MATIC Coupé"
-  ],
-  "GLE": [
-    "── SUV ──",
-    "GLE 350 4MATIC",
-    "GLE 300 d 4MATIC",
-    "GLE 450 4MATIC",
-    "GLE 450 4MATIC AMG Line",
-    "Mercedes-AMG GLE 53 4MATIC+",
-    "── Coupé ──",
-    "GLE 450 d 4MATIC Coupé AMG Line",
-    "GLE 450 4MATIC Coupé AMG Line",
-    "Mercedes-AMG GLE 53 4MATIC+ Coupé"
-  ],
-  "GLS": [
-    "GLS 450 d 4MATIC AMG Line",
-    "GLS 450 4MATIC AMG Line",
-    "GLS 450 d 4MATIC AMG Line Premium",
-    "GLS 450 4MATIC AMG Line Premium",
-    "GLS 580 4MATIC AMG Line",
-    "Mercedes-AMG GLS 63 4MATIC+"
-  ],
-  "G-Class": [
-    "G 450 d",
-    "G 450 d MANUFAKTUR",
-    "Mercedes-AMG G 63",
-    "Mercedes-AMG G 63 MANUFAKTUR"
-  ],
-  "AMG GT · SL": [
-    "Mercedes-AMG SL 43",
-    "Mercedes-AMG SL 63 4MATIC+",
-    "Mercedes-AMG GT 55 4MATIC+",
-    "Mercedes-AMG GT 63 S E Performance",
-    "Mercedes-AMG GT 43 4MATIC+"
-  ],
-  "EQ": [
-    "EQA 250 Progressive",
-    "EQA 250 AMG Line",
-    "EQB 300 4MATIC Progressive",
-    "EQB 300 4MATIC AMG Line",
-    "EQE 350+ SUV",
-    "EQE 350+",
-    "EQE 500 4MATIC SUV",
-    "EQS 450 4MATIC SUV",
-    "EQS 580 4MATIC SUV",
-    "G 580 with EQ Technology"
-  ],
-  "Mercedes-Maybach": [
-    "── MY26 ──",
-    "Mercedes-Maybach S 580",
-    "Mercedes-Maybach S 680",
-    "Mercedes-Maybach S 680 V12 Edition",
-    "Mercedes-Maybach SL 680",
-    "Mercedes-Maybach GLS 600",
-    "Mercedes-Maybach GLS 600 MANUFAKTUR",
-    "Mercedes-Maybach EQS 680 SUV",
-    "── MY27 ──",
-    "Mercedes-Maybach S 580",
-    "Mercedes-Maybach S 580 MANUFAKTUR",
-    "Mercedes-Maybach S 680"
-  ]
+  "A-Class":["A 220 Hatch","A 220 Sedan","Mercedes-AMG A 35 4MATIC","Mercedes-AMG A 45 S 4MATIC+"],
+  "CLA":["CLA 250 4MATIC AMG Line","Mercedes-AMG CLA 45 S 4MATIC+","Mercedes-AMG CLA 45 S 4MATIC+ Final Edition"],
+  "GLA / GLB":["GLA 250 4MATIC AMG Line","GLB 200 d","GLB 250 4MATIC","Mercedes-AMG GLB 35 4MATIC"],
+  "C-Class":["C 200 AVANTGARDE","C 200 AMG Line"],
+  "E-Class":["E 200 AVANTGARDE","E 200 EXCLUSIVE","E 200 AMG Line","E 200 AMG Line RoF Edition","E 220 d 4MATIC EXCLUSIVE","E 300 4MATIC EXCLUSIVE","E 300 4MATIC AMG Line","E 300 4MATIC 140주년 Edition","E 350 e 4MATIC EXCLUSIVE","E 450 4MATIC AMG Line","E 450 4MATIC EXCLUSIVE","Mercedes-AMG E 53 HYBRID 4MATIC+"],
+  "S-Class MY26":["S 350 d 4MATIC","S 450 4MATIC SWB","S 450 4MATIC Long","S 500 4MATIC","S 580 4MATIC","Mercedes-AMG S 63 E Performance"],
+  "S-Class MY27":["S 350 d 4MATIC","S 450 4MATIC","S 450 4MATIC Long Exclusive","S 450 4MATIC Long AMG Line","S 500 4MATIC Long","S 580 4MATIC Long"],
+  "CLE":["── Coupé ──","CLE 200 Coupé AMG Line","CLE 450 4MATIC Coupé AMG Line","Mercedes-AMG CLE 53 4MATIC+ Coupé","── Cabriolet ──","CLE 200 Cabriolet AMG Line","CLE 450 4MATIC Cabriolet AMG Line","Mercedes-AMG CLE 53 4MATIC+ Cabriolet"],
+  "GLC":["── SUV ──","GLC 220 d 4MATIC","GLC 300 4MATIC AVANTGARDE","GLC 300 4MATIC AMG Line","Mercedes-AMG GLC 43 4MATIC","── Coupé ──","GLC 300 4MATIC Coupé AVANTGARDE","GLC 300 4MATIC Coupé AMG Line","Mercedes-AMG GLC 43 4MATIC Coupé"],
+  "GLE":["── SUV ──","GLE 350 4MATIC","GLE 300 d 4MATIC","GLE 450 4MATIC","GLE 450 4MATIC AMG Line","Mercedes-AMG GLE 53 4MATIC+","── Coupé ──","GLE 450 d 4MATIC Coupé AMG Line","GLE 450 4MATIC Coupé AMG Line","Mercedes-AMG GLE 53 4MATIC+ Coupé"],
+  "GLS":["GLS 450 d 4MATIC AMG Line","GLS 450 4MATIC AMG Line","GLS 450 d 4MATIC AMG Line Premium","GLS 450 4MATIC AMG Line Premium","GLS 580 4MATIC AMG Line","Mercedes-AMG GLS 63 4MATIC+"],
+  "G-Class":["G 450 d","G 450 d MANUFAKTUR","Mercedes-AMG G 63","Mercedes-AMG G 63 MANUFAKTUR"],
+  "AMG GT · SL":["Mercedes-AMG SL 43","Mercedes-AMG SL 63 4MATIC+","Mercedes-AMG GT 55 4MATIC+","Mercedes-AMG GT 63 S E Performance","Mercedes-AMG GT 43 4MATIC+"],
+  "EQ":["EQA 250 Progressive","EQA 250 AMG Line","EQB 300 4MATIC Progressive","EQB 300 4MATIC AMG Line","EQE 350+ SUV","EQE 350+","EQE 500 4MATIC SUV","EQS 450 4MATIC SUV","EQS 580 4MATIC SUV","G 580 with EQ Technology"],
+  "Mercedes-Maybach":["── MY26 ──","Mercedes-Maybach S 580","Mercedes-Maybach S 680","Mercedes-Maybach S 680 V12 Edition","Mercedes-Maybach SL 680","Mercedes-Maybach GLS 600","Mercedes-Maybach GLS 600 MANUFAKTUR","Mercedes-Maybach EQS 680 SUV","── MY27 ──","Mercedes-Maybach S 580","Mercedes-Maybach S 580 MANUFAKTUR","Mercedes-Maybach S 680"]
 };
 
-// 구분선 항목 여부 확인
-function isSeparator(val) {
-  return val.indexOf("──") !== -1;
-}
+function isSeparator(v){ return v.indexOf("──") !== -1; }
 
-// ============================================================
-// 차종 변경 시 세부모델 드롭다운 업데이트
-// ============================================================
-function onCategoryChange() {
+function onCategoryChange(){
   var cat = document.getElementById("carCategory").value;
   var sel = document.getElementById("carModel");
-
-  sel.innerHTML = "";
-  sel.disabled = true;
-
-  if (!cat) {
-    sel.innerHTML = '<option value="">— 차종을 먼저 선택하세요 —</option>';
-    return;
-  }
-
+  sel.innerHTML = ""; sel.disabled = true;
+  if(!cat){ sel.innerHTML='<option value="">— 차종을 먼저 선택하세요 —</option>'; return; }
   var models = CAR_MODELS[cat] || [];
   sel.innerHTML = '<option value="">— 세부모델 선택 —</option>';
-
-  models.forEach(function(m) {
+  models.forEach(function(m){
     var opt = document.createElement("option");
-    if (isSeparator(m)) {
-      opt.value = "";
-      opt.disabled = true;
-      opt.style.color = "#aaa";
-      opt.style.fontStyle = "italic";
-      opt.textContent = m;
-    } else {
-      opt.value = m;
-      opt.textContent = m;
-    }
-    sel.appendChild(opt);
+    if(isSeparator(m)){ opt.value=""; opt.disabled=true; opt.style.color="#aaa"; opt.style.fontStyle="italic"; }
+    else { opt.value=m; }
+    opt.textContent=m; sel.appendChild(opt);
   });
-
   sel.disabled = false;
 }
 
 // ============================================================
-// 구형 상태값 → 신규 상태값 자동 변환 매핑
+// 구형 상태값 자동 변환
 // ============================================================
 var STATUS_MIGRATE = {
-  "신규 문의":    "신규문의",
-  "상담 진행 중": "상담중",
-  "견적 발송":    "상담중",
-  "시승 예정":    "상담중",
-  "시승 완료":    "상담중",
-  "계약 진행 중": "계약유력",
-  "계약 완료":    "계약",
-  "출고 완료":    "출고",
-  "장기 보류":    "구매보류",
-  "취소 / 이탈":  "해약"
+  "신규 문의":"신규문의","상담 진행 중":"상담중","견적 발송":"상담중",
+  "시승 예정":"상담중","시승 완료":"상담중","계약 진행 중":"계약유력",
+  "계약 완료":"계약","출고 완료":"출고","장기 보류":"구매보류","취소 / 이탈":"해약"
 };
+function migrateStatus(s){ if(!s) return s; return STATUS_MIGRATE[s] || s; }
 
-function migrateStatus(s) {
-  if (!s) return s;
-  return STATUS_MIGRATE[s] || s;
-}
-
-// ============================================================
-// 상태 뱃지 클래스 매핑 (9개 상태 기준)
-// ============================================================
-function statusClass(s) {
+function statusClass(s){
   var v = migrateStatus(s);
-  if (v === "신규문의")  return "s1";
-  if (v === "A급가망")   return "s2";
-  if (v === "상담중")    return "s3";
-  if (v === "계약유력")  return "s4";
-  if (v === "구매보류")  return "s5";
-  if (v === "계약")      return "s6";
-  if (v === "출고")      return "s7";
-  if (v === "상담종료")  return "s8";
-  if (v === "해약")      return "s9";
-  return "s0";
+  if(v==="신규문의") return "s1"; if(v==="A급가망")  return "s2";
+  if(v==="상담중")   return "s3"; if(v==="계약유력") return "s4";
+  if(v==="구매보류") return "s5"; if(v==="계약")     return "s6";
+  if(v==="출고")     return "s7"; if(v==="상담종료") return "s8";
+  if(v==="해약")     return "s9"; return "s0";
 }
 
 // ============================================================
-// localStorage 로드 / 저장
+// 날짜 유틸
 // ============================================================
-function loadCustomers() {
-  try {
-    return JSON.parse(localStorage.getItem(LS_KEY)) || [];
-  } catch(e) {
-    return [];
-  }
+function today(){ return new Date(new Date().toLocaleDateString("ko-KR",{timeZone:"Asia/Seoul"}).replace(/\./g,"-").replace(/\s/g,"").replace(/-$/,"")); }
+
+// date string "YYYY-MM-DD" → Date
+function parseDate(s){
+  if(!s) return null;
+  var p = s.split("-");
+  if(p.length<3) return null;
+  return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));
 }
 
-function saveCustomers(list) {
-  localStorage.setItem(LS_KEY, JSON.stringify(list));
+// 오늘 기준 D-day 계산 (양수=미래, 음수=과거)
+function daysFrom(dateStr){
+  var d = parseDate(dateStr); if(!d) return null;
+  var t = today();
+  return Math.round((d - t) / 86400000);
+}
+
+// D-day 태그 HTML
+function ddayTag(days){
+  if(days === null) return "";
+  if(days < 0)  return '<span class="dday-tag urgent">D+' + Math.abs(days) + '</span>';
+  if(days === 0) return '<span class="dday-tag urgent">D-Day</span>';
+  if(days <= 30) return '<span class="dday-tag warn">D-' + days + '</span>';
+  return '<span class="dday-tag ok">D-' + days + '</span>';
 }
 
 // ============================================================
-// 대시보드 업데이트 (8개 카드 기준)
-// 구매보류·상담종료는 카드 없음 — 데이터는 집계에 포함
+// 차량관리 대시보드 계산
 // ============================================================
-function updateDashboard(list) {
-  var total    = list.length;
-  var newInq   = 0, agrade  = 0, consult = 0, likely   = 0;
-  var contract = 0, delivery= 0, cancel  = 0;
-  // 구매보류·상담종료는 집계하되 카드 표시 안 함 (향후 통계용)
-  var hold = 0, endConsult = 0;
+function calcCareDashboard(list){
+  var now = today();
+  var dc = { week:0, insurance:0, inspect:0, finance:0, yr1:0, yr3:0, repurchase:0 };
 
-  list.forEach(function(c) {
-    var v = migrateStatus(c.status);
-    if (v === "신규문의")  newInq++;
-    else if (v === "A급가망")   agrade++;
-    else if (v === "상담중")    consult++;
-    else if (v === "계약유력")  likely++;
-    else if (v === "구매보류")  hold++;
-    else if (v === "계약")      contract++;
-    else if (v === "출고")      delivery++;
-    else if (v === "상담종료")  endConsult++;
-    else if (v === "해약")      cancel++;
+  list.forEach(function(c){
+    // 이번주 연락 고객 (nextContact 기준 오늘~7일 이내)
+    var nd = parseDate(c.nextContact);
+    if(nd){
+      var diff = Math.round((nd - now) / 86400000);
+      if(diff >= 0 && diff <= 7) dc.week++;
+    }
+
+    // 보험만기 30일 이내
+    var ins = daysFrom(c.insuranceExpireDate);
+    if(ins !== null && ins >= 0 && ins <= 30) dc.insurance++;
+
+    // 자동차검사 30일 이내
+    var ins2 = daysFrom(c.inspectionDueDate);
+    if(ins2 !== null && ins2 >= 0 && ins2 <= 30) dc.inspect++;
+
+    // 금융종료 90일 이내
+    var fin = daysFrom(c.financeEndDate);
+    if(fin !== null && fin >= 0 && fin <= 90) dc.finance++;
+
+    // 출고 1년, 3년 경과
+    var del = parseDate(c.deliveryDate);
+    if(del){
+      var elapsed = Math.round((now - del) / 86400000);
+      if(elapsed >= 365) dc.yr1++;
+      if(elapsed >= 1095) dc.yr3++;
+    }
+
+    // 재구매 예상시점 90일 이내
+    var rep = daysFrom(c.repurchaseExpectedDate);
+    if(rep !== null && rep >= 0 && rep <= 90) dc.repurchase++;
   });
 
+  return dc;
+}
+
+// ============================================================
+// localStorage
+// ============================================================
+function loadCustomers(){ try{ return JSON.parse(localStorage.getItem(LS_KEY))||[]; }catch(e){ return []; } }
+function saveCustomers(list){ localStorage.setItem(LS_KEY, JSON.stringify(list)); }
+
+// ============================================================
+// 대시보드 업데이트
+// ============================================================
+function updateDashboard(list){
+  var total=list.length, newInq=0, agrade=0, consult=0, likely=0;
+  var contract=0, delivery=0, cancel=0;
+  list.forEach(function(c){
+    var v = migrateStatus(c.status);
+    if(v==="신규문의") newInq++; else if(v==="A급가망") agrade++;
+    else if(v==="상담중") consult++; else if(v==="계약유력") likely++;
+    else if(v==="계약") contract++; else if(v==="출고") delivery++;
+    else if(v==="해약") cancel++;
+  });
   document.getElementById("d-total").textContent    = total;
   document.getElementById("d-new").textContent      = newInq;
   document.getElementById("d-agrade").textContent   = agrade;
@@ -1002,277 +803,337 @@ function updateDashboard(list) {
   document.getElementById("d-delivery").textContent = delivery;
   document.getElementById("d-cancel").textContent   = cancel;
   document.getElementById("list-count").textContent = total + "명";
+
+  // 차량관리 대시보드
+  var dc = calcCareDashboard(list);
+  document.getElementById("dc-week").textContent      = dc.week;
+  document.getElementById("dc-insurance").textContent = dc.insurance;
+  document.getElementById("dc-inspect").textContent   = dc.inspect;
+  document.getElementById("dc-finance").textContent   = dc.finance;
+  document.getElementById("dc-1yr").textContent       = dc.yr1;
+  document.getElementById("dc-3yr").textContent       = dc.yr3;
+  document.getElementById("dc-repurchase").textContent= dc.repurchase;
 }
 
 // ============================================================
 // PC 테이블 렌더링
 // ============================================================
-function renderTable(list) {
+function renderTable(list){
   var tbody = document.getElementById("customer-tbody");
   var empty = document.getElementById("list-empty");
   tbody.innerHTML = "";
+  if(list.length===0){ empty.style.display="block"; return; }
+  empty.style.display="none";
 
-  if (list.length === 0) {
-    empty.style.display = "block";
-    return;
-  }
-  empty.style.display = "none";
-
-  var sorted = list.slice().reverse();
-  sorted.forEach(function(c) {
-    // 구형 데이터 호환: carCategory 없으면 carModel을 차종으로 표시
-    var catDisplay   = c.carCategory || c.carModel || "";
-    var modelDisplay = c.carCategory ? (c.carModel || "") : "";
-
+  list.slice().reverse().forEach(function(c){
+    var cat   = c.carCategory || c.carModel || "";
+    var model = c.carCategory ? (c.carModel||"") : "";
     var tr = document.createElement("tr");
     tr.innerHTML =
-      '<td class="name-cell">' + esc(c.customerName) + '</td>' +
-      '<td><a class="tel-link" href="tel:' + esc(c.phone) + '">' + esc(c.phone) + '</a></td>' +
-      '<td>' + esc(c.birthDate || "") + '</td>' +
-      '<td>' + esc(catDisplay) + '</td>' +
-      '<td style="font-size:11px;">' + esc(modelDisplay) + '</td>' +
-      '<td>' + esc(c.ownedCarModel || "") + '</td>' +
-      '<td>' + esc(c.ownedCarMileage || "") + '</td>' +
-      '<td>' + esc(c.accidentHistory || "") + '</td>' +
-      '<td>' + esc(c.carNumber || "") + '</td>' +
-      '<td>' + esc(c.purchaseType || "") + '</td>' +
-      '<td><span class="status-badge ' + statusClass(c.status) + '">' + esc(migrateStatus(c.status) || c.status) + '</span></td>' +
-      '<td>' + esc(c.leadSource || "") + '</td>' +
-      '<td>' + esc(c.nextContact || "") + '</td>' +
-      '<td style="max-width:160px;white-space:pre-wrap;word-break:break-all;">' + esc(c.consultation || "") + '</td>' +
-      '<td>' + esc(c.memo || "") + '</td>' +
-      '<td style="white-space:nowrap;font-size:11px;color:#888;">' + esc(c.registeredAt || "") + '</td>';
+      '<td class="name-cell">'+esc(c.customerName)+'</td>'+
+      '<td><a class="tel-link" href="tel:'+esc(c.phone)+'">'+esc(c.phone)+'</a></td>'+
+      '<td>'+esc(c.birthDate||"")+'</td>'+
+      '<td>'+esc(cat)+'</td>'+
+      '<td style="font-size:11px;">'+esc(model)+'</td>'+
+      '<td>'+esc(c.ownedCarModel||"")+'</td>'+
+      '<td>'+esc(c.ownedCarMileage||"")+'</td>'+
+      '<td>'+esc(c.accidentHistory||"")+'</td>'+
+      '<td>'+esc(c.carNumber||"")+'</td>'+
+      '<td>'+esc(c.purchaseType||"")+'</td>'+
+      '<td><span class="status-badge '+statusClass(c.status)+'">'+esc(migrateStatus(c.status)||c.status)+'</span></td>'+
+      '<td>'+esc(c.leadSource||"")+'</td>'+
+      '<td>'+esc(c.nextContact||"")+'</td>'+
+      '<td style="max-width:140px;white-space:pre-wrap;word-break:break-all;">'+esc(c.consultation||"")+'</td>'+
+      '<td>'+esc(c.memo||"")+'</td>'+
+      '<td style="background:#f8fbff;">'+esc(c.expectedPurchaseDate||"")+'</td>'+
+      '<td style="background:#f8fbff;">'+esc(c.contractDate||"")+'</td>'+
+      '<td style="background:#f8fbff;">'+esc(c.deliveryDate||"")+'</td>'+
+      '<td style="background:#f8fbff;">'+esc(c.insuranceExpireDate||"")+'</td>'+
+      '<td style="background:#f8fbff;">'+esc(c.inspectionDueDate||"")+'</td>'+
+      '<td style="background:#f8fbff;">'+esc(c.financeEndDate||"")+'</td>'+
+      '<td style="background:#f8fbff;">'+esc(c.warrantyEndDate||"")+'</td>'+
+      '<td style="background:#f8fbff;">'+esc(c.repurchaseExpectedDate||"")+'</td>'+
+      '<td style="background:#f8fbff;max-width:140px;white-space:pre-wrap;word-break:break-all;">'+esc(c.vehicleCareMemo||"")+'</td>'+
+      '<td style="white-space:nowrap;font-size:11px;color:#888;">'+esc(c.registeredAt||"")+'</td>';
     tbody.appendChild(tr);
   });
 }
 
 // ============================================================
-// 모바일 카드 렌더링
+// 모바일 카드 렌더링 (차량관리 접기/펼치기 포함)
 // ============================================================
-function renderCards(list) {
+function renderCards(list){
   var wrap  = document.getElementById("customer-cards");
   var empty = document.getElementById("list-empty-mobile");
-
   Array.from(wrap.querySelectorAll(".cust-card")).forEach(function(el){ el.remove(); });
+  if(list.length===0){ empty.style.display="block"; return; }
+  empty.style.display="none";
 
-  if (list.length === 0) {
-    empty.style.display = "block";
-    return;
-  }
-  empty.style.display = "none";
-
-  var sorted = list.slice().reverse();
-  sorted.forEach(function(c) {
-    var catDisplay   = c.carCategory || c.carModel || "";
-    var modelDisplay = c.carCategory ? (c.carModel || "") : "";
+  list.slice().reverse().forEach(function(c, idx){
+    var cat   = c.carCategory || c.carModel || "";
+    var model = c.carCategory ? (c.carModel||"") : "";
+    var statusDisp = migrateStatus(c.status) || c.status;
 
     var div = document.createElement("div");
     div.className = "cust-card";
 
+    // 카드 상단
     var html =
-      '<div class="cust-card-top">' +
-        '<div>' +
-          '<div class="cust-name">' + esc(c.customerName) + '</div>' +
-          '<div class="cust-date">' + esc(c.registeredAt || "") + '</div>' +
-        '</div>' +
-        '<span class="status-badge ' + statusClass(c.status) + '">' + esc(migrateStatus(c.status) || c.status) + '</span>' +
+      '<div class="cust-card-top">'+
+        '<div>'+
+          '<div class="cust-name">'+esc(c.customerName)+'</div>'+
+          '<div class="cust-date">'+esc(c.registeredAt||"")+'</div>'+
+        '</div>'+
+        '<span class="status-badge '+statusClass(c.status)+'">'+esc(statusDisp)+'</span>'+
       '</div>';
 
     // 기본 정보
     html += '<div class="cust-section-title">기본 정보</div>';
-    html += row("휴대폰", '<a class="tel-link" href="tel:' + esc(c.phone) + '">' + esc(c.phone) + '</a>');
-    if (c.birthDate) html += row("생년월일", c.birthDate);
-    html += row("유입경로", c.leadSource || "");
+    html += row("휴대폰", '<a class="tel-link" href="tel:'+esc(c.phone)+'">'+esc(c.phone)+'</a>');
+    if(c.birthDate)   html += row("생년월일", c.birthDate);
+    if(c.leadSource)  html += row("유입경로", c.leadSource);
+    if(c.nextContact) html += row("다음연락일", c.nextContact);
 
     // 차량 정보
     html += '<div class="cust-section-title">차량 정보</div>';
-    if (catDisplay)   html += row("관심차종", catDisplay);
-    if (modelDisplay) html += row("세부모델", modelDisplay);
-    html += row("구매방식", c.purchaseType || "");
+    if(cat)              html += row("관심차종", cat);
+    if(model)            html += row("세부모델", model);
+    if(c.purchaseType)   html += row("구매방식", c.purchaseType);
+    if(c.ownedCarModel)  html += row("보유차종", c.ownedCarModel);
+    if(c.ownedCarMileage)html += row("주행거리", c.ownedCarMileage);
+    if(c.accidentHistory)html += row("사고유무", c.accidentHistory);
+    if(c.carNumber)      html += row("차량번호", c.carNumber);
 
-    // 보유차종
-    var hasOwned = c.ownedCarModel || c.ownedCarMileage || c.accidentHistory || c.carNumber;
-    if (hasOwned) {
-      html += '<div class="cust-section-title">보유차종</div>';
-      if (c.ownedCarModel)    html += row("모델명",    c.ownedCarModel);
-      if (c.ownedCarMileage)  html += row("주행거리",  c.ownedCarMileage);
-      if (c.accidentHistory)  html += row("사고유무",  c.accidentHistory);
-      if (c.carNumber)        html += row("차량번호",  c.carNumber);
+    // 상담
+    if(c.consultation || c.memo){
+      html += '<div class="cust-section-title">상담</div>';
+      if(c.consultation) html += row("상담내용", c.consultation);
+      if(c.memo)         html += row("메모", c.memo);
     }
 
-    // 상담 정보
-    html += '<div class="cust-section-title">상담</div>';
-    if (c.nextContact)   html += row("다음연락일", c.nextContact);
-    if (c.consultation)  html += row("상담내용",  c.consultation);
-    if (c.memo)          html += row("메모",      c.memo);
+    // 차량관리 정보 — 접기/펼치기
+    var careId = "care-detail-" + idx;
+    var hasCare = c.expectedPurchaseDate || c.contractDate || c.deliveryDate ||
+                  c.insuranceExpireDate  || c.inspectionDueDate || c.financeEndDate ||
+                  c.warrantyEndDate      || c.repurchaseExpectedDate || c.vehicleCareMemo;
+
+    if(hasCare){
+      html +=
+        '<button class="toggle-btn" onclick="toggleCare(this,\''+careId+'\')" aria-expanded="false">'+
+          '<span>🚗 차량관리 정보 보기</span>'+
+          '<span class="toggle-arrow">▼</span>'+
+        '</button>'+
+        '<div class="care-detail" id="'+careId+'">';
+
+      html += '<div class="cust-section-title care">차량관리 / 재구매</div>';
+
+      if(c.expectedPurchaseDate)   html += row("구매예정일", c.expectedPurchaseDate);
+      if(c.contractDate)           html += row("계약일", c.contractDate);
+
+      // 출고일 — D-day 태그 포함
+      if(c.deliveryDate){
+        var delDays = daysFrom(c.deliveryDate);
+        var delLabel = c.deliveryDate;
+        if(delDays !== null && delDays < 0){
+          var elapsed = Math.abs(delDays);
+          if(elapsed >= 1095) delLabel += ' <span class="dday-tag urgent">3년↑</span>';
+          else if(elapsed >= 365) delLabel += ' <span class="dday-tag warn">1년↑</span>';
+        }
+        html += '<div class="cust-row"><span class="cust-key">출고일</span><span class="cust-val">'+delLabel+'</span></div>';
+      }
+
+      // 보험만기 — D-day 태그
+      if(c.insuranceExpireDate){
+        var iDays = daysFrom(c.insuranceExpireDate);
+        html += '<div class="cust-row"><span class="cust-key">보험만기일</span><span class="cust-val">'+esc(c.insuranceExpireDate)+ddayTag(iDays)+'</span></div>';
+      }
+      // 자동차검사
+      if(c.inspectionDueDate){
+        var inDays = daysFrom(c.inspectionDueDate);
+        html += '<div class="cust-row"><span class="cust-key">검사예정일</span><span class="cust-val">'+esc(c.inspectionDueDate)+ddayTag(inDays)+'</span></div>';
+      }
+      // 금융종료
+      if(c.financeEndDate){
+        var fDays = daysFrom(c.financeEndDate);
+        html += '<div class="cust-row"><span class="cust-key">금융종료일</span><span class="cust-val">'+esc(c.financeEndDate)+ddayTag(fDays)+'</span></div>';
+      }
+      if(c.warrantyEndDate)          html += row("보증만료일", c.warrantyEndDate);
+      // 재구매
+      if(c.repurchaseExpectedDate){
+        var rDays = daysFrom(c.repurchaseExpectedDate);
+        html += '<div class="cust-row"><span class="cust-key">재구매예상</span><span class="cust-val">'+esc(c.repurchaseExpectedDate)+ddayTag(rDays)+'</span></div>';
+      }
+      if(c.vehicleCareMemo) html += row("관리메모", c.vehicleCareMemo);
+
+      html += '</div>'; // /.care-detail
+    }
 
     div.innerHTML = html;
     wrap.appendChild(div);
   });
 }
 
-function row(key, val) {
-  if (!val) return "";
-  return '<div class="cust-row"><span class="cust-key">' + key + '</span><span class="cust-val">' + val + '</span></div>';
+// 접기/펼치기 토글
+function toggleCare(btn, detailId){
+  var detail = document.getElementById(detailId);
+  var isOpen = detail.classList.contains("open");
+  detail.classList.toggle("open", !isOpen);
+  btn.classList.toggle("open", !isOpen);
+  btn.querySelector("span:first-child").textContent = isOpen ? "🚗 차량관리 정보 보기" : "🚗 차량관리 정보 닫기";
+  btn.setAttribute("aria-expanded", !isOpen);
 }
 
-// ============================================================
-// HTML 이스케이프
-// ============================================================
-function esc(str) {
-  if (!str) return "";
-  return String(str)
-    .replace(/&/g,  "&amp;")
-    .replace(/</g,  "&lt;")
-    .replace(/>/g,  "&gt;")
-    .replace(/"/g,  "&quot;");
+function row(key, val){
+  if(!val) return "";
+  return '<div class="cust-row"><span class="cust-key">'+key+'</span><span class="cust-val">'+val+'</span></div>';
+}
+
+function esc(str){
+  if(!str) return "";
+  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
 // ============================================================
 // 전체 화면 갱신
 // ============================================================
-function refreshUI() {
+function refreshUI(){
   var list = loadCustomers();
   updateDashboard(list);
   renderTable(list);
   renderCards(list);
 }
-
-// 페이지 로드 시 초기 렌더링
 refreshUI();
 
 // ============================================================
-// 유틸: 현재 날짜시간 (한국 형식)
+// 유틸: 현재 날짜시간 (KST)
 // ============================================================
-function getNowKST() {
-  return new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
-}
+function getNowKST(){ return new Date().toLocaleString("ko-KR",{timeZone:"Asia/Seoul"}); }
 
 // ============================================================
-// 유틸: 전화번호 자동 하이픈
+// 전화번호 자동 하이픈
 // ============================================================
-document.getElementById("phone").addEventListener("input", function () {
-  var v = this.value.replace(/\D/g, "");
-  if (v.length <= 3) {
-    this.value = v;
-  } else if (v.length <= 7) {
-    this.value = v.slice(0,3) + "-" + v.slice(3);
-  } else {
-    this.value = v.slice(0,3) + "-" + v.slice(3,7) + "-" + v.slice(7,11);
-  }
+document.getElementById("phone").addEventListener("input", function(){
+  var v = this.value.replace(/\D/g,"");
+  if(v.length<=3) this.value=v;
+  else if(v.length<=7) this.value=v.slice(0,3)+"-"+v.slice(3);
+  else this.value=v.slice(0,3)+"-"+v.slice(3,7)+"-"+v.slice(7,11);
 });
 
 // ============================================================
-// 메시지 표시 헬퍼
+// 메시지 헬퍼
 // ============================================================
-function showMsg(type, text) {
-  var el = document.getElementById("status-msg");
-  el.className = type;
-  el.textContent = text;
-  el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+function showMsg(type,text){
+  var el=document.getElementById("status-msg");
+  el.className=type; el.textContent=text;
+  el.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
-
-function hideMsg() {
-  var el = document.getElementById("status-msg");
-  el.className = "";
-  el.textContent = "";
+function hideMsg(){
+  var el=document.getElementById("status-msg");
+  el.className=""; el.textContent="";
 }
 
 // ============================================================
 // 폼 데이터 수집
-// 컬럼 구조:
-//   A 등록일시 / B 고객명 / C 휴대폰번호 / D 생년월일
-//   E 관심차종(carCategory) / F 세부모델(carModel)
-//   G 보유차종모델명 / H 주행거리 / I 사고유무 / J 차량번호
-//   K 구매방식 / L 현재상태 / M 유입경로
-//   N 상담내용 / O 다음연락일 / P 메모
+// 구글시트 컬럼 A~Y (25개)
+// A 등록일시 / B 고객명 / C 휴대폰번호 / D 생년월일
+// E 관심차종 / F 세부모델
+// G 보유차종모델명 / H 주행거리 / I 사고유무 / J 차량번호
+// K 구매방식 / L 현재상태 / M 유입경로
+// N 상담내용 / O 다음연락일 / P 메모
+// Q 구매예정일 / R 계약일 / S 출고일
+// T 보험만기일 / U 자동차검사예정일 / V 금융종료일
+// W 보증만료일 / X 재구매예상시점 / Y 차량관리메모
 //
 // birthDate는 향후 생일 알림 기능에 사용 예정
 // ============================================================
-function getFormData() {
+function getFormData(){
   return {
-    registeredAt:     getNowKST(),
-    customerName:     document.getElementById("customerName").value.trim(),
-    phone:            document.getElementById("phone").value.trim(),
-    birthDate:        document.getElementById("birthDate").value,          // 생년월일 (향후 생일 알림 기능에 사용 예정)
-    carCategory:      document.getElementById("carCategory").value,        // 관심차종 (1차)
-    carModel:         document.getElementById("carModel").value,           // 세부모델 (2차)
-    ownedCarModel:    document.getElementById("ownedCarModel").value.trim(),
-    ownedCarMileage:  document.getElementById("ownedCarMileage").value.trim(),
-    accidentHistory:  document.getElementById("accidentHistory").value,
-    carNumber:        document.getElementById("carNumber").value.trim(),
-    purchaseType:     document.getElementById("purchaseType").value,
-    status:           document.getElementById("status").value,
-    leadSource:       document.getElementById("leadSource").value,
-    consultation:     document.getElementById("consultation").value.trim(),
-    nextContact:      document.getElementById("nextContact").value,
-    memo:             document.getElementById("memo").value.trim()
+    registeredAt:          getNowKST(),
+    customerName:          document.getElementById("customerName").value.trim(),
+    phone:                 document.getElementById("phone").value.trim(),
+    birthDate:             document.getElementById("birthDate").value,
+    carCategory:           document.getElementById("carCategory").value,
+    carModel:              document.getElementById("carModel").value,
+    ownedCarModel:         document.getElementById("ownedCarModel").value.trim(),
+    ownedCarMileage:       document.getElementById("ownedCarMileage").value.trim(),
+    accidentHistory:       document.getElementById("accidentHistory").value,
+    carNumber:             document.getElementById("carNumber").value.trim(),
+    purchaseType:          document.getElementById("purchaseType").value,
+    status:                document.getElementById("status").value,
+    leadSource:            document.getElementById("leadSource").value,
+    consultation:          document.getElementById("consultation").value.trim(),
+    nextContact:           document.getElementById("nextContact").value,
+    memo:                  document.getElementById("memo").value.trim(),
+    // 차량관리 / 재구매관리
+    expectedPurchaseDate:  document.getElementById("expectedPurchaseDate").value,
+    contractDate:          document.getElementById("contractDate").value,
+    deliveryDate:          document.getElementById("deliveryDate").value,
+    insuranceExpireDate:   document.getElementById("insuranceExpireDate").value,
+    inspectionDueDate:     document.getElementById("inspectionDueDate").value,
+    financeEndDate:        document.getElementById("financeEndDate").value,
+    warrantyEndDate:       document.getElementById("warrantyEndDate").value,
+    repurchaseExpectedDate:document.getElementById("repurchaseExpectedDate").value,
+    vehicleCareMemo:       document.getElementById("vehicleCareMemo").value.trim()
   };
 }
 
-function validate(data) {
-  if (!data.customerName) { showMsg("error", "⚠ 고객명을 입력해주세요."); return false; }
-  if (!data.phone)         { showMsg("error", "⚠ 휴대폰번호를 입력해주세요."); return false; }
+function validate(data){
+  if(!data.customerName){ showMsg("error","⚠ 고객명을 입력해주세요."); return false; }
+  if(!data.phone)        { showMsg("error","⚠ 휴대폰번호를 입력해주세요."); return false; }
   return true;
 }
 
 // ============================================================
 // 폼 초기화
 // ============================================================
-function resetForm() {
+function resetForm(){
   var ids = [
     "customerName","phone","birthDate",
     "ownedCarModel","ownedCarMileage","accidentHistory","carNumber",
-    "purchaseType","status","leadSource","consultation","nextContact","memo"
+    "purchaseType","status","leadSource","consultation","nextContact","memo",
+    "expectedPurchaseDate","contractDate","deliveryDate","insuranceExpireDate",
+    "inspectionDueDate","financeEndDate","warrantyEndDate","repurchaseExpectedDate","vehicleCareMemo"
   ];
-  ids.forEach(function(id) {
-    document.getElementById(id).value = "";
-  });
-  document.getElementById("carCategory").value = "";
-  var sel = document.getElementById("carModel");
-  sel.innerHTML = '<option value="">— 차종을 먼저 선택하세요 —</option>';
-  sel.disabled = true;
+  ids.forEach(function(id){ document.getElementById(id).value=""; });
+  document.getElementById("carCategory").value="";
+  var sel=document.getElementById("carModel");
+  sel.innerHTML='<option value="">— 차종을 먼저 선택하세요 —</option>';
+  sel.disabled=true;
 }
 
 // ============================================================
 // 저장 실행 — 구글시트 저장(기존 그대로) + localStorage 추가
 // ============================================================
-function submitForm() {
+function submitForm(){
   hideMsg();
-
   var data = getFormData();
-  if (!validate(data)) return;
+  if(!validate(data)) return;
 
   var btn = document.getElementById("submitBtn");
-  btn.disabled = true;
-  btn.textContent = "저장 중…";
+  btn.disabled=true; btn.textContent="저장 중…";
 
   // ── ① 구글시트 저장 (기존 로직 그대로 — 절대 수정하지 않음) ──
-  fetch(SCRIPT_URL, {
-    method:  "POST",
-    mode:    "no-cors",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify(data)
+  fetch(SCRIPT_URL,{
+    method:"POST", mode:"no-cors",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(data)
   })
-  .then(function() {
-    // ── ② localStorage에도 저장 (화면 표시용) ──────────────────
+  .then(function(){
+    // ── ② localStorage 저장 ──
     var list = loadCustomers();
     list.push(data);
     saveCustomers(list);
-
-    // ── ③ 화면 즉시 갱신 ────────────────────────────────────────
+    // ── ③ 화면 갱신 ──
     refreshUI();
-
-    showMsg("success", "✅ 저장되었습니다. 고객 정보가 구글시트에 기록되었습니다.");
+    showMsg("success","✅ 저장되었습니다. 고객 정보가 구글시트에 기록되었습니다.");
     resetForm();
   })
-  .catch(function(err) {
-    showMsg("error", "❌ 저장에 실패했습니다. 인터넷 연결 또는 URL을 확인 후 다시 시도해주세요.");
-    console.error("전송 오류:", err);
+  .catch(function(err){
+    showMsg("error","❌ 저장에 실패했습니다. 인터넷 연결 또는 URL을 확인 후 다시 시도해주세요.");
+    console.error("전송 오류:",err);
   })
-  .finally(function() {
-    btn.disabled = false;
-    btn.textContent = "고객 정보 저장";
+  .finally(function(){
+    btn.disabled=false; btn.textContent="고객 정보 저장";
   });
 }
 </script>
