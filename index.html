@@ -7,7 +7,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxIPaPSOPF4TlO33gmU4sAcH8QOJxcHDoNve2EzXFzHpigNtx7Ti-R3nH8O4mo2QVN5mA/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxBm7P36xnbrpRIr2zcjO6ygJjIlTRVobU5gJTbITLrku-FiWgCCNMnNOubqZCYhyezZA/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   </script>
 
@@ -1659,6 +1659,8 @@ var CARE_LABELS={
 // ============================================================
 // 고객목록 렌더링
 // ============================================================
+var renderedCustomers = []; // 현재 화면에 렌더링된 고객 배열 (인덱스 기준 수정에 사용)
+
 function renderList(){
   var list=load();
   var q=(document.getElementById("searchInput")||{}).value||"";
@@ -1704,6 +1706,9 @@ function renderList(){
     return tb.localeCompare(ta);
   });
 
+  // ★ 필터/정렬이 확정된 배열을 전역에 저장 — 수정버튼이 이 인덱스를 사용
+  renderedCustomers = filtered;
+
   document.getElementById("list-count").textContent=filtered.length+"명";
   var con=document.getElementById("listContainer");
   if(filtered.length===0){
@@ -1737,7 +1742,7 @@ function buildCard(c,idx){
     '</div>'+
     '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px;">'+
       '<span class="badge '+sc(c.status)+'">'+esc(sd)+'</span>'+
-      '<button class="edit-btn" onclick="openEdit(\''+esc(c.phone||"")+'\',\''+esc(c.customerId||"")+'\')">✏️ 수정</button>'+
+      '<button class="edit-btn" onclick="openEditByRenderedIndex('+idx+')">✏️ 수정</button>'+
     '</div>'+
   '</div>';
 
@@ -2092,81 +2097,83 @@ function submitUpdate(){
 // ============================================================
 // 고객 수정 모달
 // ============================================================
-var _editOriginalPhone = "";   // 수정 전 연락처 (행 검색용)
-var _editOriginalId   = "";   // 수정 전 고객ID  (행 검색용)
+var _editOriginalPhone = "";   // 수정 전 연락처 (구글시트 행 검색용)
+var _editOriginalId   = "";   // 수정 전 고객ID  (구글시트 행 검색용)
 
-// 수정 모달 열기 — phone 또는 customerId로 로컬 데이터 조회 후 폼 채우기
-function openEdit(phone, customerId){
-  var list = load();
-  var c = null;
-  var np = normP(phone);
-
-  // 1순위: 연락처 매칭
-  if(np){
-    for(var i=0;i<list.length;i++){
-      if(normP(list[i].phone)===np){c=list[i];break;}
-    }
-  }
-  // 2순위: 고객ID 매칭
-  if(!c&&customerId){
-    for(var j=0;j<list.length;j++){
-      if((list[j].customerId||"")===(customerId)){c=list[j];break;}
-    }
-  }
-  if(!c){alert("고객 정보를 찾을 수 없습니다.");return;}
-
+// ── 폼 채우기 내부 함수 ──────────────────────────────────────
+// 고객 객체 c를 받아 수정 모달 폼을 채우고 모달을 연다.
+// openEditByRenderedIndex / openEdit 양쪽에서 공통으로 사용.
+function _fillEditForm(c){
   _editOriginalPhone = c.phone||"";
   _editOriginalId    = c.customerId||"";
 
-  // 폼 채우기
   function sv(id,v){var el=document.getElementById(id);if(el)el.value=v||"";}
-  sv("e-customerName",      c.customerName);
-  sv("e-companyName",       c.companyName);
-  sv("e-phone",             c.phone);
-  sv("e-region",            c.region);
-  sv("e-birthDate",         c.birthDate);
-  sv("e-purchaseMethod",    c.purchaseMethod);
-  sv("e-budget",            c.budget);
-  sv("e-purchaseTiming",    c.purchaseTiming);
-  sv("e-leadSource",        c.leadSource);
-  sv("e-status",            c.status);
-  sv("e-consultation",      c.consultation);
-  sv("e-nextContact",       c.nextContact);
-  sv("e-insuranceStartDate",c.insuranceStartDate);
+  sv("e-customerName",       c.customerName);
+  sv("e-companyName",        c.companyName);
+  sv("e-phone",              c.phone);
+  sv("e-region",             c.region);
+  sv("e-birthDate",          c.birthDate);
+  sv("e-purchaseMethod",     c.purchaseMethod);
+  sv("e-budget",             c.budget);
+  sv("e-purchaseTiming",     c.purchaseTiming);
+  sv("e-leadSource",         c.leadSource);
+  sv("e-status",             c.status);
+  sv("e-consultation",       c.consultation);
+  sv("e-nextContact",        c.nextContact);
+  sv("e-insuranceStartDate", c.insuranceStartDate);
   sv("e-insuranceExpireDate",c.insuranceExpireDate);
-  sv("e-inspectionDueDate", c.inspectionDueDate);
-  sv("e-financeStartDate",  c.financeStartDate);
-  sv("e-financeEndDate",    c.financeEndDate);
-  sv("e-contractDate",      c.contractDate);
-  sv("e-deliveryDate",      c.deliveryDate);
-  sv("e-deliveryMonth",     c.deliveryMonth);
-  sv("e-tags",              c.tags);
-  sv("e-lastServiceDate",   c.lastServiceDate);
-  sv("e-lastServiceMileage",c.lastServiceMileage);
-  sv("e-currentMileageDate",c.currentMileageDate);
-  sv("e-currentMileage",    c.currentMileage);
-  sv("e-nextServiceDate",   c.nextServiceDate);
-  sv("e-nextServiceMileage",c.nextServiceMileage);
+  sv("e-inspectionDueDate",  c.inspectionDueDate);
+  sv("e-financeStartDate",   c.financeStartDate);
+  sv("e-financeEndDate",     c.financeEndDate);
+  sv("e-contractDate",       c.contractDate);
+  sv("e-deliveryDate",       c.deliveryDate);
+  sv("e-deliveryMonth",      c.deliveryMonth);
+  sv("e-tags",               c.tags);
+  sv("e-lastServiceDate",    c.lastServiceDate);
+  sv("e-lastServiceMileage", c.lastServiceMileage);
+  sv("e-currentMileageDate", c.currentMileageDate);
+  sv("e-currentMileage",     c.currentMileage);
+  sv("e-nextServiceDate",    c.nextServiceDate);
+  sv("e-nextServiceMileage", c.nextServiceMileage);
 
   // 모델 선택 복원
-  var mSel = document.getElementById("e-modelName");
+  var mSel=document.getElementById("e-modelName");
   if(mSel){
-    mSel.value = c.modelName||"";
-    onEditModelChange();  // 세부모델 목록 채우기
+    mSel.value=c.modelName||"";
+    onEditModelChange();
     setTimeout(function(){
-      var dm = document.getElementById("e-detailModel");
-      if(dm)dm.value = c.detailModel||"";
+      var dm=document.getElementById("e-detailModel");
+      if(dm)dm.value=c.detailModel||"";
     },0);
   }
 
-  // 메시지 초기화
-  var msg = document.getElementById("edit-save-msg");
+  // 메시지 초기화 후 모달 열기
+  var msg=document.getElementById("edit-save-msg");
   if(msg){msg.className="st-msg edit-save-msg";msg.textContent="";}
-
-  // 모달 열기 & 스크롤 고정
   document.getElementById("editOverlay").classList.add("open");
   document.body.style.overflow="hidden";
   document.getElementById("editOverlay").scrollTop=0;
+}
+
+// ── ★ 기본 진입점: 렌더링 인덱스 기준 ──────────────────────
+// buildCard()의 수정버튼이 호출. renderedCustomers[idx]를 직접 사용하므로
+// localStorage 재검색 없이 화면에 보이는 고객을 정확히 연다.
+function openEditByRenderedIndex(idx){
+  var c=renderedCustomers[idx];
+  if(!c){alert("고객 정보를 찾을 수 없습니다.");return;}
+  _fillEditForm(c);
+}
+
+// ── 보조 진입점: phone/customerId 검색 (직접 호출 시 사용) ──
+// buildCard에서는 더 이상 사용하지 않음.
+function openEdit(phone, customerId){
+  var list=load();
+  var c=null;
+  var np=normP(phone);
+  if(np){for(var i=0;i<list.length;i++){if(normP(list[i].phone)===np){c=list[i];break;}}}
+  if(!c&&customerId){for(var j=0;j<list.length;j++){if((list[j].customerId||"")===customerId){c=list[j];break;}}}
+  if(!c){alert("고객 정보를 찾을 수 없습니다.");return;}
+  _fillEditForm(c);
 }
 
 function closeEdit(){
@@ -2414,6 +2421,15 @@ function syncFromSheet(isAuto){
           c[f]=normalizeDateStr(c[f]);
         }
       });
+    });
+
+    // ── customerId 없는 고객에 임시 ID 부여 ─────────────────
+    // 수정버튼이 인덱스 기준으로 동작하지만, submitEdit()의
+    // 구글시트 행 검색(customerId 우선)을 위해 보조로 사용됨.
+    deduped.forEach(function(c, i){
+      if(!c.customerId){
+        c.customerId="TEMP-"+normP(c.phone)+"-"+i;
+      }
     });
 
     // ── 기존 localStorage 고객 보존 (시트에 없는 로컬 신규 고객 유지) ──
