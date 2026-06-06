@@ -7,7 +7,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxswUgpfFoncBTJ_MUaLx7dcT4pbZXvVNhiQqYj75xwAXqfs-GuCPU6w_YbT2jVVbDelQ/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxIPaPSOPF4TlO33gmU4sAcH8QOJxcHDoNve2EzXFzHpigNtx7Ti-R3nH8O4mo2QVN5mA/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   </script>
 
@@ -1422,16 +1422,83 @@ function sc(s){
 // ============================================================
 // 날짜 유틸
 // ============================================================
+
+// ── normalizeDateStr ─────────────────────────────────────────
+// 어떤 형식이 들어와도 "YYYY-MM-DD" 문자열로 변환.
+// 변환 실패 시 "" 반환.
+//
+// 지원 형식:
+//   "2026-06-01"  "2026-6-1"
+//   "2026. 6. 1." "2026. 6. 1"  (한국어 점 구분)
+//   "2026/06/01"  "2026/6/1"
+//   "6/1/2026"    "06/01/2026"  (미국식 M/D/Y)
+//   Date 객체, 숫자(직렬화), "Mon Jan 01 2026..." 등
+// ─────────────────────────────────────────────────────────────
+function normalizeDateStr(v){
+  if(v===null||v===undefined)return "";
+  // Date 객체
+  if(v instanceof Date){
+    if(isNaN(v.getTime()))return "";
+    var y=v.getFullYear(),m=v.getMonth()+1,d=v.getDate();
+    return y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+  }
+  // 숫자(Excel 직렬번호 등)는 그대로 ""
+  if(typeof v==="number")return "";
+  var s=String(v).trim();
+  if(!s)return "";
+
+  var y,m,d;
+
+  // ① YYYY-MM-DD / YYYY-M-D / YYYY/MM/DD / YYYY/M/D
+  var r1=s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+  if(r1){y=+r1[1];m=+r1[2];d=+r1[3];}
+
+  // ② YYYY. M. D (한국어 점 구분)
+  if(!y){var r2=s.match(/^(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})/);
+    if(r2){y=+r2[1];m=+r2[2];d=+r2[3];}}
+
+  // ③ M/D/YYYY 또는 MM/DD/YYYY (미국식)
+  if(!y){var r3=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if(r3){m=+r3[1];d=+r3[2];y=+r3[3];}}
+
+  // ④ Date.toString() / toUTCString() 형식 파싱 시도
+  if(!y){
+    try{
+      var dt=new Date(s);
+      if(!isNaN(dt.getTime())){
+        // UTC 오프셋 없이 로컬 날짜로 취급
+        y=dt.getFullYear();m=dt.getMonth()+1;d=dt.getDate();
+      }
+    }catch(e){}
+  }
+
+  if(!y||isNaN(y)||isNaN(m)||isNaN(d))return "";
+  if(y<1900||y>2200||m<1||m>12||d<1||d>31)return "";
+  return y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+}
+
+// ── DATE_FIELDS: syncFromSheet에서 정규화할 필드 목록 ─────────
+var DATE_FIELDS_LIST=[
+  "nextContact","insuranceStartDate","insuranceExpireDate",
+  "inspectionDueDate","financeStartDate","financeEndDate",
+  "contractDate","deliveryDate","lastServiceDate",
+  "currentMileageDate","nextServiceDate","birthDate"
+];
+
 function todayD(){
   var s=new Date().toLocaleDateString("ko-KR",{timeZone:"Asia/Seoul"})
     .replace(/\./g,"-").replace(/\s/g,"").replace(/-$/,"");
   return new Date(s);
 }
+
+// parseD: normalizeDateStr 경유로 모든 형식 처리
 function parseD(s){
-  if(!s)return null;
-  var p=s.split("-");if(p.length<2)return null;
-  return new Date(parseInt(p[0]),parseInt(p[1])-1,p[2]?parseInt(p[2]):1);
+  var norm=normalizeDateStr(s);
+  if(!norm)return null;
+  var p=norm.split("-");
+  return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));
 }
+
 function dFrom(ds){var d=parseD(ds);if(!d)return null;return Math.round((d-todayD())/86400000);}
 function getNow(){return new Date().toLocaleString("ko-KR",{timeZone:"Asia/Seoul"});}
 function getTs(){
@@ -1507,18 +1574,19 @@ function updateDash(){
     if(del){var el=Math.round((now-del)/86400000);if(el>=365)y1++;if(el>=1095)y3++;}
 
     // ── 판매실적 집계 ──────────────────────────────────────
+    // normalizeDateStr()로 어떤 날짜 형식도 YYYY-MM-DD로 통일 후 비교
     try{
-      var cd=String(x.contractDate||"").trim();
+      var cd=normalizeDateStr(x.contractDate);
       if(cd.length>=7){
-        if(cd.substring(0,7)===yyyyMM) mc++;          // 이번달 계약
-        if(cd.substring(0,4)===yyyyStr) yc++;          // 올해 계약
+        if(cd.substring(0,7)===yyyyMM) mc++;   // 이번달 계약
+        if(cd.substring(0,4)===yyyyStr) yc++;   // 올해 계약
       }
     }catch(e){}
     try{
-      var dd=String(x.deliveryDate||"").trim();
+      var dd=normalizeDateStr(x.deliveryDate);
       if(dd.length>=7){
-        if(dd.substring(0,7)===yyyyMM) md++;           // 이번달 출고
-        if(dd.substring(0,4)===yyyyStr) yd++;           // 올해 출고
+        if(dd.substring(0,7)===yyyyMM) md++;    // 이번달 출고
+        if(dd.substring(0,4)===yyyyStr) yd++;   // 올해 출고
       }
     }catch(e){}
   });
@@ -2338,6 +2406,15 @@ function syncFromSheet(isAuto){
       if(ta>=tb)phoneMap[np]=c; // 최신 우선
     });
     var deduped=Object.values(phoneMap);
+
+    // ── 날짜 필드 전체 정규화 (YYYY-MM-DD 통일) ─────────────
+    deduped.forEach(function(c){
+      DATE_FIELDS_LIST.forEach(function(f){
+        if(c[f]!==undefined&&c[f]!==null&&c[f]!==""){
+          c[f]=normalizeDateStr(c[f]);
+        }
+      });
+    });
 
     // ── 기존 localStorage 고객 보존 (시트에 없는 로컬 신규 고객 유지) ──
     var local=load();
