@@ -406,7 +406,21 @@
       color:#fff;box-shadow:0 2px 8px rgba(40,100,200,.18);
     }
 
-    /* 수정 버튼 (고객 카드) */
+    /* 세부모델 직접입력 */
+    .detail-custom-wrap{
+      display:none;margin-top:6px;
+    }
+    .detail-custom-wrap.visible{display:block;}
+    .detail-custom-input{
+      width:100%;padding:11px 14px;border:1.5px solid var(--blue);
+      border-radius:var(--radius);font-family:var(--font);font-size:14px;
+      color:var(--black);background:#f0f6ff;box-sizing:border-box;
+      transition:border-color .15s;
+    }
+    .detail-custom-input:focus{outline:none;border-color:var(--gold);background:#fffdf0;}
+    .detail-custom-hint{
+      font-size:11px;color:var(--blue);margin-top:4px;font-weight:600;
+    }
     .edit-btn{
       display:inline-flex;align-items:center;gap:4px;
       padding:6px 13px;border-radius:20px;
@@ -713,9 +727,14 @@
           </div>
           <div class="field">
             <label>세부모델</label>
-            <select id="detailModel" disabled>
+            <select id="detailModel" disabled onchange="onDetailModelChange('detailModel','detailCustom')">
               <option value="">— 모델을 먼저 선택하세요 —</option>
             </select>
+            <div class="detail-custom-wrap" id="detailCustomWrap">
+              <input type="text" id="detailCustom" class="detail-custom-input"
+                     placeholder="세부모델명 직접 입력 (예: E 250 AVANTGARDE)"/>
+              <div class="detail-custom-hint">✏️ 직접 입력한 값이 저장됩니다</div>
+            </div>
           </div>
         </div>
       </div>
@@ -1054,9 +1073,14 @@
             </div>
             <div class="field">
               <label>세부모델</label>
-              <select id="e-detailModel">
+              <select id="e-detailModel" onchange="onDetailModelChange('e-detailModel','e-detailCustom')">
                 <option value="">— 모델을 먼저 선택하세요 —</option>
               </select>
+              <div class="detail-custom-wrap" id="e-detailCustomWrap">
+                <input type="text" id="e-detailCustom" class="detail-custom-input"
+                       placeholder="세부모델명 직접 입력 (예: E 250 AVANTGARDE)"/>
+                <div class="detail-custom-hint">✏️ 직접 입력한 값이 저장됩니다</div>
+              </div>
             </div>
           </div>
         </div>
@@ -1312,18 +1336,85 @@ var DETAIL_MODELS = {
     "── MY27 ──","Mercedes-Maybach S 580","Mercedes-Maybach S 580 MANUFAKTUR","Mercedes-Maybach S 680"]
 };
 function isSep(v){return v.indexOf("──")!==-1;}
-function onModelChange(){
-  var m=document.getElementById("modelName").value;
-  var sel=document.getElementById("detailModel");
-  sel.innerHTML="";sel.disabled=true;
-  if(!m){sel.innerHTML='<option value="">— 모델을 먼저 선택하세요 —</option>';return;}
+
+// ── 세부모델 드롭다운 변경 핸들러 ─────────────────────────────
+// selectId: select 요소 id, inputId: 직접입력 input id
+function onDetailModelChange(selectId, inputId){
+  var sel=document.getElementById(selectId);
+  var wrapId=selectId==="detailModel"?"detailCustomWrap":"e-detailCustomWrap";
+  var wrap=document.getElementById(wrapId);
+  var inp=document.getElementById(inputId);
+  if(!wrap||!inp)return;
+  if(sel.value==="__custom__"){
+    wrap.classList.add("visible");
+    inp.focus();
+  } else {
+    wrap.classList.remove("visible");
+    inp.value="";
+  }
+}
+
+// ── 실제 저장할 detailModel 값 결정 ──────────────────────────
+// 직접입력값 우선, 없으면 드롭다운 선택값
+function getDetailModelValue(selectId, inputId){
+  var customVal=(document.getElementById(inputId)||{}).value||"";
+  customVal=customVal.trim();
+  if(customVal)return customVal;
+  var selEl=document.getElementById(selectId);
+  var selVal=selEl?selEl.value:"";
+  return selVal==="__custom__"?"":selVal;
+}
+
+// ── 드롭다운 목록 구성 공통 함수 ─────────────────────────────
+// "직접입력" 옵션을 맨 아래에 추가
+function buildDetailModelOptions(sel, modelName){
   sel.innerHTML='<option value="">— 세부모델 선택 —</option>';
-  (DETAIL_MODELS[m]||[]).forEach(function(v){
+  (DETAIL_MODELS[modelName]||[]).forEach(function(v){
     var o=document.createElement("option");
     if(isSep(v)){o.value="";o.disabled=true;o.style.color="#aaa";o.style.fontStyle="italic";}
     else{o.value=v;}
     o.textContent=v;sel.appendChild(o);
   });
+  // 구분선 + 직접입력 옵션
+  var sep=document.createElement("option");
+  sep.value="";sep.disabled=true;sep.textContent="─────────────";
+  sel.appendChild(sep);
+  var custom=document.createElement("option");
+  custom.value="__custom__";custom.textContent="✏️ 직접입력…";
+  sel.appendChild(custom);
+}
+
+// ── 신규등록 모델 변경 ────────────────────────────────────────
+function onModelChange(){
+  var m=document.getElementById("modelName").value;
+  var sel=document.getElementById("detailModel");
+  var wrap=document.getElementById("detailCustomWrap");
+  var inp=document.getElementById("detailCustom");
+  sel.disabled=true;
+  if(wrap)wrap.classList.remove("visible");
+  if(inp)inp.value="";
+  if(!m){
+    sel.innerHTML='<option value="">— 모델을 먼저 선택하세요 —</option>';
+    return;
+  }
+  buildDetailModelOptions(sel, m);
+  sel.disabled=false;
+}
+
+// ── 수정 모달 모델 변경 ───────────────────────────────────────
+function onEditModelChange(){
+  var m=document.getElementById("e-modelName").value;
+  var sel=document.getElementById("e-detailModel");
+  var wrap=document.getElementById("e-detailCustomWrap");
+  var inp=document.getElementById("e-detailCustom");
+  sel.disabled=true;
+  if(wrap)wrap.classList.remove("visible");
+  if(inp)inp.value="";
+  if(!m){
+    sel.innerHTML='<option value="">— 모델을 먼저 선택하세요 —</option>';
+    return;
+  }
+  buildDetailModelOptions(sel, m);
   sel.disabled=false;
 }
 
@@ -2079,7 +2170,7 @@ function getFormData(){
     phone:               document.getElementById("phone").value.trim(),
     region:              document.getElementById("region").value.trim(),
     modelName:           document.getElementById("modelName").value,
-    detailModel:         document.getElementById("detailModel").value,
+    detailModel:         getDetailModelValue("detailModel","detailCustom"),
     purchaseMethod:      document.getElementById("purchaseMethod").value,
     budget:              document.getElementById("budget").value,
     purchaseTiming:      document.getElementById("purchaseTiming").value.trim(),
@@ -2121,6 +2212,11 @@ function resetNewForm(){
   document.getElementById("modelName").value="";
   var dm=document.getElementById("detailModel");
   dm.innerHTML='<option value="">— 모델을 먼저 선택하세요 —</option>';dm.disabled=true;
+  // 직접입력 초기화
+  var dcInp=document.getElementById("detailCustom");
+  var dcWrap=document.getElementById("detailCustomWrap");
+  if(dcInp)dcInp.value="";
+  if(dcWrap)dcWrap.classList.remove("visible");
 }
 
 // ============================================================
@@ -2258,14 +2354,39 @@ function _fillEditForm(c){
   sv("e-nextServiceDate",    c.nextServiceDate);
   sv("e-nextServiceMileage", c.nextServiceMileage);
 
-  // 모델 선택 복원
+  // 모델 선택 복원 → 세부모델 드롭다운 재구성 후 값 복원
   var mSel=document.getElementById("e-modelName");
   if(mSel){
     mSel.value=c.modelName||"";
-    onEditModelChange();
+    onEditModelChange(); // 세부모델 목록 재구성 (직접입력 옵션 포함)
     setTimeout(function(){
       var dm=document.getElementById("e-detailModel");
-      if(dm)dm.value=c.detailModel||"";
+      var dcWrap=document.getElementById("e-detailCustomWrap");
+      var dcInp=document.getElementById("e-detailCustom");
+      var savedVal=c.detailModel||"";
+      if(!savedVal){
+        // 저장값 없음 — 기본 선택 상태
+        if(dm)dm.value="";
+        return;
+      }
+      // 드롭다운 목록에 저장값이 있는지 확인
+      var found=false;
+      if(dm){
+        for(var oi=0;oi<dm.options.length;oi++){
+          if(dm.options[oi].value===savedVal){found=true;break;}
+        }
+      }
+      if(found){
+        // 목록에 있음 → 드롭다운 선택
+        if(dm)dm.value=savedVal;
+        if(dcWrap)dcWrap.classList.remove("visible");
+        if(dcInp)dcInp.value="";
+      } else {
+        // 목록에 없음(구형/직접입력값) → 직접입력 칸에 표시
+        if(dm)dm.value="__custom__";
+        if(dcWrap)dcWrap.classList.add("visible");
+        if(dcInp)dcInp.value=savedVal;
+      }
     },0);
   }
 
@@ -2301,6 +2422,11 @@ function openEdit(phone, customerId){
 function closeEdit(){
   document.getElementById("editOverlay").classList.remove("open");
   document.body.style.overflow="";
+  // 직접입력 초기화
+  var ecInp=document.getElementById("e-detailCustom");
+  var ecWrap=document.getElementById("e-detailCustomWrap");
+  if(ecInp)ecInp.value="";
+  if(ecWrap)ecWrap.classList.remove("visible");
 }
 
 // 배경 클릭 시 닫기
@@ -2333,21 +2459,6 @@ function autoEditNextService(){
 }
 
 // 수정 폼 — 모델 변경 시 세부모델 목록 재구성
-function onEditModelChange(){
-  var m=document.getElementById("e-modelName").value;
-  var sel=document.getElementById("e-detailModel");
-  sel.innerHTML="";sel.disabled=true;
-  if(!m){sel.innerHTML='<option value="">— 모델을 먼저 선택하세요 —</option>';return;}
-  sel.innerHTML='<option value="">— 세부모델 선택 —</option>';
-  (DETAIL_MODELS[m]||[]).forEach(function(v){
-    var o=document.createElement("option");
-    if(isSep(v)){o.value="";o.disabled=true;o.style.color="#aaa";o.style.fontStyle="italic";}
-    else{o.value=v;}
-    o.textContent=v;sel.appendChild(o);
-  });
-  sel.disabled=false;
-}
-
 // 수정 저장 실행
 function submitEdit(){
   var msgEl=document.getElementById("edit-save-msg");
@@ -2382,7 +2493,7 @@ function submitEdit(){
     newPhone:            ePhone,
     region:              document.getElementById("e-region").value.trim(),
     modelName:           document.getElementById("e-modelName").value,
-    detailModel:         document.getElementById("e-detailModel").value,
+    detailModel:         getDetailModelValue("e-detailModel","e-detailCustom"),
     purchaseMethod:      document.getElementById("e-purchaseMethod").value,
     budget:              document.getElementById("e-budget").value,
     purchaseTiming:      document.getElementById("e-purchaseTiming").value.trim(),
