@@ -1513,7 +1513,7 @@ function normalizeDateStr(v){
     try{
       var dt=new Date(s);
       if(!isNaN(dt.getTime())){
-        // UTC 오프셋 없이 로컬 날짜로 취급
+        // getFullYear/Month/Date = 로컬 기준으로 추출 (UTC 오차 방지)
         y=dt.getFullYear();m=dt.getMonth()+1;d=dt.getDate();
       }
     }catch(e){}
@@ -1532,18 +1532,26 @@ var DATE_FIELDS_LIST=[
   "currentMileageDate","nextServiceDate","birthDate"
 ];
 
+// ── todayD ───────────────────────────────────────────────────
+// 한국 시간(KST) 기준 오늘 날짜를 로컬 자정 Date로 반환.
+// toLocaleDateString 결과가 기기/브라우저마다 달라서 생기는
+// 아이패드 Safari 오작동을 방지하기 위해 UTC+9 오프셋으로 직접 계산.
 function todayD(){
-  var s=new Date().toLocaleDateString("ko-KR",{timeZone:"Asia/Seoul"})
-    .replace(/\./g,"-").replace(/\s/g,"").replace(/-$/,"");
-  return new Date(s);
+  var kst=new Date(new Date().getTime()+9*3600000); // UTC+9
+  return new Date(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate());
 }
 
-// parseD: normalizeDateStr 경유로 모든 형식 처리
+// ── parseD ───────────────────────────────────────────────────
+// normalizeDateStr() 경유로 모든 날짜 형식 처리.
+// new Date(year, month-1, day) = 로컬 자정 기준으로 생성해
+// "YYYY-MM-DD" 문자열이 UTC 자정으로 파싱되는 문제를 방지.
 function parseD(s){
   var norm=normalizeDateStr(s);
   if(!norm)return null;
   var p=norm.split("-");
-  return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));
+  var y=parseInt(p[0],10), m=parseInt(p[1],10)-1, d=parseInt(p[2],10);
+  if(isNaN(y)||isNaN(m)||isNaN(d))return null;
+  return new Date(y, m, d); // 로컬 자정 — 타임존 오차 없음
 }
 
 function dFrom(ds){var d=parseD(ds);if(!d)return null;return Math.round((d-todayD())/86400000);}
@@ -1661,23 +1669,49 @@ function updateDash(){
 }
 
 // ============================================================
+// ============================================================
 // 오늘/이번주 연락 고객
+// — 모바일 · 아이패드 · PC 모두 동일한 로직 사용
+// — nextContact 가 yyyy-mm-dd 형식이 아니거나 공백이면 제외
+// — Date 객체로 변환 후 diff 계산 (문자열 비교 아님)
 // ============================================================
 function renderHomeContacts(){
-  var list=load(),now=todayD(),today=[],week=[];
+  var list=load();
+
+  // KST 기준 오늘 자정 (todayD 와 동일 방식)
+  var kst=new Date(new Date().getTime()+9*3600000);
+  var now=new Date(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate());
+
+  var today=[], week=[];
+
   list.forEach(function(c){
-    var nd=parseD(c.nextContact);if(!nd)return;
+    var nc=String(c.nextContact||"").trim();
+    // yyyy-mm-dd 형식 검증 (normalizeDateStr 거친 뒤 반드시 10자리여야 함)
+    var norm=normalizeDateStr(nc);
+    if(!norm||norm.length<10)return;
+
+    var p=norm.split("-");
+    var y=parseInt(p[0],10), m=parseInt(p[1],10)-1, d=parseInt(p[2],10);
+    if(isNaN(y)||isNaN(m)||isNaN(d))return;
+
+    // 로컬 자정 기준 Date → 타임존 오차 없음
+    var nd=new Date(y, m, d);
     var df=Math.round((nd-now)/86400000);
-    if(df===0)today.push({c:c,df:df});
-    else if(df>0&&df<=7)week.push({c:c,df:df});
+
+    if(df===0)today.push({c:c, df:df});
+    else if(df>0 && df<=7)week.push({c:c, df:df});
   });
+
   var te=document.getElementById("todayList");
-  te.innerHTML=today.length?today.map(function(x){return cItem(x.c,x.df);}).join(""):
-    '<div class="contact-empty">오늘 연락할 고객이 없습니다</div>';
+  if(te)te.innerHTML=today.length
+    ? today.map(function(x){return cItem(x.c, x.df);}).join("")
+    : '<div class="contact-empty">오늘 연락할 고객이 없습니다</div>';
+
   week.sort(function(a,b){return a.df-b.df;});
   var we=document.getElementById("weekList");
-  we.innerHTML=week.length?week.map(function(x){return cItem(x.c,x.df);}).join(""):
-    '<div class="contact-empty">이번주 연락할 고객이 없습니다</div>';
+  if(we)we.innerHTML=week.length
+    ? week.map(function(x){return cItem(x.c, x.df);}).join("")
+    : '<div class="contact-empty">이번주 연락할 고객이 없습니다</div>';
 }
 function cItem(c,df){
   var model=(c.modelName||"")+(c.detailModel?" · "+c.detailModel:"");
