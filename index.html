@@ -2092,6 +2092,9 @@ function resetNewForm(){
 // ============================================================
 // 신규 고객 저장
 // ============================================================
+// ============================================================
+// 신규 고객 저장
+// ============================================================
 function submitNew(){
   hideMsg("msg-new");
   var data=getFormData();
@@ -2099,8 +2102,16 @@ function submitNew(){
   if(!data.phone){showMsg("msg-new","err","⚠ 연락처를 입력해주세요.");return;}
   var btn=document.getElementById("submitBtn");
   btn.disabled=true;btn.textContent="저장 중…";
-  fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",
-    headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
+
+  // ★ no-cors 모드에서는 Content-Type:application/json이 브라우저에 의해
+  //    text/plain으로 강제 변환됨. text/plain으로 명시하면 body가 그대로 전달됨.
+  //    Apps Script doPost()에서 e.postData.contents로 JSON.parse 가능.
+  fetch(SCRIPT_URL,{
+    method:"POST",
+    mode:"no-cors",
+    headers:{"Content-Type":"text/plain"},
+    body:JSON.stringify(data)
+  })
   .then(function(){
     var list=load();
     var np=normP(data.phone),idx=-1;
@@ -2141,7 +2152,7 @@ function submitUpdate(){
   var btn=document.getElementById("updateBtn");
   btn.disabled=true;btn.textContent="저장 중…";
   fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",
-    headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})
+    headers:{"Content-Type":"text/plain"},body:JSON.stringify(payload)})
   .then(function(){
     var list=load();
     var np=normP(phone),found=false;
@@ -2372,7 +2383,7 @@ function submitEdit(){
   fetch(SCRIPT_URL,{
     method:"POST",
     mode:"no-cors",
-    headers:{"Content-Type":"application/json"},
+    headers:{"Content-Type":"text/plain"},
     body:JSON.stringify(payload)
   })
   .then(function(){
