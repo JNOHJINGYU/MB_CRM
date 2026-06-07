@@ -190,7 +190,29 @@
       background:var(--black);color:#fff;text-decoration:none;
       font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:4px;}
 
-    /* ── 폼 공통 ── */
+    /* ── 데이터분석 뷰 ── */
+    .analytics-summary{
+      display:grid;grid-template-columns:repeat(3,1fr);
+      gap:10px;margin-bottom:18px;
+    }
+    .an-card{
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius);padding:16px 10px 13px;
+      text-align:center;box-shadow:var(--shadow);
+    }
+    .an-num{font-size:26px;font-weight:800;line-height:1.1;color:var(--gold);}
+    .an-label{font-size:10px;color:var(--text-dim);margin-top:5px;font-weight:600;}
+    .chart-card{
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--radius);padding:16px;
+      box-shadow:var(--shadow);margin-bottom:16px;
+      overflow:hidden;
+    }
+    .chart-title{
+      font-size:13px;font-weight:800;color:var(--black);
+      margin-bottom:14px;display:flex;align-items:center;gap:6px;
+    }
+    .chart-wrap{position:relative;width:100%;}
     .view-header{padding:16px 0 6px;}
     .view-title{font-size:20px;font-weight:800;color:var(--black);}
     .view-sub{font-size:12px;color:var(--text-dim);margin-top:2px;}
@@ -506,6 +528,7 @@
       .care-grid{grid-template-columns:repeat(2,1fr);}
     }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -529,6 +552,7 @@
     <button class="pc-tab-btn" onclick="showView('new')">✏️ 신규등록</button>
     <button class="pc-tab-btn" onclick="showView('consult')">📋 추가상담</button>
     <button class="pc-tab-btn" onclick="showView('list')">👥 고객목록</button>
+    <button class="pc-tab-btn" onclick="showView('analytics')">📊 데이터분석</button>
   </div>
 
   <!-- ══════════ VIEW: 대시보드 ══════════ -->
@@ -1013,6 +1037,63 @@
     <div id="listContainer"></div>
   </div>
 
+  <!-- ══════════ VIEW: 데이터분석 ══════════ -->
+  <div class="view" id="analyticsView">
+    <div class="list-topbar">
+      <div class="view-title">📊 데이터분석</div>
+    </div>
+
+    <!-- 재구매 분석 요약 카드 -->
+    <div class="section-heading"><span class="dot"></span> 출고 실적 요약</div>
+    <div class="analytics-summary">
+      <div class="an-card">
+        <div class="an-num" id="an-total">0</div>
+        <div class="an-label">총 출고대수</div>
+      </div>
+      <div class="an-card">
+        <div class="an-num" id="an-repurchase" style="color:var(--blue)">0</div>
+        <div class="an-label">재구매 고객</div>
+      </div>
+      <div class="an-card">
+        <div class="an-num" id="an-referral" style="color:var(--green)">0</div>
+        <div class="an-label">소개 고객</div>
+      </div>
+    </div>
+
+    <!-- ① 유입경로별 출고대수 -->
+    <div class="chart-card">
+      <div class="chart-title">🔍 유입경로별 출고대수</div>
+      <div class="chart-wrap"><canvas id="chart-lead"></canvas></div>
+    </div>
+
+    <!-- ② 월별 계약대수 -->
+    <div class="chart-card">
+      <div class="chart-title">🤝 월별 계약대수</div>
+      <div class="chart-wrap"><canvas id="chart-monthly-contract"></canvas></div>
+    </div>
+
+    <!-- ③ 월별 출고대수 -->
+    <div class="chart-card">
+      <div class="chart-title">🚗 월별 출고대수</div>
+      <div class="chart-wrap"><canvas id="chart-monthly-delivery"></canvas></div>
+    </div>
+
+    <!-- ④ 차종별 출고대수 -->
+    <div class="chart-card">
+      <div class="chart-title">🏎 차종별 출고대수</div>
+      <div class="chart-wrap"><canvas id="chart-model"></canvas></div>
+    </div>
+
+    <!-- ⑤ 차종별 월간 판매대수 (올해) -->
+    <div class="chart-card">
+      <div class="chart-title">📅 차종별 월간 판매대수 <span id="an-year-label" style="font-size:11px;color:var(--text-lt);font-weight:600;"></span></div>
+      <div class="chart-wrap" style="overflow-x:auto;">
+        <canvas id="chart-model-monthly" style="min-width:500px;"></canvas>
+      </div>
+    </div>
+
+  </div><!-- /.analyticsView -->
+
 </div><!-- /.page-wrap -->
 
 <!-- ══════════ 고객 수정 모달 ══════════ -->
@@ -1287,8 +1368,8 @@
   <button class="nav-btn" id="nb-list" onclick="showView('list')" aria-label="고객목록">
     <span class="nav-icon">👥</span><span class="nav-label">고객목록</span>
   </button>
-  <button class="nav-btn" id="nb-more" onclick="showView('home')" aria-label="더보기">
-    <span class="nav-icon">⋯</span><span class="nav-label">더보기</span>
+  <button class="nav-btn" id="nb-more" onclick="showView('analytics')" aria-label="데이터분석">
+    <span class="nav-icon">📊</span><span class="nav-label">분석</span>
   </button>
 </nav>
 
@@ -1497,9 +1578,9 @@ function isMaintenanceDue(c){
 // ============================================================
 // 화면 전환
 // ============================================================
-var VIEWS={home:"homeView",new:"newView",consult:"consultView",list:"listView"};
-var VNAMES={home:"대시보드",new:"신규등록",consult:"추가상담",list:"고객목록"};
-var NBS={home:"nb-home",consult:"nb-consult",list:"nb-list"};
+var VIEWS={home:"homeView",new:"newView",consult:"consultView",list:"listView",analytics:"analyticsView"};
+var VNAMES={home:"대시보드",new:"신규등록",consult:"추가상담",list:"고객목록",analytics:"데이터분석"};
+var NBS={home:"nb-home",consult:"nb-consult",list:"nb-list",analytics:"nb-more"};
 
 function showView(v){
   Object.values(VIEWS).forEach(function(id){
@@ -1507,17 +1588,18 @@ function showView(v){
   });
   var t=document.getElementById(VIEWS[v]);if(t)t.classList.add("active");
   document.getElementById("viewBadge").textContent=VNAMES[v]||"";
-  ["home","consult","list"].forEach(function(k){
+  ["home","consult","list","analytics"].forEach(function(k){
     var b=document.getElementById(NBS[k]);if(b)b.classList.toggle("active",k===v);
   });
   var plus=document.getElementById("nb-plus");
   if(plus)plus.classList.toggle("active",v==="new");
   var pbs=document.querySelectorAll(".pc-tab-btn");
-  ["home","new","consult","list"].forEach(function(k,i){
+  ["home","new","consult","list","analytics"].forEach(function(k,i){
     if(pbs[i])pbs[i].classList.toggle("active",k===v);
   });
   if(v==="list")renderList();
   if(v==="home"){updateDash();renderHomeContacts();}
+  if(v==="analytics")renderAnalytics();
   window.scrollTo({top:0,behavior:"smooth"});
   hideMsg("msg-new");hideMsg("msg-update");
 }
@@ -2247,7 +2329,7 @@ function submitNew(){
     var np=normP(data.phone),idx=-1;
     for(var i=0;i<list.length;i++){if(normP(list[i].phone)===np){idx=i;break;}}
     if(idx>=0)list[idx]=data;else list.push(data);
-    save(list);updateDash();
+    save(list);updateDash();renderAnalyticsIfVisible();
     showMsg("msg-new","ok","✅ 저장되었습니다. 구글시트에 기록되었습니다.");
     resetNewForm();
   })
@@ -2584,9 +2666,7 @@ function submitEdit(){
     updateDash();
     renderHomeContacts();
     renderList();
-    if(msgEl){
-      msgEl.className="st-msg edit-save-msg ok";
-      msgEl.textContent="✅ 수정이 저장되었습니다. 구글시트에 반영 중…";
+    renderAnalyticsIfVisible();
     }
     // 3초 후 구글시트에서 최신 데이터 재동기화 (자동)
     setTimeout(function(){
@@ -2603,6 +2683,292 @@ function submitEdit(){
   .finally(function(){
     btn.disabled=false;btn.textContent="✅ 수정 저장";
   });
+}
+
+// ============================================================
+// 데이터분석 — Chart.js 기반 6개 차트 + 재구매 카드
+// ============================================================
+// 분석 뷰가 현재 열려있을 때만 재렌더 (성능 최적화)
+function renderAnalyticsIfVisible(){
+  var av=document.getElementById("analyticsView");
+  if(av&&av.classList.contains("active"))renderAnalytics();
+}
+
+// 색상 팔레트 (벤츠 감성)
+var AN_COLORS = [
+  "#1a1a2e","#16213e","#0f3460","#533483","#e94560",
+  "#1d7a8a","#2d6a4f","#b5838d","#6d6875","#c9a227",
+  "#457b9d","#a8dadc","#e63946","#606c38","#dda15e"
+];
+
+function anColor(i){ return AN_COLORS[i % AN_COLORS.length]; }
+
+// 차트 생성/갱신 헬퍼 — 기존 인스턴스 destroy 후 재생성
+function makeChart(id, config){
+  if(_chartInstances[id]){
+    try{_chartInstances[id].destroy();}catch(e){}
+    delete _chartInstances[id];
+  }
+  var canvas=document.getElementById(id);
+  if(!canvas)return;
+  _chartInstances[id]=new Chart(canvas.getContext("2d"), config);
+}
+
+// 공통 차트 옵션
+function barOpts(title, horizontal){
+  return {
+    responsive:true,
+    maintainAspectRatio: horizontal ? false : true,
+    aspectRatio: horizontal ? undefined : 1.6,
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:function(ctx){return " "+ctx.parsed[horizontal?"x":"y"]+"대";}}}
+    },
+    scales:{
+      x:{grid:{color:"rgba(0,0,0,.04)"},ticks:{font:{size:11},color:"#555"}},
+      y:{grid:{color:"rgba(0,0,0,.06)"},ticks:{font:{size:11},color:"#555",
+          stepSize:1,callback:function(v){return Number.isInteger(v)?v:"";}},
+        beginAtZero:true}
+    },
+    animation:{duration:400}
+  };
+}
+
+function renderAnalytics(){
+  var list = load();
+  var kst  = new Date(new Date().getTime()+9*3600000);
+  var thisYear = kst.getUTCFullYear();
+
+  // KST 기준 연도 추출 헬퍼
+  function getYear(dateStr){
+    var n=normalizeDateStr(dateStr);
+    return n.length>=4?n.substring(0,4):"";
+  }
+  // "YYYY-MM" 추출
+  function getYM(dateStr){
+    var n=normalizeDateStr(dateStr);
+    return n.length>=7?n.substring(0,7):"";
+  }
+
+  var deliveredList = list.filter(function(c){return mst(c.status)==="출고";});
+
+  // ── 재구매 분석 카드 ────────────────────────────────────────
+  var totalDelivered = deliveredList.length;
+  var repurchase = list.filter(function(c){
+    var tags=(c.tags||"").toLowerCase();
+    var lead=(c.leadSource||"").toLowerCase();
+    return tags.indexOf("재구매")!==-1||lead.indexOf("기존고객")!==-1;
+  }).length;
+  var referral = list.filter(function(c){
+    var tags=(c.tags||"").toLowerCase();
+    var lead=(c.leadSource||"").toLowerCase();
+    return tags.indexOf("소개")!==-1||
+           lead.indexOf("지인소개")!==-1||
+           lead.indexOf("고객소개")!==-1;
+  }).length;
+
+  function setEl(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+  setEl("an-total",      totalDelivered);
+  setEl("an-repurchase", repurchase);
+  setEl("an-referral",   referral);
+  var yl=document.getElementById("an-year-label");
+  if(yl)yl.textContent="("+thisYear+"년 기준)";
+
+  // ① 유입경로별 출고대수 ─────────────────────────────────────
+  var leadMap={};
+  deliveredList.forEach(function(c){
+    var k=c.leadSource||"미기재";
+    leadMap[k]=(leadMap[k]||0)+1;
+  });
+  var leadSorted=Object.keys(leadMap).sort(function(a,b){return leadMap[b]-leadMap[a];});
+  makeChart("chart-lead",{
+    type:"bar",
+    data:{
+      labels:leadSorted,
+      datasets:[{
+        data:leadSorted.map(function(k){return leadMap[k];}),
+        backgroundColor:leadSorted.map(function(_,i){return anColor(i);}),
+        borderRadius:5,borderSkipped:false
+      }]
+    },
+    options:(function(){
+      var o=barOpts();
+      o.indexAxis="y";
+      o.aspectRatio=undefined;
+      o.maintainAspectRatio=false;
+      o.responsive=true;
+      o.plugins.legend={display:false};
+      return o;
+    })()
+  });
+  // 높이 동적 조정 (유입경로 수에 따라)
+  var lcv=document.getElementById("chart-lead");
+  if(lcv)lcv.style.height=Math.max(160, leadSorted.length*38+40)+"px";
+
+  // ② 월별 계약대수 (최근 18개월) ─────────────────────────────
+  (function(){
+    var monthMap={};
+    list.forEach(function(c){
+      var ym=getYM(c.contractDate);
+      if(!ym)return;
+      monthMap[ym]=(monthMap[ym]||0)+1;
+    });
+    var months=Object.keys(monthMap).sort();
+    // 최근 18개월만
+    if(months.length>18)months=months.slice(months.length-18);
+    makeChart("chart-monthly-contract",{
+      type:"bar",
+      data:{
+        labels:months.map(function(m){return m.replace("-","년 ")+"월";}),
+        datasets:[{
+          data:months.map(function(m){return monthMap[m];}),
+          backgroundColor:"#1a5aa0",borderRadius:5
+        }]
+      },
+      options:barOpts()
+    });
+  })();
+
+  // ③ 월별 출고대수 (최근 18개월) ─────────────────────────────
+  (function(){
+    var monthMap={};
+    deliveredList.forEach(function(c){
+      var raw=c.deliveryDate||c.deliveryMonth||"";
+      var ym=getYM(raw)||
+             (c.deliveryMonth&&c.deliveryMonth.length>=7?c.deliveryMonth.substring(0,7):"");
+      if(!ym)return;
+      monthMap[ym]=(monthMap[ym]||0)+1;
+    });
+    var months=Object.keys(monthMap).sort();
+    if(months.length>18)months=months.slice(months.length-18);
+    makeChart("chart-monthly-delivery",{
+      type:"bar",
+      data:{
+        labels:months.map(function(m){return m.replace("-","년 ")+"월";}),
+        datasets:[{
+          data:months.map(function(m){return monthMap[m];}),
+          backgroundColor:"#0f6e35",borderRadius:5
+        }]
+      },
+      options:barOpts()
+    });
+  })();
+
+  // ④ 차종별 출고대수 ─────────────────────────────────────────
+  (function(){
+    var modelMap={};
+    deliveredList.forEach(function(c){
+      var k=c.modelName||"미기재";
+      modelMap[k]=(modelMap[k]||0)+1;
+    });
+    var models=Object.keys(modelMap).sort(function(a,b){return modelMap[b]-modelMap[a];});
+    makeChart("chart-model",{
+      type:"doughnut",
+      data:{
+        labels:models,
+        datasets:[{
+          data:models.map(function(k){return modelMap[k];}),
+          backgroundColor:models.map(function(_,i){return anColor(i);}),
+          borderWidth:2,borderColor:"#fff",hoverOffset:6
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:true,aspectRatio:1.5,
+        plugins:{
+          legend:{
+            position:"right",
+            labels:{font:{size:11},color:"#333",
+              generateLabels:function(chart){
+                var data=chart.data;
+                return data.labels.map(function(lbl,i){
+                  var val=data.datasets[0].data[i];
+                  return{
+                    text:lbl+" ("+val+"대)",
+                    fillStyle:data.datasets[0].backgroundColor[i],
+                    hidden:false,index:i
+                  };
+                });
+              }
+            }
+          },
+          tooltip:{callbacks:{label:function(ctx){return " "+ctx.label+": "+ctx.parsed+"대";}}}
+        },
+        animation:{duration:400}
+      }
+    });
+  })();
+
+  // ⑤ 차종별 월간 판매대수 (올해 12개월) ─────────────────────
+  (function(){
+    // 올해 월 배열 (01~현재월)
+    var curMon=kst.getUTCMonth()+1;
+    var months=[];
+    for(var mm=1;mm<=curMon;mm++){
+      months.push(thisYear+"-"+String(mm).padStart(2,"0"));
+    }
+    // 올해 출고 고객 필터
+    var thisYearDel=deliveredList.filter(function(c){
+      var raw=c.deliveryDate||c.deliveryMonth||"";
+      var ym=getYM(raw)||(c.deliveryMonth&&c.deliveryMonth.length>=7?c.deliveryMonth.substring(0,7):"");
+      return ym.substring(0,4)===String(thisYear);
+    });
+    // 차종 목록
+    var modelSet={};
+    thisYearDel.forEach(function(c){modelSet[c.modelName||"미기재"]=1;});
+    var modelKeys=Object.keys(modelSet);
+    if(modelKeys.length===0||months.length===0){
+      // 데이터 없음 처리
+      makeChart("chart-model-monthly",{
+        type:"bar",data:{labels:[],datasets:[]},
+        options:{responsive:true,plugins:{legend:{display:false}}}
+      });
+      return;
+    }
+    // 차종×월 집계
+    var counts={};
+    thisYearDel.forEach(function(c){
+      var raw=c.deliveryDate||c.deliveryMonth||"";
+      var ym=getYM(raw)||(c.deliveryMonth&&c.deliveryMonth.length>=7?c.deliveryMonth.substring(0,7):"");
+      var mk=c.modelName||"미기재";
+      if(!counts[mk])counts[mk]={};
+      counts[mk][ym]=(counts[mk][ym]||0)+1;
+    });
+    var datasets=modelKeys.map(function(mk,i){
+      return{
+        label:mk,
+        data:months.map(function(ym){return(counts[mk]&&counts[mk][ym])||0;}),
+        backgroundColor:anColor(i),
+        borderRadius:3
+      };
+    });
+    var mmcv=document.getElementById("chart-model-monthly");
+    if(mmcv){
+      mmcv.style.height=Math.max(240,modelKeys.length*28+120)+"px";
+    }
+    makeChart("chart-model-monthly",{
+      type:"bar",
+      data:{
+        labels:months.map(function(m){return parseInt(m.substring(5))+"월";}),
+        datasets:datasets
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{position:"bottom",labels:{font:{size:10},boxWidth:10,padding:8}},
+          tooltip:{callbacks:{label:function(ctx){return " "+ctx.dataset.label+": "+ctx.parsed.y+"대";}}}
+        },
+        scales:{
+          x:{stacked:false,grid:{color:"rgba(0,0,0,.04)"},
+            ticks:{font:{size:11},color:"#555"}},
+          y:{stacked:false,grid:{color:"rgba(0,0,0,.06)"},
+            ticks:{font:{size:11},color:"#555",stepSize:1,
+              callback:function(v){return Number.isInteger(v)?v:""}},
+            beginAtZero:true}
+        },
+        animation:{duration:400}
+      }
+    });
+  })();
 }
 
 // ============================================================
@@ -2681,6 +3047,7 @@ function syncFromSheet(isAuto){
     renderHomeContacts();
     if(document.getElementById("listView")&&
        document.getElementById("listView").classList.contains("active"))renderList();
+    renderAnalyticsIfVisible();
 
     var cnt=deduped.length;
     if(!isAuto&&msgEl){
