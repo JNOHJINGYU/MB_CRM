@@ -7,7 +7,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwC1IujjXcLaoXLUL6k5nCSQ59hViAPMbr32-wcV3SH6l1tIxY-HXQIsuHg7-DbKcp7Iw/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw0y1fnQRQ3j1F7JX_vjVFk-LB7E1a1aHvEFMYGsweC5qlTvadGreqv-hj1ghI_YqCCww/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   </script>
 
@@ -191,6 +191,24 @@
       font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:4px;}
 
     /* ── 데이터분석 뷰 ── */
+    .an-year-filter{
+      display:flex;gap:7px;flex-wrap:wrap;
+      margin-bottom:14px;padding:2px 0;
+    }
+    .an-yr-btn{
+      padding:7px 16px;border-radius:20px;
+      border:1.5px solid var(--border2);
+      background:#fff;color:var(--text-dim);
+      font-family:var(--font);font-size:12px;font-weight:700;
+      cursor:pointer;transition:background .13s,color .13s,border-color .13s;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .an-yr-btn:hover{border-color:var(--blue);color:var(--blue);}
+    .an-yr-btn.active{background:var(--black);border-color:var(--black);color:#fff;}
+    .an-yr-badge{
+      font-size:11px;font-weight:600;color:var(--text-lt);
+      margin-left:4px;
+    }
     .analytics-summary{
       display:grid;grid-template-columns:repeat(3,1fr);
       gap:10px;margin-bottom:18px;
@@ -202,6 +220,17 @@
     }
     .an-num{font-size:26px;font-weight:800;line-height:1.1;color:var(--gold);}
     .an-label{font-size:10px;color:var(--text-dim);margin-top:5px;font-weight:600;}
+    /* 목표달성률 카드 */
+    .an-goal-pct{font-size:24px;font-weight:800;color:var(--gold);line-height:1.1;}
+    .an-goal-bar-bg{
+      background:#eee;border-radius:10px;height:7px;
+      margin:8px 0 5px;overflow:hidden;
+    }
+    .an-goal-bar-fill{
+      height:100%;border-radius:10px;background:var(--gold);
+      transition:width .5s ease;width:0%;
+    }
+    .an-goal-detail{font-size:10px;color:var(--text-lt);margin-top:3px;}
     .chart-card{
       background:var(--surface);border:1px solid var(--border);
       border-radius:var(--radius);padding:16px;
@@ -1043,52 +1072,89 @@
       <div class="view-title">📊 데이터분석</div>
     </div>
 
-    <!-- 재구매 분석 요약 카드 -->
-    <div class="section-heading"><span class="dot"></span> 출고 실적 요약</div>
+    <!-- 연도 선택 필터 -->
+    <div class="an-year-filter" id="an-year-filter"></div>
+
+    <!-- 실적 요약 카드 3개 -->
+    <div class="section-heading"><span class="dot"></span>
+      <span id="an-section-label">2026 실적 요약</span>
+    </div>
     <div class="analytics-summary">
-      <div class="an-card">
-        <div class="an-num" id="an-total">0</div>
-        <div class="an-label">총 출고대수</div>
+      <div class="an-card" style="border-top:3px solid var(--green);">
+        <div class="an-num" id="an-delivery-cnt" style="color:var(--green)">0</div>
+        <div class="an-label" id="an-delivery-lbl">출고대수</div>
       </div>
-      <div class="an-card">
-        <div class="an-num" id="an-repurchase" style="color:var(--blue)">0</div>
-        <div class="an-label">재구매 고객</div>
+      <div class="an-card" style="border-top:3px solid var(--blue);">
+        <div class="an-num" id="an-contract-cnt" style="color:var(--blue)">0</div>
+        <div class="an-label" id="an-contract-lbl">계약대수</div>
       </div>
-      <div class="an-card">
-        <div class="an-num" id="an-referral" style="color:var(--green)">0</div>
-        <div class="an-label">소개 고객</div>
+      <div class="an-card" style="border-top:3px solid var(--gold);">
+        <div class="an-goal-wrap" id="an-goal-wrap">
+          <div class="an-goal-pct" id="an-goal-pct">0%</div>
+          <div class="an-goal-bar-bg">
+            <div class="an-goal-bar-fill" id="an-goal-bar"></div>
+          </div>
+          <div class="an-label">목표달성률</div>
+          <div class="an-goal-detail" id="an-goal-detail">목표 — / 현재 —</div>
+        </div>
       </div>
+    </div>
+
+    <!-- ⓪ 월별 누적 출고 라인차트 (최상단) -->
+    <div class="chart-card">
+      <div class="chart-title">📈 월별 누적 출고대수
+        <span class="an-yr-badge" id="an-cumul-yr"></span>
+      </div>
+      <div class="chart-wrap"><canvas id="chart-cumul"></canvas></div>
     </div>
 
     <!-- ① 유입경로별 출고대수 -->
     <div class="chart-card">
-      <div class="chart-title">🔍 유입경로별 출고대수</div>
+      <div class="chart-title">🔍 유입경로별 출고대수
+        <span class="an-yr-badge" id="an-lead-yr"></span>
+      </div>
       <div class="chart-wrap"><canvas id="chart-lead"></canvas></div>
     </div>
 
     <!-- ② 월별 계약대수 -->
     <div class="chart-card">
-      <div class="chart-title">🤝 월별 계약대수</div>
+      <div class="chart-title">🤝 월별 계약대수
+        <span class="an-yr-badge" id="an-contract-yr"></span>
+      </div>
       <div class="chart-wrap"><canvas id="chart-monthly-contract"></canvas></div>
     </div>
 
     <!-- ③ 월별 출고대수 -->
     <div class="chart-card">
-      <div class="chart-title">🚗 월별 출고대수</div>
+      <div class="chart-title">🚗 월별 출고대수
+        <span class="an-yr-badge" id="an-delivery-yr"></span>
+      </div>
       <div class="chart-wrap"><canvas id="chart-monthly-delivery"></canvas></div>
     </div>
 
-    <!-- ④ 차종별 출고대수 -->
+    <!-- ④ 차종별 출고대수 (도넛) -->
     <div class="chart-card">
-      <div class="chart-title">🏎 차종별 출고대수</div>
+      <div class="chart-title">🏎 차종별 출고대수
+        <span class="an-yr-badge" id="an-model-yr"></span>
+      </div>
       <div class="chart-wrap"><canvas id="chart-model"></canvas></div>
     </div>
 
-    <!-- ⑤ 차종별 월간 판매대수 (올해) -->
+    <!-- ⑥ 차종별 판매비중 TOP5 (도넛) -->
     <div class="chart-card">
-      <div class="chart-title">📅 차종별 월간 판매대수 <span id="an-year-label" style="font-size:11px;color:var(--text-lt);font-weight:600;"></span></div>
+      <div class="chart-title">🥇 차종별 판매비중 TOP5
+        <span class="an-yr-badge" id="an-top5-yr"></span>
+      </div>
+      <div class="chart-wrap"><canvas id="chart-top5"></canvas></div>
+    </div>
+
+    <!-- ⑤ 차종별 월간 판매대수 TOP5 -->
+    <div class="chart-card">
+      <div class="chart-title">📅 차종별 월간 판매대수 TOP5
+        <span class="an-yr-badge" id="an-mm-yr"></span>
+      </div>
       <div class="chart-wrap" style="overflow-x:auto;">
-        <canvas id="chart-model-monthly" style="min-width:500px;"></canvas>
+        <canvas id="chart-model-monthly" style="min-width:460px;height:260px;"></canvas>
       </div>
     </div>
 
@@ -2698,6 +2764,11 @@ function renderAnalyticsIfVisible(){
   var av=document.getElementById("analyticsView");
   if(av&&av.classList.contains("active"))renderAnalytics();
 }
+// 연도 버튼 클릭 핸들러
+function setAnYear(yr){
+  _anYear=yr;
+  renderAnalytics();
+}
 
 // 색상 팔레트 (벤츠 감성)
 var AN_COLORS = [
@@ -2739,134 +2810,238 @@ function barOpts(title, horizontal){
   };
 }
 
+// 현재 선택된 분석 연도 ("2026" 등, "" = 전체)
+var _anYear = "";   // 초기값: 빈칸 → renderAnalytics에서 현재연도로 세팅
+
 function renderAnalytics(){
   var list = load();
-  var kst  = new Date(new Date().getTime()+9*3600000);
+
+  // KST 현재년도
+  var kst = new Date(new Date().getTime()+9*3600000);
   var thisYear = kst.getUTCFullYear();
 
-  // KST 기준 연도 추출 헬퍼
-  function getYear(dateStr){
-    var n=normalizeDateStr(dateStr);
-    return n.length>=4?n.substring(0,4):"";
+  // 첫 진입 시 현재년도로 초기화
+  if(!_anYear) _anYear = String(thisYear);
+
+  // ── 연도 필터 버튼 렌더링 ───────────────────────────────────
+  var yfEl = document.getElementById("an-year-filter");
+  if(yfEl){
+    var btns = '<button class="an-yr-btn'+(_anYear===String(thisYear)?" active":"")+
+               '" onclick="setAnYear(\''+thisYear+'\')">'+thisYear+'</button>';
+    for(var py=thisYear-1; py>=thisYear-3; py--){
+      btns += '<button class="an-yr-btn'+(_anYear===String(py)?" active":"")+
+              '" onclick="setAnYear(\''+py+'\')">'+py+'</button>';
+    }
+    btns += '<button class="an-yr-btn'+(_anYear===""?" active":"")+
+            '" onclick="setAnYear(\'\')">전체</button>';
+    yfEl.innerHTML = btns;
   }
-  // "YYYY-MM" 추출
+
+  var yrLabel = _anYear ? _anYear+"년" : "전체";
+  var yrStr   = _anYear;           // "2026" or ""
+
+  function setEl(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+  function setBadge(id){ setEl(id, _anYear ? "("+_anYear+"년)" : "(전체)"); }
+
+  // 헤더 라벨
+  setEl("an-section-label", yrLabel+" 실적 요약");
+
+  // ── 연도 필터 헬퍼 ──────────────────────────────────────────
   function getYM(dateStr){
     var n=normalizeDateStr(dateStr);
     return n.length>=7?n.substring(0,7):"";
   }
+  function matchYear(dateStr){
+    if(!yrStr) return true;           // 전체
+    var n=normalizeDateStr(dateStr);
+    return n.substring(0,4)===yrStr;
+  }
+  function getDelYM(c){
+    var raw=c.deliveryDate||c.deliveryMonth||"";
+    return getYM(raw)||(c.deliveryMonth&&c.deliveryMonth.length>=7
+      ?c.deliveryMonth.substring(0,7):"");
+  }
 
-  var deliveredList = list.filter(function(c){return mst(c.status)==="출고";});
-
-  // ── 재구매 분석 카드 ────────────────────────────────────────
-  var totalDelivered = deliveredList.length;
-  var repurchase = list.filter(function(c){
-    var tags=(c.tags||"").toLowerCase();
-    var lead=(c.leadSource||"").toLowerCase();
-    return tags.indexOf("재구매")!==-1||lead.indexOf("기존고객")!==-1;
-  }).length;
-  var referral = list.filter(function(c){
-    var tags=(c.tags||"").toLowerCase();
-    var lead=(c.leadSource||"").toLowerCase();
-    return tags.indexOf("소개")!==-1||
-           lead.indexOf("지인소개")!==-1||
-           lead.indexOf("고객소개")!==-1;
-  }).length;
-
-  function setEl(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
-  setEl("an-total",      totalDelivered);
-  setEl("an-repurchase", repurchase);
-  setEl("an-referral",   referral);
-  var yl=document.getElementById("an-year-label");
-  if(yl)yl.textContent="("+thisYear+"년 기준)";
-
-  // ① 유입경로별 출고대수 ─────────────────────────────────────
-  var leadMap={};
-  deliveredList.forEach(function(c){
-    var k=c.leadSource||"미기재";
-    leadMap[k]=(leadMap[k]||0)+1;
+  // 출고 고객 (상태="출고") 전체 & 연도 필터
+  var deliveredAll  = list.filter(function(c){return mst(c.status)==="출고";});
+  var deliveredYear = deliveredAll.filter(function(c){
+    return matchYear(c.deliveryDate||c.deliveryMonth||"");
   });
-  var leadSorted=Object.keys(leadMap).sort(function(a,b){return leadMap[b]-leadMap[a];});
-  makeChart("chart-lead",{
-    type:"bar",
-    data:{
-      labels:leadSorted,
-      datasets:[{
-        data:leadSorted.map(function(k){return leadMap[k];}),
-        backgroundColor:leadSorted.map(function(_,i){return anColor(i);}),
-        borderRadius:5,borderSkipped:false
-      }]
-    },
-    options:(function(){
-      var o=barOpts();
-      o.indexAxis="y";
-      o.aspectRatio=undefined;
-      o.maintainAspectRatio=false;
-      o.responsive=true;
-      o.plugins.legend={display:false};
-      return o;
-    })()
+  // 계약 고객 (contractDate 존재) 연도 필터
+  var contractYear  = list.filter(function(c){
+    return c.contractDate && matchYear(c.contractDate);
   });
-  // 높이 동적 조정 (유입경로 수에 따라)
-  var lcv=document.getElementById("chart-lead");
-  if(lcv)lcv.style.height=Math.max(160, leadSorted.length*38+40)+"px";
 
-  // ② 월별 계약대수 (최근 18개월) ─────────────────────────────
+  // ── 요약 카드 ───────────────────────────────────────────────
+  var deliveryCnt = deliveredYear.length;
+  var contractCnt = contractYear.length;
+
+  setEl("an-delivery-cnt", deliveryCnt+"대");
+  setEl("an-contract-cnt", contractCnt+"대");
+  setEl("an-delivery-lbl", yrLabel+" 출고대수");
+  setEl("an-contract-lbl", yrLabel+" 계약대수");
+
+  // 목표 달성률 (연도별 목표: 현재년도 120대, 나머지 100대 / 전체는 전체 출고)
+  var GOAL = yrStr ? (yrStr===String(thisYear)?120:100) : null;
+  var pctEl  = document.getElementById("an-goal-pct");
+  var barEl  = document.getElementById("an-goal-bar");
+  var detEl  = document.getElementById("an-goal-detail");
+  if(GOAL){
+    var pct = Math.min(Math.round(deliveryCnt/GOAL*100), 100);
+    if(pctEl) pctEl.textContent = pct+"%";
+    if(barEl) barEl.style.width = pct+"%";
+    if(detEl) detEl.textContent = "목표 "+GOAL+"대 / 현재 "+deliveryCnt+"대";
+    if(barEl) barEl.style.background = pct>=100?"var(--green)":pct>=70?"var(--gold)":"var(--orange)";
+  } else {
+    if(pctEl) pctEl.textContent = "-";
+    if(barEl) barEl.style.width = "0%";
+    if(detEl) detEl.textContent = "전체 기간 집계";
+  }
+
+  // ── 12개월 배열 생성 ────────────────────────────────────────
+  // 특정 연도: 1~12월 전체 / 전체: 최근 18개월
+  function makeMonthRange(yr){
+    var months=[];
+    if(yr){
+      for(var mm=1;mm<=12;mm++){
+        months.push(yr+"-"+String(mm).padStart(2,"0"));
+      }
+    } else {
+      // 전체 모드: 최근 18개월
+      var end=new Date(kst.getUTCFullYear(),kst.getUTCMonth());
+      for(var i=17;i>=0;i--){
+        var d=new Date(end.getFullYear(),end.getMonth()-i);
+        months.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));
+      }
+    }
+    return months;
+  }
+  var months12 = makeMonthRange(yrStr);
+  function mLabel(ym){ return yrStr?parseInt(ym.substring(5))+"월":ym.replace("-","년 ")+"월"; }
+
+  // ── ⓪ 월별 누적 출고 라인차트 ────────────────────────────────
+  setBadge("an-cumul-yr");
   (function(){
     var monthMap={};
-    list.forEach(function(c){
-      var ym=getYM(c.contractDate);
-      if(!ym)return;
+    deliveredYear.forEach(function(c){
+      var ym=getDelYM(c);if(!ym)return;
       monthMap[ym]=(monthMap[ym]||0)+1;
     });
-    var months=Object.keys(monthMap).sort();
-    // 최근 18개월만
-    if(months.length>18)months=months.slice(months.length-18);
+    var cumul=0, data=months12.map(function(ym){
+      cumul+=(monthMap[ym]||0);return cumul;
+    });
+    makeChart("chart-cumul",{
+      type:"line",
+      data:{
+        labels:months12.map(mLabel),
+        datasets:[{
+          label:"누적 출고",
+          data:data,
+          borderColor:"#c9a227",
+          backgroundColor:"rgba(201,162,39,.12)",
+          pointBackgroundColor:"#c9a227",
+          pointRadius:4,pointHoverRadius:6,
+          borderWidth:2.5,fill:true,tension:0.3
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:true,aspectRatio:1.8,
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:function(ctx){return " 누적 "+ctx.parsed.y+"대";}}}
+        },
+        scales:{
+          x:{grid:{color:"rgba(0,0,0,.04)"},ticks:{font:{size:11},color:"#555"}},
+          y:{grid:{color:"rgba(0,0,0,.06)"},beginAtZero:true,
+            ticks:{font:{size:11},color:"#555",stepSize:1,
+              callback:function(v){return Number.isInteger(v)?v:""}}}
+        },
+        animation:{duration:400}
+      }
+    });
+  })();
+
+  // ── ① 유입경로별 출고대수 ─────────────────────────────────
+  setBadge("an-lead-yr");
+  (function(){
+    var leadMap={};
+    deliveredYear.forEach(function(c){
+      var k=c.leadSource||"미기재";
+      leadMap[k]=(leadMap[k]||0)+1;
+    });
+    var sorted=Object.keys(leadMap).sort(function(a,b){return leadMap[b]-leadMap[a];});
+    makeChart("chart-lead",{
+      type:"bar",
+      data:{
+        labels:sorted,
+        datasets:[{
+          data:sorted.map(function(k){return leadMap[k];}),
+          backgroundColor:sorted.map(function(_,i){return anColor(i);}),
+          borderRadius:5,borderSkipped:false
+        }]
+      },
+      options:(function(){
+        var o=barOpts();o.indexAxis="y";
+        o.aspectRatio=undefined;o.maintainAspectRatio=false;o.responsive=true;
+        return o;
+      })()
+    });
+    var cv=document.getElementById("chart-lead");
+    if(cv)cv.style.height=Math.max(140,sorted.length*36+36)+"px";
+  })();
+
+  // ── ② 월별 계약대수 ───────────────────────────────────────
+  setBadge("an-contract-yr");
+  (function(){
+    var monthMap={};
+    months12.forEach(function(m){monthMap[m]=0;});   // 없는 달 0 보장
+    list.forEach(function(c){
+      if(!c.contractDate)return;
+      if(!matchYear(c.contractDate))return;
+      var ym=getYM(c.contractDate);
+      if(ym&&monthMap[ym]!==undefined)monthMap[ym]++;
+    });
     makeChart("chart-monthly-contract",{
       type:"bar",
       data:{
-        labels:months.map(function(m){return m.replace("-","년 ")+"월";}),
-        datasets:[{
-          data:months.map(function(m){return monthMap[m];}),
-          backgroundColor:"#1a5aa0",borderRadius:5
-        }]
+        labels:months12.map(mLabel),
+        datasets:[{data:months12.map(function(m){return monthMap[m]||0;}),
+          backgroundColor:"#1a5aa0",borderRadius:5}]
       },
       options:barOpts()
     });
   })();
 
-  // ③ 월별 출고대수 (최근 18개월) ─────────────────────────────
+  // ── ③ 월별 출고대수 ───────────────────────────────────────
+  setBadge("an-delivery-yr");
   (function(){
     var monthMap={};
-    deliveredList.forEach(function(c){
-      var raw=c.deliveryDate||c.deliveryMonth||"";
-      var ym=getYM(raw)||
-             (c.deliveryMonth&&c.deliveryMonth.length>=7?c.deliveryMonth.substring(0,7):"");
-      if(!ym)return;
-      monthMap[ym]=(monthMap[ym]||0)+1;
+    months12.forEach(function(m){monthMap[m]=0;});
+    deliveredYear.forEach(function(c){
+      var ym=getDelYM(c);
+      if(ym&&monthMap[ym]!==undefined)monthMap[ym]++;
     });
-    var months=Object.keys(monthMap).sort();
-    if(months.length>18)months=months.slice(months.length-18);
     makeChart("chart-monthly-delivery",{
       type:"bar",
       data:{
-        labels:months.map(function(m){return m.replace("-","년 ")+"월";}),
-        datasets:[{
-          data:months.map(function(m){return monthMap[m];}),
-          backgroundColor:"#0f6e35",borderRadius:5
-        }]
+        labels:months12.map(mLabel),
+        datasets:[{data:months12.map(function(m){return monthMap[m]||0;}),
+          backgroundColor:"#0f6e35",borderRadius:5}]
       },
       options:barOpts()
     });
   })();
 
-  // ④ 차종별 출고대수 ─────────────────────────────────────────
+  // ── ④ 차종별 출고대수 (도넛, 전체 차종) ─────────────────
+  setBadge("an-model-yr");
   (function(){
     var modelMap={};
-    deliveredList.forEach(function(c){
+    deliveredYear.forEach(function(c){
       var k=c.modelName||"미기재";
       modelMap[k]=(modelMap[k]||0)+1;
     });
     var models=Object.keys(modelMap).sort(function(a,b){return modelMap[b]-modelMap[a];});
+    if(!models.length){makeChart("chart-model",{type:"doughnut",data:{labels:[],datasets:[{data:[]}]}});return;}
     makeChart("chart-model",{
       type:"doughnut",
       data:{
@@ -2880,22 +3055,14 @@ function renderAnalytics(){
       options:{
         responsive:true,maintainAspectRatio:true,aspectRatio:1.5,
         plugins:{
-          legend:{
-            position:"right",
-            labels:{font:{size:11},color:"#333",
-              generateLabels:function(chart){
-                var data=chart.data;
-                return data.labels.map(function(lbl,i){
-                  var val=data.datasets[0].data[i];
-                  return{
-                    text:lbl+" ("+val+"대)",
-                    fillStyle:data.datasets[0].backgroundColor[i],
-                    hidden:false,index:i
-                  };
-                });
-              }
+          legend:{position:"right",labels:{font:{size:11},color:"#333",
+            generateLabels:function(chart){
+              return chart.data.labels.map(function(lbl,i){
+                return{text:lbl+" ("+chart.data.datasets[0].data[i]+"대)",
+                  fillStyle:chart.data.datasets[0].backgroundColor[i],hidden:false,index:i};
+              });
             }
-          },
+          }},
           tooltip:{callbacks:{label:function(ctx){return " "+ctx.label+": "+ctx.parsed+"대";}}}
         },
         animation:{duration:400}
@@ -2903,59 +3070,85 @@ function renderAnalytics(){
     });
   })();
 
-  // ⑤ 차종별 월간 판매대수 (올해 12개월) ─────────────────────
+  // ── ⑥ 차종별 판매비중 TOP5 (도넛) ───────────────────────
+  setBadge("an-top5-yr");
   (function(){
-    // 올해 월 배열 (01~현재월)
-    var curMon=kst.getUTCMonth()+1;
-    var months=[];
-    for(var mm=1;mm<=curMon;mm++){
-      months.push(thisYear+"-"+String(mm).padStart(2,"0"));
-    }
-    // 올해 출고 고객 필터
-    var thisYearDel=deliveredList.filter(function(c){
-      var raw=c.deliveryDate||c.deliveryMonth||"";
-      var ym=getYM(raw)||(c.deliveryMonth&&c.deliveryMonth.length>=7?c.deliveryMonth.substring(0,7):"");
-      return ym.substring(0,4)===String(thisYear);
+    var modelMap={};
+    deliveredYear.forEach(function(c){
+      var k=c.modelName||"미기재";
+      modelMap[k]=(modelMap[k]||0)+1;
     });
-    // 차종 목록
-    var modelSet={};
-    thisYearDel.forEach(function(c){modelSet[c.modelName||"미기재"]=1;});
-    var modelKeys=Object.keys(modelSet);
-    if(modelKeys.length===0||months.length===0){
-      // 데이터 없음 처리
-      makeChart("chart-model-monthly",{
-        type:"bar",data:{labels:[],datasets:[]},
-        options:{responsive:true,plugins:{legend:{display:false}}}
-      });
+    var sorted=Object.keys(modelMap).sort(function(a,b){return modelMap[b]-modelMap[a];});
+    var top5=sorted.slice(0,5);
+    var otherCnt=sorted.slice(5).reduce(function(s,k){return s+modelMap[k];},0);
+    var labels=top5.slice();var data=top5.map(function(k){return modelMap[k];});
+    if(otherCnt>0){labels.push("기타");data.push(otherCnt);}
+    var total=data.reduce(function(s,v){return s+v;},0)||1;
+    if(!top5.length){makeChart("chart-top5",{type:"doughnut",data:{labels:[],datasets:[{data:[]}]}});return;}
+    makeChart("chart-top5",{
+      type:"doughnut",
+      data:{
+        labels:labels,
+        datasets:[{
+          data:data,
+          backgroundColor:labels.map(function(_,i){return anColor(i);}),
+          borderWidth:2,borderColor:"#fff",hoverOffset:6
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:true,aspectRatio:1.5,
+        plugins:{
+          legend:{position:"right",labels:{font:{size:11},color:"#333",
+            generateLabels:function(chart){
+              return chart.data.labels.map(function(lbl,i){
+                var cnt=chart.data.datasets[0].data[i];
+                var pct=Math.round(cnt/total*100);
+                return{text:lbl+" "+pct+"% ("+cnt+"대)",
+                  fillStyle:chart.data.datasets[0].backgroundColor[i],hidden:false,index:i};
+              });
+            }
+          }},
+          tooltip:{callbacks:{label:function(ctx){
+            var pct=Math.round(ctx.parsed/total*100);
+            return " "+ctx.label+": "+ctx.parsed+"대 ("+pct+"%)";
+          }}}
+        },
+        animation:{duration:400}
+      }
+    });
+  })();
+
+  // ── ⑤ 차종별 월간 판매대수 TOP5 (그룹 막대) ─────────────
+  setBadge("an-mm-yr");
+  (function(){
+    // 연도 전체 출고에서 TOP5 차종 선택
+    var modelMap={};
+    deliveredYear.forEach(function(c){
+      var k=c.modelName||"미기재";
+      modelMap[k]=(modelMap[k]||0)+1;
+    });
+    var top5=Object.keys(modelMap).sort(function(a,b){return modelMap[b]-modelMap[a];}).slice(0,5);
+    if(!top5.length||!months12.length){
+      makeChart("chart-model-monthly",{type:"bar",data:{labels:[],datasets:[]},
+        options:{responsive:true,plugins:{legend:{display:false}}}});
       return;
     }
-    // 차종×월 집계
     var counts={};
-    thisYearDel.forEach(function(c){
-      var raw=c.deliveryDate||c.deliveryMonth||"";
-      var ym=getYM(raw)||(c.deliveryMonth&&c.deliveryMonth.length>=7?c.deliveryMonth.substring(0,7):"");
+    deliveredYear.forEach(function(c){
       var mk=c.modelName||"미기재";
+      if(top5.indexOf(mk)===-1)return;
+      var ym=getDelYM(c);if(!ym)return;
       if(!counts[mk])counts[mk]={};
       counts[mk][ym]=(counts[mk][ym]||0)+1;
     });
-    var datasets=modelKeys.map(function(mk,i){
-      return{
-        label:mk,
-        data:months.map(function(ym){return(counts[mk]&&counts[mk][ym])||0;}),
-        backgroundColor:anColor(i),
-        borderRadius:3
-      };
+    var datasets=top5.map(function(mk,i){
+      return{label:mk,
+        data:months12.map(function(ym){return(counts[mk]&&counts[mk][ym])||0;}),
+        backgroundColor:anColor(i),borderRadius:3};
     });
-    var mmcv=document.getElementById("chart-model-monthly");
-    if(mmcv){
-      mmcv.style.height=Math.max(240,modelKeys.length*28+120)+"px";
-    }
     makeChart("chart-model-monthly",{
       type:"bar",
-      data:{
-        labels:months.map(function(m){return parseInt(m.substring(5))+"월";}),
-        datasets:datasets
-      },
+      data:{labels:months12.map(mLabel),datasets:datasets},
       options:{
         responsive:true,maintainAspectRatio:false,
         plugins:{
@@ -2963,12 +3156,10 @@ function renderAnalytics(){
           tooltip:{callbacks:{label:function(ctx){return " "+ctx.dataset.label+": "+ctx.parsed.y+"대";}}}
         },
         scales:{
-          x:{stacked:false,grid:{color:"rgba(0,0,0,.04)"},
-            ticks:{font:{size:11},color:"#555"}},
-          y:{stacked:false,grid:{color:"rgba(0,0,0,.06)"},
+          x:{grid:{color:"rgba(0,0,0,.04)"},ticks:{font:{size:11},color:"#555"}},
+          y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.06)"},
             ticks:{font:{size:11},color:"#555",stepSize:1,
-              callback:function(v){return Number.isInteger(v)?v:""}},
-            beginAtZero:true}
+              callback:function(v){return Number.isInteger(v)?v:""}}}
         },
         animation:{duration:400}
       }
