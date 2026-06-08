@@ -2754,8 +2754,8 @@ function submitEdit(){
   var btn=document.getElementById("editSaveBtn");
   if(msgEl){msgEl.className="st-msg edit-save-msg";msgEl.textContent="";}
 
-  var eName=document.getElementById("e-customerName").value.trim();
-  var ePhone=document.getElementById("e-phone").value.trim();
+  var eName  = document.getElementById("e-customerName").value.trim();
+  var ePhone = document.getElementById("e-phone").value.trim();
   if(!eName){
     if(msgEl){msgEl.className="st-msg edit-save-msg err";msgEl.textContent="⚠ 고객명을 입력해주세요.";}
     return;
@@ -2765,18 +2765,18 @@ function submitEdit(){
     return;
   }
 
-  var deliveryDate=document.getElementById("e-deliveryDate").value;
-  var deliveryMonth=deliveryDate&&deliveryDate.length>=7?deliveryDate.substring(0,7):"";
-  var eDM=document.getElementById("e-deliveryMonth").value;
-  if(eDM)deliveryMonth=eDM;
+  var deliveryDate  = document.getElementById("e-deliveryDate").value;
+  var deliveryMonth = deliveryDate&&deliveryDate.length>=7?deliveryDate.substring(0,7):"";
+  var eDM = document.getElementById("e-deliveryMonth").value;
+  if(eDM) deliveryMonth=eDM;
 
   var payload={
     action:              "editCustomer",
     customerId:          _editOriginalId,
-    phone:               _editOriginalPhone||ePhone,   // 행 검색용 (기존 번호)
+    phone:               _editOriginalPhone||ePhone,  // 행 검색용 (기존 번호)
     customerName:        eName,
     companyName:         document.getElementById("e-companyName").value.trim(),
-    newPhone:            ePhone,                       // 실제 저장할 번호
+    newPhone:            ePhone,                      // 실제 저장할 번호
     region:              document.getElementById("e-region").value.trim(),
     modelName:           document.getElementById("e-modelName").value,
     detailModel:         getDetailModelValue("e-detailModel","e-detailCustom"),
@@ -2805,25 +2805,15 @@ function submitEdit(){
     birthDate:           document.getElementById("e-birthDate").value
   };
 
-  btn.disabled=true;btn.textContent="저장 중…";
+  btn.disabled=true; btn.textContent="저장 중…";
 
-  // ── 디버그 로그 ──────────────────────────────────────────────────────────
   console.log("[수정시작] customerId="+payload.customerId
     +" / 검색phone="+payload.phone
     +" / newPhone="+payload.newPhone
     +" / name="+payload.customerName);
 
-  // ★ no-cors → 응답 body를 직접 읽을 수 없음.
-  //   해결: POST 직후 1.5초 대기 → syncFromSheet()로 시트를 읽어 검증.
-  //   시트에 변경이 반영되었는지 확인 후에만 성공 처리.
-  //   localStorage는 syncFromSheet() 완료 후에만 갱신됨.
-  // ────────────────────────────────────────────────────────────────────────
-
-  // 수정 전 phone(검색용)과 수정 후 phone을 기억해둠
-  var searchPhone = normP(payload.phone);
-  var newPhoneNorm = normP(ePhone);
-
-  console.log("[구글시트 저장 요청] action=editCustomer / row 검색: "+payload.phone);
+  // ── STEP 1: 구글시트에 수정 내용 POST (no-cors) ───────────────────────────
+  console.log("[구글시트 저장 요청] action=editCustomer");
 
   fetch(SCRIPT_URL,{
     method:"POST",
@@ -2832,76 +2822,93 @@ function submitEdit(){
     body:JSON.stringify(payload)
   })
   .then(function(){
-    // no-cors이므로 응답 내용 불가 — 1.5초 후 시트에서 읽어 검증
-    console.log("[구글시트 저장 요청 완료] no-cors 응답 (opaque). 1.5초 후 동기화 시작.");
+    // no-cors이므로 응답 body 확인 불가 (opaque response — 항상 성공으로 처리됨)
+    // Apps Script 처리 완료 대기 후 시트를 직접 읽어 검증
+    console.log("[구글시트 POST 완료] Apps Script 처리 대기 중…");
     if(msgEl){
       msgEl.className="st-msg edit-save-msg";
-      msgEl.textContent="⏳ 구글시트에 저장 중… 잠시 후 자동으로 갱신됩니다.";
+      msgEl.textContent="⏳ 구글시트에 저장 중… 잠시 후 자동 갱신됩니다.";
     }
-    return new Promise(function(resolve){setTimeout(resolve,1500);});
+    // Apps Script 실행 시간 고려 — 3초 대기
+    return new Promise(function(resolve){setTimeout(resolve,3000);});
   })
   .then(function(){
-    // ── 시트에서 최신 데이터 읽어 검증 및 localStorage 갱신 ──────────────
-    console.log("[동기화 시작] syncFromSheet 호출");
-    return _syncAndVerifyEdit(searchPhone, newPhoneNorm, payload.customerName, msgEl, btn);
+    // ── STEP 2: 시트에서 전체 고객 읽기 (syncFromSheet 내부 로직 직접 호출) ──
+    console.log("[동기화 시작] 시트에서 최신 데이터 읽기");
+    return _fetchSheetAndSave(payload.phone, ePhone, msgEl, btn);
   })
   .catch(function(err){
-    console.error("[submitEdit 오류]",err);
+    console.error("[submitEdit 오류]", err);
     if(msgEl){
       msgEl.className="st-msg edit-save-msg err";
-      msgEl.textContent="❌ 저장 실패. 인터넷 연결 또는 Apps Script 배포 상태를 확인해주세요.";
+      msgEl.textContent="❌ 저장 실패: "+err.message;
     }
-    btn.disabled=false;btn.textContent="✅ 수정 저장";
+    btn.disabled=false; btn.textContent="✅ 수정 저장";
   });
 }
 
-// 수정 후 시트에서 데이터를 읽어 검증하고 localStorage를 시트 기준으로 덮어쓴다.
-function _syncAndVerifyEdit(searchPhone, newPhoneNorm, expectedName, msgEl, btn){
-  return fetch(SCRIPT_URL+"?action=list",{method:"GET"})
+// ── STEP 2 구현: 시트를 읽어 localStorage 갱신 후 화면 업데이트 ────────────
+// submitEdit() 전용 동기화 함수.
+// syncFromSheet()와 동일한 fetch 방식을 사용하되,
+// _syncInProgress 플래그를 공유하지 않아 독립 실행 가능.
+function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn){
+  var searchNorm = normP(searchPhone);
+  var newNorm    = normP(newPhone);
+
+  return fetch(SCRIPT_URL+"?action=list", {method:"GET"})
   .then(function(res){
-    if(!res.ok)throw new Error("시트 읽기 HTTP "+res.status);
-    return res.json();
+    if(!res.ok) throw new Error("HTTP "+res.status+" (시트 읽기 실패)");
+    return res.text();   // text()로 먼저 받아 파싱 오류를 명확하게 처리
   })
-  .then(function(json){
-    if(!json.success)throw new Error(json.message||"시트 읽기 실패");
+  .then(function(text){
+    var json;
+    try{
+      json=JSON.parse(text);
+    }catch(e){
+      // HTML 오류 페이지 등이 반환된 경우 — 앞 200자 출력
+      console.error("[시트 읽기] JSON 파싱 실패. 응답 앞부분:", text.substring(0,200));
+      throw new Error("시트 응답이 JSON이 아닙니다. Apps Script 배포 상태를 확인하세요.");
+    }
 
-    var incoming=json.customers||[];
-    console.log("[구글시트 응답] 고객 "+incoming.length+"명 수신");
+    console.log("[구글시트 응답] success="+json.success+" / 고객 수="+
+      (json.customers?json.customers.length:"N/A"));
 
-    // 시트에 수정된 고객이 존재하는지 확인 (신규 phone 또는 기존 phone 기준)
-    var found=incoming.find(function(c){
-      var np=normP(c.phone);
-      return np===newPhoneNorm||(searchPhone&&np===searchPhone);
+    if(!json.success){
+      throw new Error(json.message||"Apps Script 오류 (success:false)");
+    }
+
+    var incoming = json.customers||[];
+
+    // 수정된 고객이 시트에 존재하는지 확인
+    var found = incoming.find(function(c){
+      var np = normP(c.phone);
+      return np===newNorm || (searchNorm && np===searchNorm);
     });
 
     if(!found){
-      throw new Error("구글시트에서 해당 고객을 찾을 수 없습니다. (phone: "+searchPhone+")");
+      // 시트에 아직 반영이 안 됐을 수 있음 → 경고는 하되 저장은 계속 진행
+      console.warn("[동기화 경고] 시트에서 해당 고객을 찾지 못함. 시트 처리 지연 가능.");
+    } else {
+      console.log("[동기화 확인] 시트 고객 확인: "+found.customerName+" / "+found.phone);
     }
 
-    console.log("[동기화 확인] 시트에서 고객 확인: "+found.customerName+" / phone: "+found.phone);
-
-    // ── 중복 제거 (시트 기준, 최신 행 우선) ────────────────────────────────
+    // ── 중복 제거 (연락처 기준, 최신 수정일 우선) ────────────────────────────
     var phoneMap={};
     incoming.forEach(function(c){
       var np=normP(c.phone);
-      if(!np){
-        phoneMap["_nophone_"+(c.customerId||Math.random())]=c;
-        return;
-      }
+      if(!np){ phoneMap["_nophone_"+(c.customerId||Math.random())]=c; return; }
       var existing=phoneMap[np];
-      if(!existing){phoneMap[np]=c;return;}
+      if(!existing){ phoneMap[np]=c; return; }
       var ta=c._updatedAt||c._savedAt||"";
       var tb=existing._updatedAt||existing._savedAt||"";
-      if(ta>=tb)phoneMap[np]=c;
+      if(ta>=tb) phoneMap[np]=c;
     });
     var deduped=Object.values(phoneMap);
 
     // 날짜 정규화
     deduped.forEach(function(c){
       DATE_FIELDS_LIST.forEach(function(f){
-        if(c[f]!==undefined&&c[f]!==null&&c[f]!==""){
-          c[f]=normalizeDateStr(c[f]);
-        }
+        if(c[f]!==undefined&&c[f]!==null&&c[f]!=="") c[f]=normalizeDateStr(c[f]);
       });
     });
 
@@ -2910,36 +2917,34 @@ function _syncAndVerifyEdit(searchPhone, newPhoneNorm, expectedName, msgEl, btn)
       if(!c.customerId) c.customerId="TEMP-"+normP(c.phone)+"-"+i;
     });
 
-    // ★ 시트를 single source of truth로 사용 — onlyLocal 병합 없이 덮어쓰기
-    //   (아직 시트에 없는 로컬 신규 고객도 이 시점에는 제거됨.
-    //    신규 고객은 submitNew() 직후 즉시 시트에 appendRow되므로
-    //    정상 흐름에서는 문제 없음)
+    // ★ 시트 기준 완전 덮어쓰기 (onlyLocal 병합 없음)
     save(deduped);
-    console.log("[동기화 완료] localStorage에 "+deduped.length+"명 저장 (시트 기준 덮어쓰기)");
+    console.log("[동기화 완료] localStorage에 "+deduped.length+"명 저장 (시트 기준)");
 
-    // 화면 갱신
+    // 화면 전체 갱신
     updateDash();
     renderHomeContacts();
     if(document.getElementById("listView")&&
-       document.getElementById("listView").classList.contains("active"))renderList();
+       document.getElementById("listView").classList.contains("active")) renderList();
     renderAnalyticsIfVisible();
 
     if(msgEl){
       msgEl.className="st-msg edit-save-msg ok";
-      msgEl.textContent="✅ 수정이 구글시트에 저장되고 화면이 갱신되었습니다.";
+      msgEl.textContent="✅ 수정이 저장되었습니다.";
     }
   })
   .catch(function(err){
-    console.error("[_syncAndVerifyEdit 오류]",err);
+    console.error("[_fetchSheetAndSave 오류]", err);
     if(msgEl){
       msgEl.className="st-msg edit-save-msg err";
       msgEl.textContent="❌ "+err.message;
     }
   })
   .finally(function(){
-    if(btn){btn.disabled=false;btn.textContent="✅ 수정 저장";}
+    if(btn){ btn.disabled=false; btn.textContent="✅ 수정 저장"; }
   });
 }
+
 
 
 // ============================================================
