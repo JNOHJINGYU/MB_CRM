@@ -7,7 +7,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw0y1fnQRQ3j1F7JX_vjVFk-LB7E1a1aHvEFMYGsweC5qlTvadGreqv-hj1ghI_YqCCww/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxswUgpfFoncBTJ_MUaLx7dcT4pbZXvVNhiQqYj75xwAXqfs-GuCPU6w_YbT2jVVbDelQ/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   </script>
 
@@ -186,9 +186,46 @@
       box-shadow:0 1px 6px rgba(0,0,0,.05);}
     .c-name{font-size:15px;font-weight:700;color:var(--black);}
     .c-meta{font-size:12px;color:var(--text-dim);margin-top:2px;}
-    .call-btn{padding:7px 13px;border-radius:20px;border:none;
-      background:var(--black);color:#fff;text-decoration:none;
-      font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:4px;}
+    .call-btn{
+      white-space:nowrap;word-break:keep-all;flex-shrink:0;
+      min-width:76px;height:44px;padding:0 16px;border-radius:24px;
+      border:none;background:var(--black);color:#fff;text-decoration:none;
+      display:inline-flex;align-items:center;justify-content:center;
+      gap:5px;font-size:13px;font-weight:800;line-height:1;
+    }
+
+    /* 클릭 가능한 고객명 */
+    .clickable-name{
+      cursor:pointer;
+      display:inline-block;
+      transition:color .15s, transform .1s;
+    }
+    .clickable-name:hover{color:var(--gold-dk);}
+    .clickable-name:active{transform:scale(.98);}
+
+    /* 고객 상세 오버레이 */
+    .customer-detail-overlay{
+      display:none;position:fixed;inset:0;z-index:600;
+      background:rgba(0,0,0,.55);backdrop-filter:blur(2px);
+      overflow-y:auto;-webkit-overflow-scrolling:touch;
+    }
+    .customer-detail-overlay.open{
+      display:flex;align-items:flex-start;justify-content:center;
+      padding:18px 10px 40px;
+    }
+    .customer-detail-modal{
+      width:100%;max-width:640px;background:var(--bg);
+      border-radius:20px;overflow:hidden;
+      box-shadow:0 12px 48px rgba(0,0,0,.28);
+      animation:vIn .2s ease;
+    }
+
+    @media(max-width:640px){
+      .contact-item{gap:10px;}
+      .contact-item > div:first-child{min-width:0;flex:1;}
+      .c-meta{overflow-wrap:anywhere;}
+      .call-btn{min-width:74px;height:42px;padding:0 14px;white-space:nowrap;}
+    }
 
     /* ── 데이터분석 뷰 ── */
     .an-year-filter{
@@ -1418,6 +1455,18 @@
   </div><!-- /.edit-modal -->
 </div><!-- /.edit-overlay -->
 
+<!-- 고객 상세 보기 오버레이 (대시보드 연락 목록에서 이름 클릭 시) -->
+<div class="customer-detail-overlay" id="custDetailOverlay" onclick="custDetailOverlayClick(event)">
+  <div class="customer-detail-modal" id="custDetailModal">
+    <div class="edit-modal-header">
+      <div class="edit-modal-title">👤 고객 상세 정보</div>
+      <button class="edit-modal-close" onclick="closeCustDetail()" aria-label="닫기">✕</button>
+    </div>
+    <div class="edit-modal-body" id="custDetailBody" style="padding:18px 16px 20px;">
+    </div>
+  </div>
+</div><!-- /.customer-detail-overlay -->
+
 <!-- 하단 네비 (모바일) -->
 <nav class="bottom-nav">
   <button class="nav-btn active" id="nb-home" onclick="showView('home')" aria-label="홈">
@@ -1955,11 +2004,15 @@ function renderHomeContacts(){
 function cItem(c,df){
   var model=(c.modelName||"")+(c.detailModel?" · "+c.detailModel:"");
   var sd=mst(c.status)||c.status||"—";
+  var safePhone=(c.phone||"").replace(/"/g,"&quot;");
+  var safeName=(c.customerName||"").replace(/"/g,"&quot;");
   return'<div class="contact-item">'+
-    '<div><div class="c-name">'+esc(c.customerName)+'</div>'+
-    '<div class="c-meta">'+esc(model||"모델미정")+
-    ' | <span class="badge '+sc(c.status)+'">'+esc(sd)+'</span>'+
-    ' | D-'+df+'일</div></div>'+
+    '<div style="min-width:0;flex:1;">'+
+      '<div class="c-name clickable-name" data-phone="'+safePhone+'" data-cname="'+safeName+'">'+esc(c.customerName)+'</div>'+
+      '<div class="c-meta">'+esc(model||"모델미정")+
+      ' | <span class="badge '+sc(c.status)+'">'  +esc(sd)+'</span>'+
+      ' | D-'+df+'일</div>'+
+    '</div>'+
     '<a class="call-btn" href="tel:'+esc(c.phone)+'">📞 전화</a>'+
   '</div>';
 }
@@ -2581,6 +2634,76 @@ function closeEdit(){
 function editOverlayClick(e){
   if(e.target===document.getElementById("editOverlay"))closeEdit();
 }
+
+// ============================================================
+// 대시보드 연락 목록 → 고객 상세 보기
+// ============================================================
+function openCustomerDetailFromDashboard(phone, name){
+  var list=load();
+  var np=(phone||"").replace(/\D/g,"");
+  var customer=null;
+  if(np){customer=list.find(function(c){return (c.phone||"").replace(/\D/g,"")===np;});}
+  if(!customer&&name){customer=list.find(function(c){return (c.customerName||"")===name;});}
+  if(!customer){alert("고객 정보를 찾을 수 없습니다.");return;}
+  _openCustDetailModal(customer);
+}
+
+function _openCustDetailModal(c){
+  var body=document.getElementById("custDetailBody");
+  if(!body)return;
+  var model=(c.modelName||"")+(c.detailModel?" · "+c.detailModel:"");
+  var rows=[
+    ["고객명",c.customerName],["연락처",c.phone],["법인명",c.companyName],
+    ["거주지역",c.region],["모델명",c.modelName],["세부모델",c.detailModel],
+    ["구매방식",c.purchaseType],["현재상태",mst(c.status)||c.status],
+    ["다음연락일",c.nextContact],["보험만기일",c.insuranceExpireDate],
+    ["자동차검사일",c.inspectionDueDate],["금융종료일",c.financeEndDate],
+    ["출고일",c.deliveryDate],["상담내용",c.consultNote]
+  ];
+  var html='<table style="width:100%;border-collapse:collapse;font-size:14px;">';
+  rows.forEach(function(r){
+    if(!r[1]&&r[1]!==0)return;
+    var isNote=(r[0]==="상담내용");
+    html+='<tr style="border-bottom:1px solid var(--border);">'+
+      '<td style="padding:9px 6px 9px 0;color:var(--text-dim);white-space:nowrap;width:90px;vertical-align:top;font-size:12px;">'+esc(r[0])+'</td>'+
+      '<td style="padding:9px 0 9px 8px;color:var(--black);font-weight:'+(isNote?'500':'600')+';'+(isNote?'white-space:pre-wrap;':'')+'">'+(isNote?esc(r[1]):'<strong>'+esc(r[1])+'</strong>')+'</td>'+
+    '</tr>';
+  });
+  html+='</table>';
+  // 수정 버튼
+  var safePhone=(c.phone||"").replace(/"/g,"&quot;");
+  var custId=(c.customerId||"").replace(/"/g,"&quot;");
+  html+='<div style="margin-top:16px;display:flex;gap:10px;">'+
+    '<button onclick="closeCustDetail();openEdit(\''+safePhone+'\',\''+custId+'\')" style="flex:1;padding:13px;border:none;border-radius:var(--radius);background:var(--gold);color:#fff;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;">✏️ 수정하기</button>'+
+    '<button onclick="closeCustDetail()" style="padding:13px 20px;border:1.5px solid var(--border2);border-radius:var(--radius);background:transparent;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;">닫기</button>'+
+  '</div>';
+  body.innerHTML=html;
+  var ov=document.getElementById("custDetailOverlay");
+  ov.classList.add("open");
+  document.body.style.overflow="hidden";
+  ov.scrollTop=0;
+}
+
+function closeCustDetail(){
+  var ov=document.getElementById("custDetailOverlay");
+  if(ov)ov.classList.remove("open");
+  document.body.style.overflow="";
+}
+
+function custDetailOverlayClick(e){
+  if(e.target===document.getElementById("custDetailOverlay"))closeCustDetail();
+}
+
+// 이벤트 위임: 오늘/이번주 연락 리스트의 고객명 클릭
+document.addEventListener("click",function(e){
+  var el=e.target.closest(".clickable-name");
+  if(!el)return;
+  e.preventDefault();
+  e.stopPropagation();
+  var phone=el.getAttribute("data-phone")||"";
+  var name=el.getAttribute("data-cname")||"";
+  openCustomerDetailFromDashboard(phone,name);
+});
 
 // 수정 폼 — 출고일 → 출고월 자동
 function autoEditDeliveryMonth(){
