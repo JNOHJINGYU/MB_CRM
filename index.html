@@ -7,7 +7,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxswUgpfFoncBTJ_MUaLx7dcT4pbZXvVNhiQqYj75xwAXqfs-GuCPU6w_YbT2jVVbDelQ/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxEX9g6aNFliCVLjryIB_az6DW78PHkFGmSNZEloALT_EtDCCGC90Fq_VHmZ050HjwYLg/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   </script>
 
@@ -2651,39 +2651,69 @@ function openCustomerDetailFromDashboard(phone, name){
 function _openCustDetailModal(c){
   var body=document.getElementById("custDetailBody");
   if(!body)return;
-  var model=(c.modelName||"")+(c.detailModel?" · "+c.detailModel:"");
+
+  // ── 기본 정보 테이블 ──
   var rows=[
     ["고객명",c.customerName],["연락처",c.phone],["법인명",c.companyName],
     ["거주지역",c.region],["모델명",c.modelName],["세부모델",c.detailModel],
     ["구매방식",c.purchaseType],["현재상태",mst(c.status)||c.status],
     ["다음연락일",c.nextContact],["보험만기일",c.insuranceExpireDate],
     ["자동차검사일",c.inspectionDueDate],["금융종료일",c.financeEndDate],
-    ["출고일",c.deliveryDate],["상담내용",c.consultNote]
+    ["출고일",c.deliveryDate]
   ];
   var html='<table style="width:100%;border-collapse:collapse;font-size:14px;">';
   rows.forEach(function(r){
     if(!r[1]&&r[1]!==0)return;
-    var isNote=(r[0]==="상담내용");
     html+='<tr style="border-bottom:1px solid var(--border);">'+
       '<td style="padding:9px 6px 9px 0;color:var(--text-dim);white-space:nowrap;width:90px;vertical-align:top;font-size:12px;">'+esc(r[0])+'</td>'+
-      '<td style="padding:9px 0 9px 8px;color:var(--black);font-weight:'+(isNote?'500':'600')+';'+(isNote?'white-space:pre-wrap;':'')+'">'+(isNote?esc(r[1]):'<strong>'+esc(r[1])+'</strong>')+'</td>'+
+      '<td style="padding:9px 0 9px 8px;color:var(--black);font-weight:600;"><strong>'+esc(r[1])+'</strong></td>'+
     '</tr>';
   });
   html+='</table>';
-  // 수정 버튼
-  var safePhone=(c.phone||"").replace(/"/g,"&quot;");
-  var custId=(c.customerId||"").replace(/"/g,"&quot;");
+
+  // ── 상담 이력 섹션 ──
+  var raw=(c.consultation||"").trim();
+  if(raw){
+    // "[yyyy-mm-dd hh:mm 추가상담]" 마커로 분리
+    var entries=raw.split(/\n(?=\[\d{4}-\d{2}-\d{2})/);
+    html+='<div style="margin-top:18px;">'+
+      '<div style="font-size:13px;font-weight:800;color:var(--black);margin-bottom:10px;display:flex;align-items:center;gap:6px;">'+
+        '💬 상담 이력 <span style="font-size:11px;font-weight:600;color:var(--text-dim);background:var(--border);padding:2px 8px;border-radius:20px;">'+entries.length+'건</span>'+
+      '</div>';
+    // 최신 순 (역순)
+    entries.slice().reverse().forEach(function(entry,i){
+      var lines=entry.trim().split("\n");
+      var header=lines[0]||"";
+      var body_text=lines.slice(1).join("\n").trim();
+      // 헤더에서 날짜 추출
+      var dateMatch=header.match(/\[(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})/);
+      var dateLabel=dateMatch?dateMatch[1]:header.replace(/[\[\]]/g,"");
+      // 첫 번째 항목(최신) 강조
+      var isFirst=(i===0);
+      html+='<div style="background:'+(isFirst?'var(--gold-lt, #fdf6e3)':'var(--surface)')+';border:1px solid '+(isFirst?'var(--gold)':'var(--border)')+';border-radius:12px;padding:12px 14px;margin-bottom:8px;">'+
+        '<div style="font-size:11px;font-weight:700;color:'+(isFirst?'var(--gold-dk)':'var(--text-dim)')+';margin-bottom:6px;">📅 '+esc(dateLabel)+(isFirst?' <span style="font-size:10px;padding:1px 6px;background:var(--gold);color:#fff;border-radius:10px;margin-left:4px;">최신</span>':'')+'</div>'+
+        '<div style="font-size:13px;color:var(--black);line-height:1.6;white-space:pre-wrap;">'+esc(body_text||header)+'</div>'+
+      '</div>';
+    });
+    html+='</div>';
+  } else {
+    html+='<div style="margin-top:18px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-align:center;color:var(--text-lt);font-size:13px;">상담 이력이 없습니다</div>';
+  }
+
+  // ── 버튼 ──
+  var safePhone=(c.phone||"").replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+  var custId=(c.customerId||"").replace(/\\/g,"\\\\").replace(/'/g,"\\'");
   html+='<div style="margin-top:16px;display:flex;gap:10px;">'+
     '<button onclick="closeCustDetail();openEdit(\''+safePhone+'\',\''+custId+'\')" style="flex:1;padding:13px;border:none;border-radius:var(--radius);background:var(--gold);color:#fff;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;">✏️ 수정하기</button>'+
     '<button onclick="closeCustDetail()" style="padding:13px 20px;border:1.5px solid var(--border2);border-radius:var(--radius);background:transparent;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;">닫기</button>'+
   '</div>';
+
   body.innerHTML=html;
   var ov=document.getElementById("custDetailOverlay");
   ov.classList.add("open");
   document.body.style.overflow="hidden";
   ov.scrollTop=0;
 }
-
 function closeCustDetail(){
   var ov=document.getElementById("custDetailOverlay");
   if(ov)ov.classList.remove("open");
