@@ -3486,8 +3486,44 @@ function syncFromSheet(isAuto){
 })();
 updateDash();
 renderHomeContacts();
-// 페이지 로드 시 구글시트에서 자동으로 고객목록 불러오기
+// ============================================================
+// 자동 동기화 (60초마다, 입력 중일 때는 건너뜀)
+// ============================================================
+var _autoSyncTimer = null;
+var AUTO_SYNC_INTERVAL = 60000;
+
+function canAutoSync(){
+  var editOverlay = document.getElementById("editOverlay");
+  if(editOverlay && editOverlay.classList.contains("open")) return false;
+  var newView = document.getElementById("newView");
+  if(newView && newView.classList.contains("active")){
+    var fields = ["customerName","phone","consultation","tags"];
+    for(var i=0;i<fields.length;i++){
+      var el=document.getElementById(fields[i]);
+      if(el && el.value.trim()) return false;
+    }
+  }
+  var consultView = document.getElementById("consultView");
+  if(consultView && consultView.classList.contains("active")){
+    var fields2 = ["u-name","u-phone","addConsultation"];
+    for(var j=0;j<fields2.length;j++){
+      var el2=document.getElementById(fields2[j]);
+      if(el2 && el2.value.trim()) return false;
+    }
+  }
+  return true;
+}
+
+function startAutoSync(){
+  if(_autoSyncTimer) clearInterval(_autoSyncTimer);
+  _autoSyncTimer = setInterval(function(){
+    if(canAutoSync()) syncFromSheet(true);
+  }, AUTO_SYNC_INTERVAL);
+}
+
+// 페이지 로드 시 자동 불러오기 + 60초마다 자동 동기화
 syncFromSheet(true);
+startAutoSync();
 
 </script>
 </body>
