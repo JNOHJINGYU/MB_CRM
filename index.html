@@ -7,7 +7,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5eMEZLzwZDmWpDgsWDH7zd9IDWktdY1mtHNWNZBuqATaGoIBVD16QKpiFC69fTOhQ9w/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycby7bkJ69Ukg0ZfdUv1rD9LYOix60NticerNh8VvLeV5Dz0BGRcbkHeJVb_s7LvCPtvSxA/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   </script>
 
@@ -2504,15 +2504,17 @@ function submitUpdate(){
 // ============================================================
 // 고객 수정 모달
 // ============================================================
-var _editOriginalPhone = "";   // 수정 전 연락처 (구글시트 행 검색용)
-var _editOriginalId   = "";   // 수정 전 고객ID  (구글시트 행 검색용)
+var _editOriginalPhone    = "";   // 수정 전 연락처 (구글시트 행 검색용)
+var _editOriginalId      = "";   // 수정 전 고객ID  (구글시트 행 검색용)
+var _editOriginalRowNumber = "";  // ★ v26: 실제 시트 행번호 (가장 신뢰할 수 있는 식별자)
 
 // ── 폼 채우기 내부 함수 ──────────────────────────────────────
 // 고객 객체 c를 받아 수정 모달 폼을 채우고 모달을 연다.
 // openEditByRenderedIndex / openEdit 양쪽에서 공통으로 사용.
 function _fillEditForm(c){
-  _editOriginalPhone = c.phone||"";
-  _editOriginalId    = c.customerId||"";
+  _editOriginalPhone     = c.phone||"";
+  _editOriginalId       = c.customerId||"";
+  _editOriginalRowNumber = c._rowNumber||"";  // ★ v26: 시트 행번호 저장
 
   function sv(id,v){var el=document.getElementById(id);if(el)el.value=v||"";}
   sv("e-customerName",       c.customerName);
@@ -2772,8 +2774,9 @@ function submitEdit(){
 
   var payload={
     action:              "editCustomer",
+    rowNumber:           _editOriginalRowNumber,        // ★ v26: 행번호 직접 전달 (최우선 검색)
     customerId:          _editOriginalId,
-    phone:               _editOriginalPhone||ePhone,  // 행 검색용 (기존 번호)
+    phone:               _editOriginalPhone||ePhone,   // fallback 검색용 (기존 번호)
     customerName:        eName,
     companyName:         document.getElementById("e-companyName").value.trim(),
     newPhone:            ePhone,                      // 실제 저장할 번호
