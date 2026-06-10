@@ -7,7 +7,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_uYbtpyQRf3RlOu82IDArmCeipn2xgXUoSKfS1Gur5siaqqx3IHau-PHXe8tAdL-Jig/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzyzSJun3dJyPcd1jaL32puC5MQRhvPOX8OLe91F5gCWCnAnob7usshc01_XHjnWeo_Kg/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   </script>
 
@@ -846,13 +846,7 @@
           </div>
           <div class="field">
             <label>구매예산</label>
-            <select id="budget">
-              <option value="">— 선택 —</option>
-              <option>1억이내</option><option>1억~1억5000만</option>
-              <option>1억5000만원선</option><option>2억이내</option>
-              <option>2억이상</option><option>한도달내구매</option>
-              <option>이번달이내</option><option>미정</option>
-            </select>
+            <input type="text" id="budget" placeholder="예: 1억5천, 2억 이상, 리스 한도 확인중"/>
           </div>
           <div class="field">
             <label>구매예정시기</label>
@@ -1274,13 +1268,7 @@
             </div>
             <div class="field">
               <label>구매예산</label>
-              <select id="e-budget">
-                <option value="">— 선택 —</option>
-                <option>1억이내</option><option>1억~1억5000만</option>
-                <option>1억5000만원선</option><option>2억이내</option>
-                <option>2억이상</option><option>한도달내구매</option>
-                <option>이번달이내</option><option>미정</option>
-              </select>
+              <input type="text" id="e-budget" placeholder="예: 1억5천, 2억 이상, 리스 한도 확인중"/>
             </div>
             <div class="field full">
               <label>구매예정시기</label>
