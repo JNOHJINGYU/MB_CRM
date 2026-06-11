@@ -977,7 +977,7 @@
           </div>
           <div class="field">
             <label>출고일</label>
-            <input type="date" id="deliveryDate" oninput="autoDeliveryMonth()"/>
+            <input type="date" id="deliveryDate" oninput="autoDeliveryMonth()" onchange="autoDeliveryMonth()"/>
           </div>
           <div class="field">
             <label>출고월 <span style="font-size:10px;color:var(--text-lt);">(출고일 입력 시 자동)</span></label>
@@ -1399,7 +1399,7 @@
             </div>
             <div class="field">
               <label>출고일</label>
-              <input type="date" id="e-deliveryDate" oninput="autoEditDeliveryMonth()"/>
+              <input type="date" id="e-deliveryDate" oninput="autoEditDeliveryMonth()" onchange="autoEditDeliveryMonth()"/>
             </div>
             <div class="field">
               <label>출고월 <span style="font-size:10px;color:var(--text-lt);">(출고일 입력 시 자동)</span></label>
@@ -2404,6 +2404,7 @@ function resetNewForm(){
 // ============================================================
 function submitNew(){
   hideMsg("msg-new");
+  autoDeliveryMonth(); // ★ 저장 직전 출고월 강제 재계산
   var data=getFormData();
   if(!data.customerName){showMsg("msg-new","err","⚠ 고객명을 입력해주세요.");return;}
   if(!data.phone){showMsg("msg-new","err","⚠ 연락처를 입력해주세요.");return;}
@@ -2524,7 +2525,12 @@ function _fillEditForm(c){
   sv("e-financeEndDate",     c.financeEndDate);
   sv("e-contractDate",       c.contractDate);
   sv("e-deliveryDate",       c.deliveryDate);
-  sv("e-deliveryMonth",      c.deliveryMonth);
+  // ★ 출고월 보정: 비어 있으면 출고일 기준으로 자동 생성
+  var fixedDeliveryMonth = c.deliveryMonth;
+  if((!fixedDeliveryMonth || fixedDeliveryMonth === "") && c.deliveryDate && c.deliveryDate.length >= 7){
+    fixedDeliveryMonth = c.deliveryDate.substring(0,7);
+  }
+  sv("e-deliveryMonth",      fixedDeliveryMonth);
   sv("e-tags",               c.tags);
   sv("e-lastServiceDate",    c.lastServiceDate);
   sv("e-lastServiceMileage", c.lastServiceMileage);
@@ -2755,10 +2761,10 @@ function submitEdit(){
     return;
   }
 
+  autoEditDeliveryMonth(); // ★ 저장 직전 출고월 강제 재계산
+
   var deliveryDate  = document.getElementById("e-deliveryDate").value;
   var deliveryMonth = deliveryDate&&deliveryDate.length>=7?deliveryDate.substring(0,7):"";
-  var eDM = document.getElementById("e-deliveryMonth").value;
-  if(eDM) deliveryMonth=eDM;
 
   var payload={
     action:              "editCustomer",
@@ -3406,6 +3412,14 @@ function syncFromSheet(isAuto){
           c[f] = normalizeDateStr(c[f]);
         }
       });
+    });
+
+    // ── deliveryMonth 자동 보정 (출고일 있는데 출고월 비어 있는 경우) ──
+    sheetRows = sheetRows.map(function(c){
+      if((!c.deliveryMonth || c.deliveryMonth === "") && c.deliveryDate && c.deliveryDate.length >= 7){
+        c.deliveryMonth = c.deliveryDate.substring(0,7);
+      }
+      return c;
     });
 
     // ── rowNumber / customerId 보완 ───────────────────────────
