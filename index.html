@@ -3474,6 +3474,22 @@ function syncFromSheet(isAuto){
       if(ov&&ov.classList.contains("open"))closeEdit();
     }
   });
+
+  // ★ 기존 localStorage 데이터 중 출고일은 있는데 출고월이 비어있는 고객 일괄 보정
+  (function fixLocalStorageDeliveryMonth(){
+    var list = load();
+    var changed = false;
+    list.forEach(function(c){
+      if((!c.deliveryMonth || c.deliveryMonth === "") && c.deliveryDate && c.deliveryDate.length >= 7){
+        c.deliveryMonth = c.deliveryDate.substring(0, 7);
+        changed = true;
+      }
+    });
+    if(changed){
+      save(list);
+      console.log("[init] 출고월 자동 보정 완료");
+    }
+  })();
 })();
 updateDash();
 renderHomeContacts();
