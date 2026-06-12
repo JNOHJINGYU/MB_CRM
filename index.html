@@ -7,7 +7,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx659b06Ej1Frk8f_znW02gJ9iIlGboElW302VshX5Te_6yGuO1J6LJPokc0BPiF9DogA/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwrvQ8XuSlPOB0aKH3XkDA9yX8k9NoSnznR6lfvD54Zt9BY9Zmac9y3-FSSEihZL17OXg/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   </script>
 
@@ -1189,6 +1189,27 @@
         <span class="an-yr-badge" id="an-delivery-yr"></span>
       </div>
       <div class="chart-wrap"><canvas id="chart-monthly-delivery"></canvas></div>
+    </div>
+
+    <!-- 6순위: 디버그 패널 -->
+    <div class="chart-card">
+      <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>🔎 유입경로별 원본 데이터 확인
+          <span class="an-yr-badge" id="an-debug-yr"></span>
+        </span>
+        <button onclick="toggleDebugPanel()" id="debug-toggle-btn"
+          style="font-size:11px;padding:3px 10px;border:1px solid var(--border);
+                 border-radius:12px;background:var(--bg);cursor:pointer;color:var(--text-dim);">
+          펼치기
+        </button>
+      </div>
+      <div id="debug-panel" style="display:none;margin-top:8px;">
+        <div id="debug-table"></div>
+        <div style="margin-top:8px;font-size:11px;color:var(--text-dim);">
+          ※ 계약전환율 기준: (계약+출고) ÷ 유입고객 × 100<br>
+          ※ 연도 필터: 계약일 또는 출고일 기준. 둘 다 없으면 등록일 기준.
+        </div>
+      </div>
     </div>
 
   </div><!-- /.analyticsView -->
@@ -2501,6 +2522,7 @@ function submitUpdate(){
     }
     if(found)save(list);
     updateDash();
+    renderAnalyticsIfVisible();
     showMsg("msg-update","ok","✅ 추가상담이 저장되었습니다.");
     ["u-name","u-phone","u-status","u-next","addConsultation","u-memo","u-mileageDate","u-mileage"]
       .forEach(function(id){document.getElementById(id).value="";});
@@ -3081,27 +3103,152 @@ function renderPipelineChart(list){
   el.innerHTML=html;
 }
 
-function renderLeadConvChart(list, yrStr){
-  var el=document.getElementById("lead-conv-chart");
-  if(!el)return;
-  // 해당 연도 고객만
-  var filtered=yrStr?list.filter(function(c){
-    var reg=normalizeDateStr(c._savedAt||c.registrationDate||"");
-    return reg.substring(0,4)===yrStr;
-  }):list;
+// ============================================================
+// 디버그 패널: 유입경로별 원본 수치 테이블
+// ============================================================
+function toggleDebugPanel(){
+  var p=document.getElementById("debug-panel");
+  var b=document.getElementById("debug-toggle-btn");
+  if(!p)return;
+  if(p.style.display==="none"){
+    p.style.display="block";
+    if(b)b.textContent="접기";
+  } else {
+    p.style.display="none";
+    if(b)b.textContent="펼치기";
+  }
+}
 
+function renderDebugPanel(list, yrStr){
+  var el=document.getElementById("debug-table");
+  if(!el)return;
+
+  function inYear(c){
+    if(!yrStr) return true;
+    var cd=normalizeDateStr(c.contractDate||"");
+    var dd=normalizeDateStr(c.deliveryDate||c.deliveryMonth||"");
+    if(cd.length>=4 && cd.substring(0,4)===yrStr) return true;
+    if(dd.length>=4 && dd.substring(0,4)===yrStr) return true;
+    if(!cd && !dd){
+      var reg=normalizeDateStr(c._savedAt||c.registrationDate||"");
+      return reg.substring(0,4)===yrStr;
+    }
+    return false;
+  }
+
+  var filtered = list.filter(inYear);
   var leadMap={};
   filtered.forEach(function(c){
     var k=c.leadSource||"미기재";
-    if(!leadMap[k])leadMap[k]={total:0,conv:0};
+    if(!leadMap[k])leadMap[k]={total:0,contract:0,delivered:0,names:[]};
     leadMap[k].total++;
-    if(isConverted(c.status))leadMap[k].conv++;
+    var s=mst(c.status)||c.status||"";
+    if(s==="계약"){leadMap[k].contract++;leadMap[k].names.push(c.customerName||"?");}
+    if(s==="출고"){leadMap[k].delivered++;leadMap[k].names.push(c.customerName||"?");}
+  });
+
+  var keys=Object.keys(leadMap).sort(function(a,b){
+    var pa=(leadMap[a].contract+leadMap[a].delivered)/leadMap[a].total;
+    var pb=(leadMap[b].contract+leadMap[b].delivered)/leadMap[b].total;
+    return pb-pa;
+  });
+
+  if(!keys.length){
+    el.innerHTML='<div style="padding:12px;color:var(--text-dim);font-size:13px;">데이터 없음</div>';
+    return;
+  }
+
+  var totalAll=0,totalContract=0,totalDelivered=0;
+  keys.forEach(function(k){
+    totalAll+=leadMap[k].total;
+    totalContract+=leadMap[k].contract;
+    totalDelivered+=leadMap[k].delivered;
+  });
+
+  var html=
+    '<div style="overflow-x:auto;">'+
+    '<table style="width:100%;border-collapse:collapse;font-size:12px;">'+
+    '<thead>'+
+      '<tr style="background:var(--blue);color:#fff;">'+
+        '<th style="padding:7px 8px;text-align:left;border-radius:4px 0 0 0;">유입경로</th>'+
+        '<th style="padding:7px 8px;text-align:center;">유입수</th>'+
+        '<th style="padding:7px 8px;text-align:center;color:#b8d4ff;">계약수</th>'+
+        '<th style="padding:7px 8px;text-align:center;color:#b8ffce;">출고수</th>'+
+        '<th style="padding:7px 8px;text-align:center;border-radius:0 4px 0 0;">전환율</th>'+
+      '</tr>'+
+    '</thead>'+
+    '<tbody>';
+
+  keys.forEach(function(k,i){
+    var d=leadMap[k];
+    var conv=d.contract+d.delivered;
+    var pct=d.total>0?Math.round(conv/d.total*100):0;
+    var color=pct>=30?"#2d6a4f":pct>=15?"#c9a227":"#e94560";
+    var bg=i%2===0?"var(--bg)":"var(--border)";
+    html+=
+      '<tr style="background:'+bg+';">'+
+        '<td style="padding:7px 8px;font-weight:600;">'+esc(k)+'</td>'+
+        '<td style="padding:7px 8px;text-align:center;">'+d.total+'</td>'+
+        '<td style="padding:7px 8px;text-align:center;color:#1a5aa0;font-weight:700;">'+d.contract+'</td>'+
+        '<td style="padding:7px 8px;text-align:center;color:#0f6e35;font-weight:700;">'+d.delivered+'</td>'+
+        '<td style="padding:7px 8px;text-align:center;font-weight:800;color:'+color+';">'+pct+'%</td>'+
+      '</tr>';
+  });
+
+  var totalConv=totalContract+totalDelivered;
+  var totalPct=totalAll>0?Math.round(totalConv/totalAll*100):0;
+  html+=
+    '<tr style="background:#e8f0fb;font-weight:700;border-top:2px solid var(--blue);">'+
+      '<td style="padding:7px 8px;">합계</td>'+
+      '<td style="padding:7px 8px;text-align:center;">'+totalAll+'</td>'+
+      '<td style="padding:7px 8px;text-align:center;color:#1a5aa0;">'+totalContract+'</td>'+
+      '<td style="padding:7px 8px;text-align:center;color:#0f6e35;">'+totalDelivered+'</td>'+
+      '<td style="padding:7px 8px;text-align:center;color:#1a5aa0;">'+totalPct+'%</td>'+
+    '</tr>'+
+  '</tbody></table></div>';
+
+  el.innerHTML=html;
+}
+
+function renderLeadConvChart(list, yrStr){
+  var el=document.getElementById("lead-conv-chart");
+  if(!el)return;
+
+  // ── 연도 필터: 계약일 또는 출고일 기준 ──────────────────────
+  // 연도 일치 여부 판단
+  function inYear(c){
+    if(!yrStr) return true;
+    var cd=normalizeDateStr(c.contractDate||"");
+    var dd=normalizeDateStr(c.deliveryDate||c.deliveryMonth||"");
+    // 계약일이 해당연도이면 포함
+    if(cd.length>=4 && cd.substring(0,4)===yrStr) return true;
+    // 출고일이 해당연도이면 포함
+    if(dd.length>=4 && dd.substring(0,4)===yrStr) return true;
+    // 둘 다 없으면 등록일로 fallback
+    if(!cd && !dd){
+      var reg=normalizeDateStr(c._savedAt||c.registrationDate||"");
+      return reg.substring(0,4)===yrStr;
+    }
+    return false;
+  }
+
+  var filtered = list.filter(inYear);
+
+  // ── 유입경로별 집계 ─────────────────────────────────────────
+  var leadMap={};
+  filtered.forEach(function(c){
+    var k=c.leadSource||"미기재";
+    if(!leadMap[k])leadMap[k]={total:0,contract:0,delivered:0};
+    leadMap[k].total++;
+    var s=mst(c.status)||c.status||"";
+    if(s==="계약") leadMap[k].contract++;
+    if(s==="출고") leadMap[k].delivered++;
   });
 
   var keys=Object.keys(leadMap).filter(function(k){return leadMap[k].total>0;});
   keys.sort(function(a,b){
-    var pa=leadMap[a].conv/leadMap[a].total;
-    var pb=leadMap[b].conv/leadMap[b].total;
+    var pa=(leadMap[a].contract+leadMap[a].delivered)/leadMap[a].total;
+    var pb=(leadMap[b].contract+leadMap[b].delivered)/leadMap[b].total;
     return pb-pa;
   });
 
@@ -3110,16 +3257,19 @@ function renderLeadConvChart(list, yrStr){
     return;
   }
 
-  var html='<div style="display:flex;flex-direction:column;gap:10px;padding:4px 0;">';
+  var html='<div style="display:flex;flex-direction:column;gap:12px;padding:4px 0;">';
   keys.forEach(function(k){
     var d=leadMap[k];
-    var pct=d.total>0?Math.round(d.conv/d.total*100):0;
+    var conv=d.contract+d.delivered;
+    var pct=d.total>0?Math.round(conv/d.total*100):0;
     var color=pct>=30?"#2d6a4f":pct>=15?"#c9a227":"#e94560";
     html+=
       '<div>'+
         '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">'+
           '<span style="font-size:13px;font-weight:700;color:var(--black);">'+esc(k)+'</span>'+
-          '<span style="font-size:12px;color:var(--text-dim);">'+d.total+'명 유입 · '+d.conv+'명 계약</span>'+
+          '<span style="font-size:11px;color:var(--text-dim);">'+
+            '유입 <b>'+d.total+'</b>명 · 계약 <b style="color:#1a5aa0;">'+d.contract+'</b>명 · 출고 <b style="color:#0f6e35;">'+d.delivered+'</b>명'+
+          '</span>'+
         '</div>'+
         '<div style="display:flex;align-items:center;gap:8px;">'+
           '<div style="flex:1;background:var(--border);border-radius:6px;overflow:hidden;height:22px;">'+
@@ -3130,31 +3280,44 @@ function renderLeadConvChart(list, yrStr){
       '</div>';
   });
   html+='</div>';
-  html+='<div style="margin-top:8px;font-size:11px;color:var(--text-dim);">전환율 = (계약+출고) ÷ 유입고객 × 100</div>';
+  html+='<div style="margin-top:8px;font-size:11px;color:var(--text-dim);">전환율 = (계약+출고) ÷ 유입고객 × 100 | 연도 기준: 계약일 또는 출고일</div>';
   el.innerHTML=html;
 }
 
 function renderModelConvChart(list, yrStr){
   var el=document.getElementById("model-conv-chart");
   if(!el)return;
-  var filtered=yrStr?list.filter(function(c){
-    var reg=normalizeDateStr(c._savedAt||c.registrationDate||"");
-    return reg.substring(0,4)===yrStr;
-  }):list;
+
+  // ── 연도 필터: 계약일 또는 출고일 기준 (LeadConvChart와 동일 로직) ──
+  function inYear(c){
+    if(!yrStr) return true;
+    var cd=normalizeDateStr(c.contractDate||"");
+    var dd=normalizeDateStr(c.deliveryDate||c.deliveryMonth||"");
+    if(cd.length>=4 && cd.substring(0,4)===yrStr) return true;
+    if(dd.length>=4 && dd.substring(0,4)===yrStr) return true;
+    if(!cd && !dd){
+      var reg=normalizeDateStr(c._savedAt||c.registrationDate||"");
+      return reg.substring(0,4)===yrStr;
+    }
+    return false;
+  }
+
+  var filtered = list.filter(inYear);
 
   var modelMap={};
   filtered.forEach(function(c){
-    var k=(c.modelName||"미기재").trim();
-    if(!k)k="미기재";
-    if(!modelMap[k])modelMap[k]={total:0,conv:0};
+    var k=(c.modelName||"미기재").trim()||"미기재";
+    if(!modelMap[k])modelMap[k]={total:0,contract:0,delivered:0};
     modelMap[k].total++;
-    if(isConverted(c.status))modelMap[k].conv++;
+    var s=mst(c.status)||c.status||"";
+    if(s==="계약") modelMap[k].contract++;
+    if(s==="출고") modelMap[k].delivered++;
   });
 
   var keys=Object.keys(modelMap).filter(function(k){return modelMap[k].total>0;});
   keys.sort(function(a,b){
-    var pa=modelMap[a].conv/modelMap[a].total;
-    var pb=modelMap[b].conv/modelMap[b].total;
+    var pa=(modelMap[a].contract+modelMap[a].delivered)/modelMap[a].total;
+    var pb=(modelMap[b].contract+modelMap[b].delivered)/modelMap[b].total;
     return pb-pa;
   });
 
@@ -3163,16 +3326,19 @@ function renderModelConvChart(list, yrStr){
     return;
   }
 
-  var html='<div style="display:flex;flex-direction:column;gap:10px;padding:4px 0;">';
+  var html='<div style="display:flex;flex-direction:column;gap:12px;padding:4px 0;">';
   keys.forEach(function(k,i){
     var d=modelMap[k];
-    var pct=d.total>0?Math.round(d.conv/d.total*100):0;
+    var conv=d.contract+d.delivered;
+    var pct=d.total>0?Math.round(conv/d.total*100):0;
     var color=anColor(i);
     html+=
       '<div>'+
         '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">'+
           '<span style="font-size:13px;font-weight:700;color:var(--black);">'+esc(k)+'</span>'+
-          '<span style="font-size:12px;color:var(--text-dim);">'+d.total+'명 관심 · '+d.conv+'명 계약</span>'+
+          '<span style="font-size:11px;color:var(--text-dim);">'+
+            '유입 <b>'+d.total+'</b>명 · 계약 <b style="color:#1a5aa0;">'+d.contract+'</b>명 · 출고 <b style="color:#0f6e35;">'+d.delivered+'</b>명'+
+          '</span>'+
         '</div>'+
         '<div style="display:flex;align-items:center;gap:8px;">'+
           '<div style="flex:1;background:var(--border);border-radius:6px;overflow:hidden;height:22px;">'+
@@ -3292,15 +3458,29 @@ function renderAnalytics(){
     var raw=c.deliveryDate||c.deliveryMonth||"";
     return getYM(raw)||(c.deliveryMonth&&c.deliveryMonth.length>=7?c.deliveryMonth.substring(0,7):"");
   }
+  // 계약일 또는 출고일이 해당 연도인지 판단
+  function inYearByContractOrDelivery(c){
+    if(!yrStr) return true;
+    var cd=normalizeDateStr(c.contractDate||"");
+    var dd=normalizeDateStr(c.deliveryDate||c.deliveryMonth||"");
+    if(cd.length>=4 && cd.substring(0,4)===yrStr) return true;
+    if(dd.length>=4 && dd.substring(0,4)===yrStr) return true;
+    // 둘 다 없으면 등록일 fallback
+    if(!cd && !dd){
+      var reg=normalizeDateStr(c._savedAt||c.registrationDate||"");
+      return reg.substring(0,4)===yrStr;
+    }
+    return false;
+  }
 
-  // 출고 고객
-  var deliveredAll  = list.filter(function(c){return mst(c.status)==="출고";});
+  // 출고 고객 (상태=출고, 출고일 기준)
+  var deliveredAll  = list.filter(function(c){return (mst(c.status)||c.status)==="출고";});
   var deliveredYear = deliveredAll.filter(function(c){
     return matchYear(c.deliveryDate||c.deliveryMonth||"");
   });
-  // 계약 고객
+  // 계약 고객 (상태=계약, 계약일 기준)
   var contractYear  = list.filter(function(c){
-    return c.contractDate && matchYear(c.contractDate);
+    return (mst(c.status)||c.status)==="계약" && c.contractDate && matchYear(c.contractDate);
   });
 
   // ── 요약 카드 ───────────────────────────────────────────────
@@ -3395,6 +3575,10 @@ function renderAnalytics(){
       options:barOpts()
     });
   })();
+
+  // ── 6순위: 디버그 패널 ──────────────────────────────────────
+  setBadge("an-debug-yr");
+  renderDebugPanel(list, yrStr);
 }
 
 // ============================================================
