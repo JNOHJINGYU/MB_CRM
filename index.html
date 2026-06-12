@@ -7,7 +7,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwM1SG4OU79oDIGJ_7V93forfmnHXE_2XZBnti1XgcxITWVQpDjSTmHuIESyTU22sbW_Q/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwrvQ8XuSlPOB0aKH3XkDA9yX8k9NoSnznR6lfvD54Zt9BY9Zmac9y3-FSSEihZL17OXg/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   </script>
 
@@ -431,6 +431,9 @@
     .d-row{display:flex;gap:6px;margin-bottom:5px;font-size:13px;align-items:flex-start;}
     .d-key{flex-shrink:0;width:82px;color:var(--text-dim);font-weight:600;font-size:12px;}
     .d-val{color:var(--text);word-break:break-all;line-height:1.5;white-space:pre-wrap;}
+    .memo-detail-row{background:#fffdf4;border:1px solid #e8d59a;border-radius:6px;padding:6px 8px;margin-bottom:6px;}
+    .memo-detail-row .d-key{color:#8a6a00;}
+    .memo-detail-val{color:#5a4200;}
 
     /* D-day 태그 */
     .dd{display:inline-block;font-size:10px;font-weight:700;
@@ -587,6 +590,8 @@
       .sales-num{font-size:24px;} .sales-label{font-size:9px;}
       input[type="date"]{font-size:16px;padding:13px 14px;}
       textarea#addConsultation{min-height:140px;}
+      .memo-field textarea{background:#fffdf4;border:1px solid #e8d59a;}
+      .memo-field label{color:#8a6a00;font-weight:600;}
       .badge{font-size:12px;padding:4px 10px;}
     }
     @media(max-width:380px){
@@ -886,6 +891,10 @@
             <label>상담내용</label>
             <textarea id="consultation" placeholder="상담 내용을 입력하세요."></textarea>
           </div>
+          <div class="field full memo-field">
+            <label>📝 고객메모</label>
+            <textarea id="memo" placeholder="내부 메모를 입력하세요.&#10;예) 배우자가 BMW 선호 / 할인에 민감함 / VIP 고객"></textarea>
+          </div>
           <div class="field">
             <label>다음연락일</label>
             <input type="date" id="nextContact"/>
@@ -1058,6 +1067,12 @@
             <textarea id="addConsultation"
               placeholder="이번 상담 내용을 입력하세요.&#10;날짜/시간은 자동으로 앞에 붙습니다."
               style="min-height:130px;"></textarea>
+          </div>
+          <div class="field full memo-field">
+            <label>📝 고객메모 수정 (최신 상태로 덮어씁니다)</label>
+            <textarea id="u-memo"
+              placeholder="내부 메모를 수정하세요. 비워두면 기존 메모 유지."
+              style="min-height:90px;"></textarea>
           </div>
           <!-- 주행거리 업데이트 (통화 중 바로 입력) -->
           <div class="field">
@@ -1307,6 +1322,10 @@
             <div class="field full">
               <label>상담내용</label>
               <textarea id="e-consultation" placeholder="상담 내용을 입력하세요." style="min-height:100px;"></textarea>
+            </div>
+            <div class="field full memo-field">
+              <label>📝 고객메모</label>
+              <textarea id="e-memo" placeholder="내부 메모를 입력하세요.&#10;예) 배우자가 BMW 선호 / 할인에 민감함 / VIP 고객" style="min-height:100px;"></textarea>
             </div>
             <div class="field">
               <label>다음연락일</label>
@@ -2177,6 +2196,7 @@ function buildCard(c,idx){
   if(c.purchaseTiming) html+=dr("구매예정시기",c.purchaseTiming);
   html+='<div class="d-sec">상담</div>';
   if(c.consultation) html+='<div class="d-row"><span class="d-key">상담내용</span><span class="d-val">'+esc(c.consultation)+'</span></div>';
+  if(c.memo) html+='<div class="d-row memo-detail-row"><span class="d-key">📝 메모</span><span class="d-val memo-detail-val">'+esc(c.memo)+'</span></div>';
   if(c.tags)         html+=dr("태그",c.tags);
 
   // 차량관리/금융/정기점검 접기/펼치기
@@ -2308,6 +2328,7 @@ function onUPhoneInput(el){
         '<span class="badge '+sc(c.status)+'">'+esc(sd)+'</span>'+
         ' <span style="font-size:12px;color:#888;margin-left:6px;">'+esc(c._updatedAt||c._savedAt||"")+'</span>';
       var ne=document.getElementById("u-name");if(!ne.value)ne.value=c.customerName||"";
+      var um=document.getElementById("u-memo");if(um&&!um.value)um.value=c.memo||"";
       pb.classList.add("show");
     }else if(np.length>=11){nf.classList.add("show");}
   },400);
@@ -2324,17 +2345,17 @@ function showMsg(id,type,text){
 function hideMsg(id){var el=document.getElementById(id);if(!el)return;el.className="st-msg";el.textContent="";}
 
 // ============================================================
-// getFormData() — 구글시트 A~AC
+// getFormData() — 구글시트 A~AD
 // A 고객ID(빈값)  B 고객명       C 법인명        D 연락처
 // E 거주지역      F 모델명       G 세부모델      H 구매방식
 // I 구매예산      J 구매예정시기 K 유입경로      L 현재상태
-// M 상담내용      N 다음연락일
-// O 보험가입일    P 보험만기일   Q 자동차검사일
-// R 금융시작일    S 금융종료일
-// T 계약일        U 출고일       V 출고월(자동)  W 태그
-// X 최근서비스점검일  Y 최근점검주행거리
-// Z 현재주행거리확인일  AA 현재주행거리
-// AB 다음무상점검예정일  AC 다음무상점검예정주행거리
+// M 상담내용      N 고객메모     O 다음연락일   ← v16
+// P 보험가입일    Q 보험만기일   R 자동차검사일
+// S 금융시작일    T 금융종료일
+// U 계약일        V 출고일       W 출고월(자동)  X 태그
+// Y 최근서비스점검일  Z 최근점검주행거리
+// AA 현재주행거리확인일  AB 현재주행거리
+// AC 다음무상점검예정일  AD 다음무상점검예정주행거리
 // ============================================================
 function getFormData(){
   var deliveryDate=document.getElementById("deliveryDate").value;
@@ -2354,6 +2375,7 @@ function getFormData(){
     leadSource:          document.getElementById("leadSource").value,
     status:              document.getElementById("status").value,
     consultation:        document.getElementById("consultation").value.trim(),
+    memo:                document.getElementById("memo").value.trim(),
     nextContact:         document.getElementById("nextContact").value,
     insuranceStartDate:  document.getElementById("insuranceStartDate").value,
     insuranceExpireDate: document.getElementById("insuranceExpireDate").value,
@@ -2378,7 +2400,7 @@ function getFormData(){
 
 function resetNewForm(){
   var ids=["customerName","companyName","phone","region","purchaseMethod","budget",
-    "purchaseTiming","leadSource","status","consultation","nextContact",
+    "purchaseTiming","leadSource","status","consultation","memo","nextContact",
     "insuranceStartDate","insuranceExpireDate","inspectionDueDate",
     "financeStartDate","financeEndDate","contractDate","deliveryDate","tags","birthDate",
     "lastServiceDate","lastServiceMileage","currentMileageDate","currentMileage"];
@@ -2451,6 +2473,7 @@ function submitUpdate(){
     action:"update",_updatedAt:now,
     customerName:document.getElementById("u-name").value.trim(),
     phone:phone,consultationEntry:entry,
+    memo:document.getElementById("u-memo").value.trim(),
     status:document.getElementById("u-status").value,
     nextContact:document.getElementById("u-next").value,
     // 주행거리 업데이트
@@ -2468,8 +2491,9 @@ function submitUpdate(){
       if(normP(list[i].phone)===np){
         var prev=list[i].consultation||"";
         list[i].consultation=prev?prev+"\n\n"+entry:entry;
+        if(payload.memo)             list[i].memo=payload.memo;
         if(payload.status)           list[i].status=payload.status;
-        if(payload.nextContact)      list[i].nextContact=payload.nextContact;
+        if(payload.nextContact!==undefined) list[i].nextContact=payload.nextContact;
         if(payload.currentMileageDate)list[i].currentMileageDate=payload.currentMileageDate;
         if(payload.currentMileage)   list[i].currentMileage=payload.currentMileage;
         list[i]._updatedAt=now;found=true;break;
@@ -2478,7 +2502,7 @@ function submitUpdate(){
     if(found)save(list);
     updateDash();
     showMsg("msg-update","ok","✅ 추가상담이 저장되었습니다.");
-    ["u-name","u-phone","u-status","u-next","addConsultation","u-mileageDate","u-mileage"]
+    ["u-name","u-phone","u-status","u-next","addConsultation","u-memo","u-mileageDate","u-mileage"]
       .forEach(function(id){document.getElementById(id).value="";});
     document.getElementById("preview-box").classList.remove("show");
     document.getElementById("nofound").classList.remove("show");
@@ -2517,6 +2541,7 @@ function _fillEditForm(c){
   sv("e-leadSource",         c.leadSource);
   sv("e-status",             c.status);
   sv("e-consultation",       c.consultation);
+  sv("e-memo",               c.memo);
   sv("e-nextContact",        c.nextContact);
   sv("e-insuranceStartDate", c.insuranceStartDate);
   sv("e-insuranceExpireDate",c.insuranceExpireDate);
@@ -2783,6 +2808,7 @@ function submitEdit(){
     leadSource:          document.getElementById("e-leadSource").value,
     status:              document.getElementById("e-status").value,
     consultation:        document.getElementById("e-consultation").value.trim(),
+    memo:                document.getElementById("e-memo").value.trim(),
     nextContact:         document.getElementById("e-nextContact").value,
     insuranceStartDate:  document.getElementById("e-insuranceStartDate").value,
     insuranceExpireDate: document.getElementById("e-insuranceExpireDate").value,
