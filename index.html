@@ -3259,7 +3259,7 @@ function renderAnalytics(){
   if(yfEl){
     var btns = '<button class="an-yr-btn'+(_anYear===String(thisYear)?" active":"")+
                '" onclick="setAnYear(\''+thisYear+'\')">'+thisYear+'</button>';
-    for(var py=thisYear-1; py>=thisYear-3; py--){
+    for(var py=thisYear-1; py>=thisYear-4; py--){
       btns += '<button class="an-yr-btn'+(_anYear===String(py)?" active":"")+
               '" onclick="setAnYear(\''+py+'\')">'+py+'</button>';
     }
