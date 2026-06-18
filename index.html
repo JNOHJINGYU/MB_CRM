@@ -2093,7 +2093,14 @@ function renderList(){
     if(q){
       var nm=(c.customerName||"").toLowerCase();
       var ph=normP(c.phone);
-      if(nm.indexOf(q)<0&&ph.indexOf(q.replace(/\D/g,""))<0)return false;
+      var qDigits=q.replace(/\D/g,"");
+      // 이름 매칭 또는 전화번호 매칭(숫자가 있을 때만) 중 하나라도 맞으면 통과
+      // ※ 기존 코드는 "이름 불일치 && 전화번호 불일치"일 때만 제외했는데,
+      //   검색어에 숫자가 하나도 없으면 ''.indexOf('') 가 항상 0(매칭)으로 평가되어
+      //   전화번호 쪽이 절대 "불일치"가 되지 않아 결과적으로 아무도 제외되지 않는 버그였음.
+      var nameMatch  = nm.indexOf(q)>=0;
+      var phoneMatch = qDigits!==""&&ph.indexOf(qDigits)>=0;
+      if(!(nameMatch||phoneMatch))return false;
     }
     return true;
   });
@@ -2103,6 +2110,9 @@ function renderList(){
     var tb=b._updatedAt||b._savedAt||"";
     return tb.localeCompare(ta);
   });
+
+  console.log('전체고객', list.length);
+  console.log('검색결과', filtered.length);
 
   // ★ 필터/정렬이 확정된 배열을 전역에 저장 — 수정버튼이 이 인덱스를 사용
   renderedCustomers = filtered;
@@ -3310,9 +3320,22 @@ function renderAnalytics(){
   var deliveredYear = deliveredAll.filter(function(c){
     return matchYear(c.deliveryDate||c.deliveryMonth||"");
   });
-  // 계약 고객 (상태=계약, 계약일 기준)
+  // 계약 고객 ("선택한 연도의 계약일이 존재하는 고객" 기준 — 상태와 무관)
+  // ※ 기존 코드는 status==="계약" 조건이 같이 걸려 있어서,
+  //   계약 후 출고완료(status="출고")로 바뀐 고객이 계약대수에서 빠지는 버그가 있었음.
   var contractYear  = list.filter(function(c){
-    return (mst(c.status)||c.status)==="계약" && c.contractDate && matchYear(c.contractDate);
+    if(!c.contractDate){
+      console.warn('계약집계 제외(계약일없음)', c.customerName, c.contractDate);
+      return false;
+    }
+    var cdNorm = normalizeDateStr(c.contractDate);
+    var parsedYear = cdNorm ? cdNorm.substring(0,4) : '';
+    var isMatch = matchYear(c.contractDate);
+    console.log('계약집계', c.customerName, c.contractDate, parsedYear);
+    if(!isMatch){
+      console.warn('계약집계 제외(연도불일치)', c.customerName, c.contractDate);
+    }
+    return isMatch;
   });
 
   // ── 요약 카드 ───────────────────────────────────────────────
