@@ -232,6 +232,19 @@
       display:flex;gap:7px;flex-wrap:wrap;
       margin-bottom:14px;padding:2px 0;
     }
+    .an-month-filter,.an-yr2-filter{
+      display:flex;gap:6px;flex-wrap:wrap;
+      margin-bottom:10px;padding:2px 0;
+    }
+    .an-mo-btn,.an-yr2-btn{
+      padding:6px 13px;border-radius:20px;
+      border:1.5px solid var(--border2);
+      background:#fff;color:var(--text-dim);
+      font-family:var(--font);font-size:12px;font-weight:700;
+      cursor:pointer;transition:background .13s,color .13s,border-color .13s;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .an-mo-btn.active,.an-yr2-btn.active{background:var(--black);border-color:var(--black);color:#fff;}
     .an-yr-btn{
       padding:7px 16px;border-radius:20px;
       border:1.5px solid var(--border2);
@@ -1153,21 +1166,23 @@
       </div>
     </div>
 
-    <!-- 1순위: 상태별 고객 파이프라인 -->
+    <!-- 월별 유입경로별 출고대수 -->
     <div class="chart-card">
-      <div class="chart-title">🎯 고객 파이프라인 (현재 전체)</div>
-      <div id="pipeline-chart"></div>
+      <div class="chart-title">🚗 월별 유입경로별 출고대수</div>
+      <!-- 월 선택 버튼 -->
+      <div class="an-month-filter" id="an-month-filter-lead"></div>
+      <div id="lead-monthly-chart" style="margin-top:4px;"></div>
     </div>
 
-    <!-- 2순위: 유입경로별 출고대수 -->
+    <!-- 년도별 유입경로별 출고대수 -->
     <div class="chart-card">
-      <div class="chart-title">🚗 유입경로별 출고대수
-        <span class="an-yr-badge" id="an-lead-del-yr"></span>
-      </div>
-      <div id="lead-del-chart"></div>
+      <div class="chart-title">🚗 년도별 유입경로별 출고대수</div>
+      <!-- 년도 선택 버튼 -->
+      <div class="an-yr2-filter" id="an-yr2-filter-lead"></div>
+      <div id="lead-yearly-chart" style="margin-top:4px;"></div>
     </div>
 
-    <!-- 3순위: 차종별 출고대수 -->
+    <!-- 차종별 출고대수 -->
     <div class="chart-card">
       <div class="chart-title">🏎 차종별 출고대수
         <span class="an-yr-badge" id="an-model-del-yr"></span>
@@ -1175,20 +1190,21 @@
       <div id="model-del-chart"></div>
     </div>
 
-    <!-- 4순위: 월별 계약대수 -->
+    <!-- 월별 계약 / 출고대수 통합 그래프 -->
     <div class="chart-card">
-      <div class="chart-title">🤝 월별 계약대수
+      <div class="chart-title">📊 월별 계약 / 출고대수
         <span class="an-yr-badge" id="an-contract-yr"></span>
       </div>
-      <div class="chart-wrap"><canvas id="chart-monthly-contract"></canvas></div>
-    </div>
-
-    <!-- 5순위: 월별 출고대수 -->
-    <div class="chart-card">
-      <div class="chart-title">📦 월별 출고대수
-        <span class="an-yr-badge" id="an-delivery-yr"></span>
+      <!-- 범례 -->
+      <div style="display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--text-dim);">
+          <div style="width:14px;height:14px;border-radius:3px;background:#1976D2;flex-shrink:0;"></div> 계약
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--text-dim);">
+          <div style="width:14px;height:14px;border-radius:3px;background:#2E7D32;flex-shrink:0;"></div> 출고
+        </div>
       </div>
-      <div class="chart-wrap"><canvas id="chart-monthly-delivery"></canvas></div>
+      <div class="chart-wrap"><canvas id="chart-monthly-combined"></canvas></div>
     </div>
 
   </div><!-- /.analyticsView -->
@@ -3166,32 +3182,9 @@ function renderModelDelChart(list, yrStr, deliveredYear){
   var maxVal=modelMap[keys[0]]||1;
   var total=deliveredYear.length;
 
-  var html='<div style="display:flex;flex-direction:column;gap:10px;padding:4px 0;">';
-  var colors=["#1a5aa0","#0f6e35","#c9a227","#7c3aed","#e94560","#0891b2","#be185d","#16a34a"];
-  keys.forEach(function(k,i){
-    var cnt=modelMap[k];
-    var barPct=Math.round(cnt/maxVal*100);
-    var sharePct=Math.round(cnt/total*100);
-    var color=colors[i%colors.length];
-    html+=
-      '<div>'+
-        '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">'+
-          '<span style="font-size:13px;font-weight:700;color:var(--black);">'+esc(k)+'</span>'+
-          '<span style="font-size:12px;color:var(--text-dim);">'+
-            '<b style="color:'+color+';font-size:14px;">'+cnt+'대</b> ('+sharePct+'%)'+
-          '</span>'+
-        '</div>'+
-        '<div style="background:var(--border);border-radius:6px;overflow:hidden;height:26px;">'+
-          '<div style="height:100%;width:'+barPct+'%;background:'+color+';border-radius:6px;'+
-               'transition:width .5s;display:flex;align-items:center;padding-left:8px;min-width:'+(cnt>0?'26px':'0')+';box-sizing:border-box;">'+
-            (barPct>15?'<span style="font-size:11px;color:#fff;font-weight:700;">'+cnt+'대</span>':'')+
-          '</div>'+
-        '</div>'+
-      '</div>';
-  });
-  html+='</div>';
-  html+='<div style="margin-top:8px;font-size:11px;color:var(--text-dim);">실제 출고 기준 · 연도 필터: deliveryDate 기준</div>';
-  el.innerHTML=html;
+  var modelMap2={};
+  keys.forEach(function(k){modelMap2[k]=modelMap[k];});
+  el.innerHTML=renderHBar(modelMap2,"#1a5aa0");
 }
 
 // 재구매 가능 고객 목록 표시
@@ -3253,7 +3246,146 @@ function showRepurchaseList(){
   panel.style.display="block";
 }
 
-var _anYear = "";   // 초기값: 빈칸 → renderAnalytics에서 현재연도로 세팅
+var _anYear = "";   // 상단 연도 필터 (실적요약 + 차종별 + 월별통합)
+var _anLeadMonth = ""; // 월별 유입경로 선택된 월 (YYYY-MM)
+var _anLeadYear2 = ""; // 년도별 유입경로 선택된 년도
+
+// ============================================================
+// 월별 유입경로별 출고 렌더
+// ============================================================
+function renderLeadMonthlyChart(){
+  var list = load();
+  var deliveredAll = list.filter(function(c){return (mst(c.status)||c.status)==="출고";});
+  var kst = new Date(new Date().getTime()+9*3600000);
+  var thisYear = kst.getUTCFullYear();
+  var thisMonth = kst.getUTCMonth()+1;
+
+  // 월 버튼: 현재연도 1월~이번달
+  var filterEl = document.getElementById("an-month-filter-lead");
+  if(filterEl){
+    if(!_anLeadMonth){
+      _anLeadMonth = thisYear+"-"+String(thisMonth).padStart(2,"0");
+    }
+    var moHtml="";
+    for(var mm=1;mm<=12;mm++){
+      var mStr=thisYear+"-"+String(mm).padStart(2,"0");
+      moHtml+='<button class="an-mo-btn'+(_anLeadMonth===mStr?" active":"")+
+              '" onclick="setAnLeadMonth(\''+mStr+'\')">'+mm+'월</button>';
+    }
+    filterEl.innerHTML=moHtml;
+  }
+
+  var chartEl=document.getElementById("lead-monthly-chart");
+  if(!chartEl)return;
+
+  // 선택 월의 출고 고객 필터
+  var filtered=deliveredAll.filter(function(c){
+    var raw=c.deliveryDate||c.deliveryMonth||"";
+    var ym=normalizeDateStr(raw).substring(0,7);
+    return ym===_anLeadMonth;
+  });
+
+  if(!filtered.length){
+    chartEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-lt);font-size:13px;">해당 월 출고 데이터 없음</div>';
+    return;
+  }
+
+  var leadMap={};
+  filtered.forEach(function(c){
+    var k=c.leadSource||"미기재";
+    leadMap[k]=(leadMap[k]||0)+1;
+  });
+  chartEl.innerHTML=renderHBar(leadMap,"#0f6e35");
+}
+
+function setAnLeadMonth(m){
+  _anLeadMonth=m;
+  renderLeadMonthlyChart();
+}
+
+// ============================================================
+// 년도별 유입경로별 출고 렌더
+// ============================================================
+function renderLeadYearlyChart(){
+  var list = load();
+  var deliveredAll = list.filter(function(c){return (mst(c.status)||c.status)==="출고";});
+  var kst = new Date(new Date().getTime()+9*3600000);
+  var thisYear = kst.getUTCFullYear();
+
+  if(!_anLeadYear2) _anLeadYear2=String(thisYear);
+
+  var filterEl=document.getElementById("an-yr2-filter-lead");
+  if(filterEl){
+    var yHtml="";
+    for(var y=thisYear;y>=thisYear-4;y--){
+      yHtml+='<button class="an-yr2-btn'+(_anLeadYear2===String(y)?" active":"")+
+             '" onclick="setAnLeadYear2(\''+y+'\')">'+y+'</button>';
+    }
+    yHtml+='<button class="an-yr2-btn'+(_anLeadYear2===""?" active":"")+
+           '" onclick="setAnLeadYear2(\'\')">전체</button>';
+    filterEl.innerHTML=yHtml;
+  }
+
+  var chartEl=document.getElementById("lead-yearly-chart");
+  if(!chartEl)return;
+
+  var filtered=deliveredAll.filter(function(c){
+    if(!_anLeadYear2) return true;
+    var raw=c.deliveryDate||c.deliveryMonth||"";
+    return normalizeDateStr(raw).substring(0,4)===_anLeadYear2;
+  });
+
+  if(!filtered.length){
+    chartEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-lt);font-size:13px;">'+(_anLeadYear2||"전체")+(_.anLeadYear2?"년 ":"")+'출고 데이터 없음</div>';
+    return;
+  }
+
+  var leadMap={};
+  filtered.forEach(function(c){
+    var k=c.leadSource||"미기재";
+    leadMap[k]=(leadMap[k]||0)+1;
+  });
+  chartEl.innerHTML=renderHBar(leadMap,"#1976D2");
+}
+
+function setAnLeadYear2(y){
+  _anLeadYear2=y;
+  renderLeadYearlyChart();
+}
+
+// ============================================================
+// 공통: 가로 막대 HTML 생성 (퍼센트 없음)
+// ============================================================
+function renderHBar(dataMap, baseColor){
+  var keys=Object.keys(dataMap);
+  if(!keys.length) return '<div style="padding:20px;text-align:center;color:var(--text-lt);font-size:13px;">데이터 없음</div>';
+  keys.sort(function(a,b){return dataMap[b]-dataMap[a];});
+  var maxVal=dataMap[keys[0]]||1;
+  var colors=["#0f6e35","#1976D2","#7c3aed","#c9a227","#e94560","#0891b2","#be185d","#16a34a"];
+  if(baseColor) colors=[baseColor].concat(colors.filter(function(c){return c!==baseColor;}));
+  var html='<div style="display:flex;flex-direction:column;gap:10px;padding:4px 0;">';
+  keys.forEach(function(k,i){
+    var cnt=dataMap[k];
+    var barPct=Math.round(cnt/maxVal*100);
+    var color=colors[i%colors.length];
+    html+=
+      '<div>'+
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;">'+
+          '<span style="font-size:13px;font-weight:700;color:var(--black);">'+esc(k)+'</span>'+
+          '<b style="color:'+color+';font-size:14px;font-weight:800;">'+cnt+'대</b>'+
+        '</div>'+
+        '<div style="background:var(--border);border-radius:6px;overflow:hidden;height:28px;">'+
+          '<div style="height:100%;width:'+barPct+'%;background:'+color+';border-radius:6px;'+
+               'transition:width .5s;display:flex;align-items:center;padding-left:8px;'+
+               'min-width:'+(cnt>0?'28px':'0')+';box-sizing:border-box;">'+
+            (barPct>12?'<span style="font-size:12px;color:#fff;font-weight:700;">'+cnt+'대</span>':'')+
+          '</div>'+
+        '</div>'+
+      '</div>';
+  });
+  html+='</div>';
+  return html;
+}
 
 function renderAnalytics(){
   var list = load();
@@ -3300,29 +3432,13 @@ function renderAnalytics(){
     var raw=c.deliveryDate||c.deliveryMonth||"";
     return getYM(raw)||(c.deliveryMonth&&c.deliveryMonth.length>=7?c.deliveryMonth.substring(0,7):"");
   }
-  // 계약일 또는 출고일이 해당 연도인지 판단
-  function inYearByContractOrDelivery(c){
-    if(!yrStr) return true;
-    var cd=normalizeDateStr(c.contractDate||"");
-    var dd=normalizeDateStr(c.deliveryDate||c.deliveryMonth||"");
-    if(cd.length>=4 && cd.substring(0,4)===yrStr) return true;
-    if(dd.length>=4 && dd.substring(0,4)===yrStr) return true;
-    // 둘 다 없으면 등록일 fallback
-    if(!cd && !dd){
-      var reg=normalizeDateStr(c._savedAt||c.registrationDate||"");
-      return reg.substring(0,4)===yrStr;
-    }
-    return false;
-  }
 
-  // 출고 고객 (상태=출고, 출고일 기준)
+  // 출고 고객
   var deliveredAll  = list.filter(function(c){return (mst(c.status)||c.status)==="출고";});
   var deliveredYear = deliveredAll.filter(function(c){
     return matchYear(c.deliveryDate||c.deliveryMonth||"");
   });
-  // 계약 고객 ("선택한 연도의 계약일이 존재하는 고객" 기준 — 상태와 무관)
-  // ※ 기존 코드는 status==="계약" 조건이 같이 걸려 있어서,
-  //   계약 후 출고완료(status="출고")로 바뀐 고객이 계약대수에서 빠지는 버그가 있었음.
+  // 계약 고객 (계약일 기준, 상태 무관)
   var contractYear  = list.filter(function(c){
     if(!c.contractDate){
       console.warn('계약집계 제외(계약일없음)', c.customerName, c.contractDate);
@@ -3344,7 +3460,7 @@ function renderAnalytics(){
   setEl("an-delivery-lbl", yrLabel+" 출고대수");
   setEl("an-contract-lbl", yrLabel+" 계약대수");
 
-  // 재구매 가능 고객수 (전체 기간 대상)
+  // 재구매 가능 고객수 (전체 기간)
   var kstNow=new Date(new Date().getTime()+9*3600000);
   var nowDate=new Date(kstNow.getUTCFullYear(),kstNow.getUTCMonth(),kstNow.getUTCDate());
   function daysFromNow(dateStr){
@@ -3378,56 +3494,65 @@ function renderAnalytics(){
   var months12 = makeMonthRange(yrStr);
   function mLabel(ym){ return yrStr?parseInt(ym.substring(5))+"월":ym.replace("-","년 ")+"월"; }
 
-  // ── 1순위: 고객 파이프라인 (전체 고객 기준) ─────────────────
-  renderPipelineChart(list);
+  // ── 월별 유입경로별 출고 ─────────────────────────────────────
+  renderLeadMonthlyChart();
 
-  // ── 2순위: 유입경로별 출고대수 ─────────────────────────────
-  setBadge("an-lead-del-yr");
-  renderLeadDelChart(list, yrStr, deliveredYear);
+  // ── 년도별 유입경로별 출고 ───────────────────────────────────
+  renderLeadYearlyChart();
 
-  // ── 3순위: 차종별 출고대수 ──────────────────────────────────
+  // ── 차종별 출고대수 ──────────────────────────────────────────
   setBadge("an-model-del-yr");
   renderModelDelChart(list, yrStr, deliveredYear);
 
-  // ── 4순위: 월별 계약대수 (막대) ─────────────────────────────
+  // ── 월별 계약/출고 통합 그래프 (Grouped Bar) ─────────────────
   setBadge("an-contract-yr");
   (function(){
-    var monthMap={};
-    months12.forEach(function(m){monthMap[m]=0;});
+    var contractMap={}, deliveryMap={};
+    months12.forEach(function(m){contractMap[m]=0;deliveryMap[m]=0;});
     list.forEach(function(c){
       if(!c.contractDate)return;
       if(!matchYear(c.contractDate))return;
       var ym=getYM(c.contractDate);
-      if(ym&&monthMap[ym]!==undefined)monthMap[ym]++;
+      if(ym&&contractMap[ym]!==undefined) contractMap[ym]++;
     });
-    makeChart("chart-monthly-contract",{
-      type:"bar",
-      data:{
-        labels:months12.map(mLabel),
-        datasets:[{data:months12.map(function(m){return monthMap[m]||0;}),
-          backgroundColor:"#1a5aa0",borderRadius:5}]
-      },
-      options:barOpts()
-    });
-  })();
-
-  // ── 5순위: 월별 출고대수 (막대) ─────────────────────────────
-  setBadge("an-delivery-yr");
-  (function(){
-    var monthMap={};
-    months12.forEach(function(m){monthMap[m]=0;});
     deliveredYear.forEach(function(c){
       var ym=getDelYM(c);
-      if(ym&&monthMap[ym]!==undefined)monthMap[ym]++;
+      if(ym&&deliveryMap[ym]!==undefined) deliveryMap[ym]++;
     });
-    makeChart("chart-monthly-delivery",{
+    makeChart("chart-monthly-combined",{
       type:"bar",
       data:{
         labels:months12.map(mLabel),
-        datasets:[{data:months12.map(function(m){return monthMap[m]||0;}),
-          backgroundColor:"#0f6e35",borderRadius:5}]
+        datasets:[
+          {
+            label:"계약",
+            data:months12.map(function(m){return contractMap[m]||0;}),
+            backgroundColor:"#1976D2",
+            borderRadius:4,
+            barPercentage:0.75,
+            categoryPercentage:0.7
+          },
+          {
+            label:"출고",
+            data:months12.map(function(m){return deliveryMap[m]||0;}),
+            backgroundColor:"#2E7D32",
+            borderRadius:4,
+            barPercentage:0.75,
+            categoryPercentage:0.7
+          }
+        ]
       },
-      options:barOpts()
+      options:(function(){
+        var o=barOpts();
+        o.plugins=o.plugins||{};
+        o.plugins.legend={display:false};
+        o.plugins.tooltip={
+          callbacks:{
+            label:function(ctx){return ctx.dataset.label+": "+ctx.raw+"대";}
+          }
+        };
+        return o;
+      })()
     });
   })();
 
