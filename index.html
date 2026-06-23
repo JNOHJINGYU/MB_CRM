@@ -1169,6 +1169,8 @@
     <!-- 월별 유입경로별 출고대수 -->
     <div class="chart-card">
       <div class="chart-title">🚗 월별 유입경로별 출고대수</div>
+      <!-- 연도 선택 버튼 (데이터 기반 동적 생성) -->
+      <div class="an-yr2-filter" id="an-mo-yr-filter-lead" style="margin-bottom:8px;"></div>
       <!-- 월 선택 버튼 -->
       <div class="an-month-filter" id="an-month-filter-lead"></div>
       <div id="lead-monthly-chart" style="margin-top:4px;"></div>
@@ -3247,8 +3249,9 @@ function showRepurchaseList(){
 }
 
 var _anYear = "";   // 상단 연도 필터 (실적요약 + 차종별 + 월별통합)
-var _anLeadMonth = ""; // 월별 유입경로 선택된 월 (YYYY-MM)
-var _anLeadYear2 = ""; // 년도별 유입경로 선택된 년도
+var _anLeadMonthYear = ""; // 월별 유입경로 — 선택된 연도 (e.g. "2025")
+var _anLeadMonthNum  = 0;  // 월별 유입경로 — 선택된 월 번호 (1~12)
+var _anLeadYear2 = "";     // 년도별 유입경로 선택된 년도
 
 // ============================================================
 // 월별 유입경로별 출고 렌더
@@ -3260,33 +3263,63 @@ function renderLeadMonthlyChart(){
   var thisYear = kst.getUTCFullYear();
   var thisMonth = kst.getUTCMonth()+1;
 
-  // 월 버튼: 현재연도 1월~이번달
-  var filterEl = document.getElementById("an-month-filter-lead");
-  if(filterEl){
-    if(!_anLeadMonth){
-      _anLeadMonth = thisYear+"-"+String(thisMonth).padStart(2,"0");
+  // ── 실제 데이터에서 연도 목록 수집 ──────────────────────────
+  var yearSet={};
+  deliveredAll.forEach(function(c){
+    var raw=c.deliveryDate||c.deliveryMonth||"";
+    var norm=normalizeDateStr(raw);
+    if(norm.length>=4){
+      var y=norm.substring(0,4);
+      if(/^\d{4}$/.test(y)) yearSet[y]=true;
     }
+  });
+  var years=Object.keys(yearSet).sort(function(a,b){return parseInt(b)-parseInt(a);});
+  // 데이터 없으면 현재연도라도 넣어 버튼 생성
+  if(!years.length) years=[String(thisYear)];
+
+  // 기본값 세팅 (첫 진입 시)
+  if(!_anLeadMonthYear || years.indexOf(_anLeadMonthYear)===-1){
+    _anLeadMonthYear = years[0]; // 최신 연도
+  }
+  if(!_anLeadMonthNum) _anLeadMonthNum = thisMonth;
+
+  // ── 연도 버튼 렌더 ──────────────────────────────────────────
+  var yrFilterEl=document.getElementById("an-mo-yr-filter-lead");
+  if(yrFilterEl){
+    var yrHtml="";
+    years.forEach(function(y){
+      yrHtml+='<button class="an-yr2-btn'+(_anLeadMonthYear===y?" active":"")+
+              '" onclick="setAnLeadMonthYear(\''+y+'\')">'+y+'</button>';
+    });
+    yrFilterEl.innerHTML=yrHtml;
+  }
+
+  // ── 월 버튼 렌더 (1~12월 고정) ─────────────────────────────
+  var moFilterEl=document.getElementById("an-month-filter-lead");
+  if(moFilterEl){
     var moHtml="";
     for(var mm=1;mm<=12;mm++){
-      var mStr=thisYear+"-"+String(mm).padStart(2,"0");
-      moHtml+='<button class="an-mo-btn'+(_anLeadMonth===mStr?" active":"")+
-              '" onclick="setAnLeadMonth(\''+mStr+'\')">'+mm+'월</button>';
+      moHtml+='<button class="an-mo-btn'+(_anLeadMonthNum===mm?" active":"")+
+              '" onclick="setAnLeadMonthNum('+mm+')">'+mm+'월</button>';
     }
-    filterEl.innerHTML=moHtml;
+    moFilterEl.innerHTML=moHtml;
   }
+
+  // ── 데이터 필터링: 선택 연도 + 선택 월 ──────────────────────
+  var targetYM=_anLeadMonthYear+"-"+String(_anLeadMonthNum).padStart(2,"0");
 
   var chartEl=document.getElementById("lead-monthly-chart");
   if(!chartEl)return;
 
-  // 선택 월의 출고 고객 필터
   var filtered=deliveredAll.filter(function(c){
     var raw=c.deliveryDate||c.deliveryMonth||"";
     var ym=normalizeDateStr(raw).substring(0,7);
-    return ym===_anLeadMonth;
+    return ym===targetYM;
   });
 
   if(!filtered.length){
-    chartEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-lt);font-size:13px;">해당 월 출고 데이터 없음</div>';
+    chartEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-lt);font-size:13px;">'+
+      _anLeadMonthYear+'년 '+_anLeadMonthNum+'월 출고 데이터가 없습니다.</div>';
     return;
   }
 
@@ -3298,8 +3331,15 @@ function renderLeadMonthlyChart(){
   chartEl.innerHTML=renderHBar(leadMap,"#0f6e35");
 }
 
-function setAnLeadMonth(m){
-  _anLeadMonth=m;
+// 연도 버튼 클릭 — 월은 유지하고 연도만 바꿔서 재렌더
+function setAnLeadMonthYear(y){
+  _anLeadMonthYear=y;
+  renderLeadMonthlyChart();
+}
+
+// 월 버튼 클릭 — 연도 유지하고 월만 바꿔서 재렌더
+function setAnLeadMonthNum(m){
+  _anLeadMonthNum=m;
   renderLeadMonthlyChart();
 }
 
