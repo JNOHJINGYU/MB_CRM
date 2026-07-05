@@ -3405,10 +3405,13 @@ function setAnLeadYear2(y){
 }
 
 // ============================================================
-// 월별 유입경로별 신규문의 건수 렌더
-// ── 기준: 현재상태(Status)가 "신규문의"인 고객을,
-//         "신규 등록일(고객 생성일)"인 _savedAt 기준으로 집계
-//         (출고일/계약일과 무관 — 최초 등록월에 반드시 포함)
+// 월별 유입경로별 신규문의(신규 유입) 건수 렌더
+// ── 기준: 현재상태(Status)는 절대 사용하지 않음.
+//         오직 "신규 등록일(고객 생성일 = _savedAt)" + "유입경로"
+//         두 가지만으로 집계한다.
+//         즉 등록월 이후 상태가 상담중→계약유력→계약→출고로
+//         바뀌어도, 최초 등록월의 신규 유입 건수에서는 절대
+//         빠지지 않는다.
 // ============================================================
 var _anInquiryMonthYear = ""; // 선택된 연도
 var _anInquiryMonthNum  = 0;  // 선택된 월 번호 (1~12)
@@ -3421,16 +3424,16 @@ function getRegDate(c){
 
 function renderNewInquiryMonthlyChart(){
   var list = load();
-  var inquiryAll = list.filter(function(c){return (mst(c.status)||c.status)==="신규문의";});
+  // ★ 상태(Status)는 절대 사용하지 않음 — 전체 고객 대상, 등록일 기준으로만 집계
+  var allWithRegDate = list.filter(function(c){return !!normalizeDateStr(getRegDate(c));});
   var kst = new Date(new Date().getTime()+9*3600000);
   var thisYear = kst.getUTCFullYear();
   var thisMonth = kst.getUTCMonth()+1;
 
   // ── 실제 데이터에서 연도 목록 수집 (등록일 기준) ────────────
   var yearSet={};
-  inquiryAll.forEach(function(c){
-    var raw=getRegDate(c);
-    var norm=normalizeDateStr(raw);
+  allWithRegDate.forEach(function(c){
+    var norm=normalizeDateStr(getRegDate(c));
     if(norm.length>=4){
       var y=norm.substring(0,4);
       if(/^\d{4}$/.test(y)) yearSet[y]=true;
@@ -3468,24 +3471,23 @@ function renderNewInquiryMonthlyChart(){
     moFilterEl.innerHTML=moHtml;
   }
 
-  // ── 데이터 필터링: 선택 연도 + 선택 월 (등록일 기준) ────────
+  // ── 데이터 필터링: 선택 연도 + 선택 월 (등록일 기준, 상태 무관) ─
   var targetYM=_anInquiryMonthYear+"-"+String(_anInquiryMonthNum).padStart(2,"0");
 
   var chartEl=document.getElementById("inquiry-monthly-chart");
   var totalEl=document.getElementById("inquiry-monthly-total");
   if(!chartEl)return;
 
-  var filtered=inquiryAll.filter(function(c){
-    var raw=getRegDate(c);
-    var ym=normalizeDateStr(raw).substring(0,7);
+  var filtered=allWithRegDate.filter(function(c){
+    var ym=normalizeDateStr(getRegDate(c)).substring(0,7);
     return ym===targetYM;
   });
 
   if(!filtered.length){
     chartEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-lt);font-size:13px;">'+
-      _anInquiryMonthYear+'년 '+_anInquiryMonthNum+'월 신규문의 데이터가 없습니다.</div>';
+      _anInquiryMonthYear+'년 '+_anInquiryMonthNum+'월 신규 유입 데이터가 없습니다.</div>';
     if(totalEl) totalEl.innerHTML=
-      '<span style="font-size:13px;color:var(--text-dim);font-weight:600;">'+_anInquiryMonthNum+'월 신규문의</span><br/>'+
+      '<span style="font-size:13px;color:var(--text-dim);font-weight:600;">'+_anInquiryMonthNum+'월 신규 유입</span><br/>'+
       '<span style="font-size:22px;font-weight:800;color:var(--black);">총 0건</span>';
     return;
   }
@@ -3498,7 +3500,7 @@ function renderNewInquiryMonthlyChart(){
   chartEl.innerHTML=renderHBar(leadMap,"#e94560","건");
 
   if(totalEl) totalEl.innerHTML=
-    '<span style="font-size:13px;color:var(--text-dim);font-weight:600;">'+_anInquiryMonthNum+'월 신규문의</span><br/>'+
+    '<span style="font-size:13px;color:var(--text-dim);font-weight:600;">'+_anInquiryMonthNum+'월 신규 유입</span><br/>'+
     '<span style="font-size:22px;font-weight:800;color:var(--black);">총 '+filtered.length+'건</span>';
 }
 
