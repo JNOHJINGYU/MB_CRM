@@ -1176,6 +1176,17 @@
       <div id="lead-monthly-chart" style="margin-top:4px;"></div>
     </div>
 
+    <!-- 월별 유입경로별 신규문의 건수 -->
+    <div class="chart-card">
+      <div class="chart-title">📞 월별 유입경로별 신규문의 건수</div>
+      <!-- 연도 선택 버튼 (데이터 기반 동적 생성) -->
+      <div class="an-yr2-filter" id="an-mo-yr-filter-inquiry" style="margin-bottom:8px;"></div>
+      <!-- 월 선택 버튼 -->
+      <div class="an-month-filter" id="an-month-filter-inquiry"></div>
+      <div id="inquiry-monthly-chart" style="margin-top:4px;"></div>
+      <div id="inquiry-monthly-total" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);text-align:center;"></div>
+    </div>
+
     <!-- 년도별 유입경로별 출고대수 -->
     <div class="chart-card">
       <div class="chart-title">🚗 년도별 유입경로별 출고대수</div>
@@ -3394,9 +3405,120 @@ function setAnLeadYear2(y){
 }
 
 // ============================================================
+// 월별 유입경로별 신규문의 건수 렌더
+// ── 기준: 현재상태(Status)가 "신규문의"인 고객을,
+//         "신규 등록일(고객 생성일)"인 _savedAt 기준으로 집계
+//         (출고일/계약일과 무관 — 최초 등록월에 반드시 포함)
+// ============================================================
+var _anInquiryMonthYear = ""; // 선택된 연도
+var _anInquiryMonthNum  = 0;  // 선택된 월 번호 (1~12)
+
+// 고객의 "신규 등록일"을 최대한 정확히 뽑아내는 헬퍼
+// _savedAt(앱에서 신규 등록 시 자동 기록되는 타임스탬프)을 우선 사용
+function getRegDate(c){
+  return c._savedAt || c.regDate || c.createdDate || "";
+}
+
+function renderNewInquiryMonthlyChart(){
+  var list = load();
+  var inquiryAll = list.filter(function(c){return (mst(c.status)||c.status)==="신규문의";});
+  var kst = new Date(new Date().getTime()+9*3600000);
+  var thisYear = kst.getUTCFullYear();
+  var thisMonth = kst.getUTCMonth()+1;
+
+  // ── 실제 데이터에서 연도 목록 수집 (등록일 기준) ────────────
+  var yearSet={};
+  inquiryAll.forEach(function(c){
+    var raw=getRegDate(c);
+    var norm=normalizeDateStr(raw);
+    if(norm.length>=4){
+      var y=norm.substring(0,4);
+      if(/^\d{4}$/.test(y)) yearSet[y]=true;
+    }
+  });
+  var years=Object.keys(yearSet).sort(function(a,b){return parseInt(b)-parseInt(a);});
+  if(!years.length) years=[String(thisYear)];
+  if(years.indexOf(String(thisYear))===-1) years.unshift(String(thisYear));
+
+  // 기본값 세팅 (첫 진입 시)
+  if(!_anInquiryMonthYear || years.indexOf(_anInquiryMonthYear)===-1){
+    _anInquiryMonthYear = String(thisYear);
+  }
+  if(!_anInquiryMonthNum) _anInquiryMonthNum = thisMonth;
+
+  // ── 연도 버튼 렌더 ──────────────────────────────────────────
+  var yrFilterEl=document.getElementById("an-mo-yr-filter-inquiry");
+  if(yrFilterEl){
+    var yrHtml="";
+    years.forEach(function(y){
+      yrHtml+='<button class="an-yr2-btn'+(_anInquiryMonthYear===y?" active":"")+
+              '" onclick="setAnInquiryMonthYear(\''+y+'\')">'+y+'</button>';
+    });
+    yrFilterEl.innerHTML=yrHtml;
+  }
+
+  // ── 월 버튼 렌더 (1~12월 고정) ─────────────────────────────
+  var moFilterEl=document.getElementById("an-month-filter-inquiry");
+  if(moFilterEl){
+    var moHtml="";
+    for(var mm=1;mm<=12;mm++){
+      moHtml+='<button class="an-mo-btn'+(_anInquiryMonthNum===mm?" active":"")+
+              '" onclick="setAnInquiryMonthNum('+mm+')">'+mm+'월</button>';
+    }
+    moFilterEl.innerHTML=moHtml;
+  }
+
+  // ── 데이터 필터링: 선택 연도 + 선택 월 (등록일 기준) ────────
+  var targetYM=_anInquiryMonthYear+"-"+String(_anInquiryMonthNum).padStart(2,"0");
+
+  var chartEl=document.getElementById("inquiry-monthly-chart");
+  var totalEl=document.getElementById("inquiry-monthly-total");
+  if(!chartEl)return;
+
+  var filtered=inquiryAll.filter(function(c){
+    var raw=getRegDate(c);
+    var ym=normalizeDateStr(raw).substring(0,7);
+    return ym===targetYM;
+  });
+
+  if(!filtered.length){
+    chartEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-lt);font-size:13px;">'+
+      _anInquiryMonthYear+'년 '+_anInquiryMonthNum+'월 신규문의 데이터가 없습니다.</div>';
+    if(totalEl) totalEl.innerHTML=
+      '<span style="font-size:13px;color:var(--text-dim);font-weight:600;">'+_anInquiryMonthNum+'월 신규문의</span><br/>'+
+      '<span style="font-size:22px;font-weight:800;color:var(--black);">총 0건</span>';
+    return;
+  }
+
+  var leadMap={};
+  filtered.forEach(function(c){
+    var k=c.leadSource||"미기재";
+    leadMap[k]=(leadMap[k]||0)+1;
+  });
+  chartEl.innerHTML=renderHBar(leadMap,"#e94560","건");
+
+  if(totalEl) totalEl.innerHTML=
+    '<span style="font-size:13px;color:var(--text-dim);font-weight:600;">'+_anInquiryMonthNum+'월 신규문의</span><br/>'+
+    '<span style="font-size:22px;font-weight:800;color:var(--black);">총 '+filtered.length+'건</span>';
+}
+
+// 연도 버튼 클릭 — 월은 유지하고 연도만 바꿔서 재렌더
+function setAnInquiryMonthYear(y){
+  _anInquiryMonthYear=y;
+  renderNewInquiryMonthlyChart();
+}
+
+// 월 버튼 클릭 — 연도 유지하고 월만 바꿔서 재렌더
+function setAnInquiryMonthNum(m){
+  _anInquiryMonthNum=m;
+  renderNewInquiryMonthlyChart();
+}
+
+// ============================================================
 // 공통: 가로 막대 HTML 생성 (퍼센트 없음)
 // ============================================================
-function renderHBar(dataMap, baseColor){
+function renderHBar(dataMap, baseColor, unit){
+  unit = unit || "대";
   var keys=Object.keys(dataMap);
   if(!keys.length) return '<div style="padding:20px;text-align:center;color:var(--text-lt);font-size:13px;">데이터 없음</div>';
   keys.sort(function(a,b){return dataMap[b]-dataMap[a];});
@@ -3412,13 +3534,13 @@ function renderHBar(dataMap, baseColor){
       '<div>'+
         '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;">'+
           '<span style="font-size:13px;font-weight:700;color:var(--black);">'+esc(k)+'</span>'+
-          '<b style="color:'+color+';font-size:14px;font-weight:800;">'+cnt+'대</b>'+
+          '<b style="color:'+color+';font-size:14px;font-weight:800;">'+cnt+unit+'</b>'+
         '</div>'+
         '<div style="background:var(--border);border-radius:6px;overflow:hidden;height:28px;">'+
           '<div style="height:100%;width:'+barPct+'%;background:'+color+';border-radius:6px;'+
                'transition:width .5s;display:flex;align-items:center;padding-left:8px;'+
                'min-width:'+(cnt>0?'28px':'0')+';box-sizing:border-box;">'+
-            (barPct>12?'<span style="font-size:12px;color:#fff;font-weight:700;">'+cnt+'대</span>':'')+
+            (barPct>12?'<span style="font-size:12px;color:#fff;font-weight:700;">'+cnt+unit+'</span>':'')+
           '</div>'+
         '</div>'+
       '</div>';
@@ -3536,6 +3658,9 @@ function renderAnalytics(){
 
   // ── 월별 유입경로별 출고 ─────────────────────────────────────
   renderLeadMonthlyChart();
+
+  // ── 월별 유입경로별 신규문의 건수 ─────────────────────────────
+  renderNewInquiryMonthlyChart();
 
   // ── 년도별 유입경로별 출고 ───────────────────────────────────
   renderLeadYearlyChart();
