@@ -7,7 +7,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9uszhZbQVcMqCz_FnzHgsfJmOTUFm42s8ud4E3EQ6WJwnlZ0bkY9vTaAxoKh_vzzBhA/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycby0xQ-BWRGzPK9feu6vKZKVt7z0Wu3behx9pbp5Bd-5RlNP0fa84FvVe8TtB-x9tht33Q/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   </script>
 
@@ -3127,11 +3127,20 @@ function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn){
     console.log("[구글시트 응답] success="+json.success+" / 고객 수="+
       (json.customers?json.customers.length:"N/A"));
 
+    if(json.debug) console.log("[Apps Script 진단 _fetch]", json.debug);
+
     if(!json.success){
       throw new Error(json.message||"Apps Script 오류 (success:false)");
     }
 
     var incoming = json.customers || [];
+
+    // ★ 0건 안전장치
+    var existingForCheck2 = load();
+    if(incoming.length === 0 && existingForCheck2.length > 0){
+      throw new Error("⚠ 구글시트 응답 0건 — 기존 "+existingForCheck2.length+
+        "건 보호. 시트명·헤더를 확인하세요.");
+    }
 
     // ── rowNumber 기준으로 수정된 고객 확인 (phone 기준 제거) ──
     var found = incoming.find(function(c){
@@ -3163,15 +3172,17 @@ function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn){
       }
     }
 
-    // ── 구글시트 행 기준 필터 (연락처 기준 dedupe 완전 제거) ──
+    // ── 구글시트 행 기준 필터 ────────────────────────────────
     var sheetRows = incoming.filter(function(c){
       return c && (
         (c.customerName && String(c.customerName).trim()) ||
-        (c.phone        && String(c.phone).trim())        ||
-        (c.modelName    && String(c.modelName).trim())    ||
-        (c.deliveryDate && String(c.deliveryDate).trim())
+        (c.phone        && String(c.phone).trim())
       );
     });
+    // ★ 0건 안전장치
+    if(sheetRows.length === 0 && existingForCheck2 && existingForCheck2.length > 0){
+      throw new Error("⚠ 유효 고객 행 0건 — 기존 "+existingForCheck2.length+"건 보호. 헤더 매핑 확인 필요.");
+    }
 
     // 날짜 정규화
     sheetRows.forEach(function(c){
@@ -3980,20 +3991,43 @@ function syncFromSheet(isAuto){
     return res.json();
   })
   .then(function(json){
-    if(!json.success)throw new Error(json.message||"Apps Script 오류");
+    if(!json.success) throw new Error(json.message||"Apps Script 오류");
+
+    // ── 진단 정보 출력 ─────────────────────────────────────
+    if(json.debug){
+      console.log("[Apps Script 진단]", json.debug);
+      console.log("[시트명]", json.debug.customerSheetName,
+        "/ 헤더:", json.debug.headers,
+        "/ 원본행:", json.debug.rawDataRows,
+        "/ 반환:", json.debug.returnedCustomers);
+    }
 
     var incoming = json.customers || [];
 
+    // ★ 0건 안전장치 — 기존 localStorage 데이터 보호
+    var existingForCheck = load();
+    if(incoming.length === 0 && existingForCheck.length > 0){
+      var errMsg = "⚠ 구글시트에서 고객 데이터가 0건으로 반환되었습니다. 기존 "+
+        existingForCheck.length+"건의 데이터는 보호되었습니다. "+
+        "Apps Script 시트명·헤더를 확인해주세요.";
+      if(json.debug) errMsg += " [시트: "+( json.debug.customerSheetName||"?")+
+        " / 헤더: "+(json.debug.headers||[]).slice(0,5).join(",")+"]";
+      throw new Error(errMsg);
+    }
+
     // ── 구글시트 행 기준 필터 (비어있는 행 제거) ──────────────
-    // ★ 연락처 기준 dedupe 완전 제거: 같은 연락처라도 별도 행이면 별도 카드
     var sheetRows = incoming.filter(function(c){
       return c && (
         (c.customerName && String(c.customerName).trim()) ||
-        (c.phone        && String(c.phone).trim())        ||
-        (c.modelName    && String(c.modelName).trim())    ||
-        (c.deliveryDate && String(c.deliveryDate).trim())
+        (c.phone        && String(c.phone).trim())
       );
     });
+
+    // 필터 후에도 0건이면 보호
+    if(sheetRows.length === 0 && existingForCheck.length > 0){
+      throw new Error("⚠ 유효한 고객 행이 0건입니다. 기존 "+existingForCheck.length+
+        "건을 보호했습니다. 헤더 매핑을 확인해주세요.");
+    }
 
     // ── 날짜 필드 전체 정규화 (YYYY-MM-DD 통일) ─────────────
     sheetRows.forEach(function(c){
@@ -4058,7 +4092,11 @@ function syncFromSheet(isAuto){
       if(!c.customerId)  c.customerId  = "ROW-" + c._rowNumber;
     });
 
-    // ── 시트 기준으로 localStorage 완전 덮어쓰기 ────────────
+    // ── 최종 검증 후 저장 (0건 방어) ────────────────────────
+    var prevCount = load().length;
+    if(sheetRows.length === 0 && prevCount > 0){
+      throw new Error("⚠ 최종 저장 직전 0건 감지 — 기존 "+prevCount+"건 보호.");
+    }
     save(sheetRows);
 
     // ── 화면 전체 갱신 ──
@@ -4078,9 +4116,9 @@ function syncFromSheet(isAuto){
   })
   .catch(function(err){
     console.error("[syncFromSheet] 오류:", err);
-    if(!isAuto&&msgEl){
+    if(msgEl){
       msgEl.className="sync-msg err";
-      msgEl.textContent="❌ 구글시트 불러오기에 실패했습니다. Apps Script 배포 상태와 권한을 확인해주세요.";
+      msgEl.textContent="❌ "+err.message;
     }
   })
   .finally(function(){
