@@ -7,7 +7,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwe9eveUKBpv52o-_VEys5JHGvRI215dbY6XWoXEa8Jxpwej-9iZJc2N8cm1sQB30aEeQ/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9uszhZbQVcMqCz_FnzHgsfJmOTUFm42s8ud4E3EQ6WJwnlZ0bkY9vTaAxoKh_vzzBhA/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   </script>
 
@@ -612,29 +612,19 @@
       .care-grid{grid-template-columns:repeat(2,1fr);}
     }
 
-    /* ── 구매차량 목록 ── */
-    .veh-section-header{
-      display:flex;align-items:center;justify-content:space-between;
-      margin:18px 0 10px;
-    }
-    .veh-section-title{
-      font-size:13px;font-weight:800;color:var(--black);
-      display:flex;align-items:center;gap:6px;
-    }
+    /* ── 구매차량 목록 UI ── */
     .veh-add-btn{
       display:flex;align-items:center;gap:5px;
       padding:8px 14px;border-radius:20px;
       border:1.5px solid var(--gold);
-      background:#fff;color:var(--gold-dk,#9a7a28);
+      background:#fff;color:#9a7a28;
       font-family:var(--font);font-size:12px;font-weight:700;
-      cursor:pointer;transition:background .15s,color .15s;
-      -webkit-tap-highlight-color:transparent;
+      cursor:pointer;-webkit-tap-highlight-color:transparent;
     }
-    .veh-add-btn:hover{background:var(--gold);color:#fff;}
+    .veh-add-btn:active{background:var(--gold);color:#fff;}
     .veh-card{
       background:#fafafa;border:1.5px solid var(--border2);
       border-radius:12px;padding:14px;margin-bottom:12px;
-      position:relative;
     }
     .veh-card-header{
       display:flex;align-items:center;justify-content:space-between;
@@ -648,52 +638,25 @@
     .veh-del-btn{
       padding:5px 10px;border-radius:20px;
       border:1px solid #f0b8b2;background:#fdf0ef;
-      color:var(--danger);font-size:11px;font-weight:700;
+      color:var(--danger,#c0392b);font-size:11px;font-weight:700;
       cursor:pointer;font-family:var(--font);
-      -webkit-tap-highlight-color:transparent;
     }
-    .veh-del-btn:hover{background:var(--danger);color:#fff;}
     .veh-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
     .veh-field{display:flex;flex-direction:column;gap:4px;}
-    .veh-field.full{grid-column:1/-1;}
     .veh-field label{font-size:11px;font-weight:600;color:var(--text-dim);}
     .veh-field input,.veh-field select{
       width:100%;background:#fff;border:1px solid var(--border2);
       border-radius:8px;color:var(--text);font-family:var(--font);
       font-size:14px;padding:10px 12px;outline:none;
-      transition:border-color .18s;-webkit-appearance:none;appearance:none;
+      -webkit-appearance:none;appearance:none;
     }
     .veh-field input:focus,.veh-field select:focus{border-color:var(--gold);}
-    .veh-field .auto-field{background:var(--surface2)!important;border:1px dashed var(--border2)!important;color:var(--text-dim)!important;cursor:default;}
-    .veh-status-badge{
-      display:inline-flex;align-items:center;gap:4px;
-      font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;
+    .veh-field .auto-field{
+      background:var(--surface2,#f5f5f5)!important;
+      border:1px dashed var(--border2)!important;
+      color:var(--text-dim)!important;cursor:default;
     }
-    .veh-status-상담중{background:#fff0e0;color:#c05800;border:1px solid #ffd8a8;}
-    .veh-status-계약{background:#e3f0ff;color:#1055a8;border:1px solid #b0cef5;}
-    .veh-status-출고{background:#e3f7ec;color:#0f6e35;border:1px solid #90ddb0;}
-    .veh-status-해약{background:#fde8e8;color:#a01515;border:1px solid #f0a0a0;}
-    /* 카드 내 차량 뱃지 (고객목록 카드용) */
-    .veh-badge{
-      display:inline-flex;align-items:center;gap:3px;
-      background:#f0e8ff;color:#6020a0;border:1px solid #d5b8f5;
-      font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;
-    }
-    /* 상세보기 차량 카드 */
-    .veh-detail-card{
-      background:#f8f6ff;border:1.5px solid #d5b8f5;
-      border-radius:12px;padding:13px;margin-bottom:10px;
-    }
-    .veh-detail-card-hd{
-      display:flex;align-items:center;justify-content:space-between;
-      margin-bottom:8px;
-    }
-    .veh-detail-model{font-size:14px;font-weight:800;color:var(--black);}
-    .veh-detail-qty{font-size:12px;font-weight:700;color:var(--purple,#7a3db8);}
-    @media(max-width:480px){
-      .veh-grid{grid-template-columns:1fr;}
-      .veh-field.full{grid-column:1;}
-    }
+    @media(max-width:480px){.veh-grid{grid-template-columns:1fr;}}
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -1080,7 +1043,7 @@
       <div class="form-body" style="padding-bottom:4px;">
         <div id="new-veh-list"></div>
         <div id="new-veh-empty" style="text-align:center;padding:16px 0;color:var(--text-lt);font-size:13px;">
-          차량을 추가해주세요
+          + 차량 추가 버튼을 눌러 구매차량을 등록하세요
         </div>
       </div>
     </div>
@@ -1520,7 +1483,7 @@
         <div class="form-body" style="padding-bottom:4px;">
           <div id="edit-veh-list"></div>
           <div id="edit-veh-empty" style="text-align:center;padding:16px 0;color:var(--text-lt);font-size:13px;">
-            차량을 추가해주세요
+            + 차량 추가 버튼을 눌러 구매차량을 등록하세요
           </div>
         </div>
       </div>
@@ -1804,7 +1767,6 @@ function showView(v){
     if(pbs[i])pbs[i].classList.toggle("active",k===v);
   });
   if(v==="list")renderList();
-  if(v==="new"){ var nvc=document.getElementById("new-veh-list"); if(nvc&&nvc.children.length===0) renderVehiclesToDom("new-veh-list",[]); }
   if(v==="home"){updateDash();renderHomeContacts();}
   if(v==="analytics")renderAnalytics();
   window.scrollTo({top:0,behavior:"smooth"});
@@ -1971,218 +1933,171 @@ function ddTag(days,warnDays){
 // ============================================================
 function load(){try{return JSON.parse(localStorage.getItem(LS_KEY))||[];}catch(e){return[];}}
 function save(l){localStorage.setItem(LS_KEY,JSON.stringify(l));}
+function normP(p){return(p||"").replace(/\D/g,"");}
 
 // ============================================================
-// 구매차량(vehicles) 헬퍼
+// 구매차량(vehicles) 헬퍼 — 다중 구매차량 관리
 // ============================================================
-
-// 기존 단일 차량 데이터를 vehicles 배열로 마이그레이션 (호환성)
 function migrateVehicles(c){
-  if(Array.isArray(c.vehicles)&&c.vehicles.length>0) return c.vehicles;
-  // 기존 필드로 차량 1개 구성
+  if(Array.isArray(c.vehicles)&&c.vehicles.length>0){
+    return c.vehicles.map(function(v){
+      return {
+        vehicleId:     v.vehicleId     ||"",
+        modelName:     v.modelName     ||"",
+        detailModel:   v.detailModel   ||"",
+        purchaseMethod:v.purchaseMethod||"",
+        vehicleStatus: v.vehicleStatus ||"",
+        contractDate:  v.contractDate  ||"",
+        deliveryDate:  v.deliveryDate  ||"",
+        deliveryMonth: v.deliveryMonth ||"",
+        quantity:      Math.max(1,parseInt(v.quantity,10)||1)
+      };
+    });
+  }
   var v={
-    modelName:     c.modelName||"",
-    detailModel:   c.detailModel||"",
+    vehicleId:"",
+    modelName:c.modelName||"",detailModel:c.detailModel||"",
     purchaseMethod:c.purchaseMethod||"",
-    contractDate:  c.contractDate||"",
-    deliveryDate:  c.deliveryDate||"",
-    deliveryMonth: c.deliveryMonth||"",
-    vehicleStatus: c.status&&(c.status==="계약"||c.status==="출고"||c.status==="해약")?c.status:
-                   (c.contractDate&&!c.deliveryDate?"계약":(c.deliveryDate?"출고":"")),
-    quantity:      1
+    contractDate:c.contractDate||"",deliveryDate:c.deliveryDate||"",
+    deliveryMonth:c.deliveryMonth||"",
+    vehicleStatus:c.status&&(c.status==="계약"||c.status==="출고"||c.status==="해약")?c.status:
+                  (c.contractDate&&!c.deliveryDate?"계약":(c.deliveryDate?"출고":"")),
+    quantity:1
   };
-  if(!v.modelName&&!v.contractDate&&!v.deliveryDate) return []; // 완전히 비어있으면 빈배열
-  return [v];
+  if(!v.modelName&&!v.contractDate&&!v.deliveryDate)return[];
+  return[v];
 }
 
-// vehicles 배열에서 계약 quantity 합계 (연도/월 필터 적용)
-function sumContractQty(c, filterYM, filterY){
-  var vehs=migrateVehicles(c);
+function sumContractQty(c,filterYM,filterY){
   var total=0;
-  vehs.forEach(function(v){
+  migrateVehicles(c).forEach(function(v){
     var cd=normalizeDateStr(v.contractDate||"");
-    if(!cd||cd.length<7) return;
-    if(filterYM&&cd.substring(0,7)!==filterYM) return;
-    if(filterY&&cd.substring(0,4)!==filterY) return;
-    total+=(parseInt(v.quantity)||1);
+    if(!cd||cd.length<7)return;
+    if(filterYM&&cd.substring(0,7)!==filterYM)return;
+    if(filterY&&cd.substring(0,4)!==filterY)return;
+    total+=Math.max(1,parseInt(v.quantity,10)||1);
   });
   return total;
 }
 
-// vehicles 배열에서 출고 quantity 합계 (연도/월 필터 적용)
-function sumDeliveryQty(c, filterYM, filterY){
-  var vehs=migrateVehicles(c);
+function sumDeliveryQty(c,filterYM,filterY){
   var total=0;
-  vehs.forEach(function(v){
+  migrateVehicles(c).forEach(function(v){
     var dd=normalizeDateStr(v.deliveryDate||"");
-    if(!dd||dd.length<7) return;
-    if(filterYM&&dd.substring(0,7)!==filterYM) return;
-    if(filterY&&dd.substring(0,4)!==filterY) return;
-    total+=(parseInt(v.quantity)||1);
+    if(!dd||dd.length<7)return;
+    if(filterYM&&dd.substring(0,7)!==filterYM)return;
+    if(filterY&&dd.substring(0,4)!==filterY)return;
+    total+=Math.max(1,parseInt(v.quantity,10)||1);
   });
   return total;
 }
 
-// 고객의 전체 구매차량 총 수량 표시용
 function totalVehicleQty(c){
   var vehs=migrateVehicles(c);
-  if(!vehs.length) return 0;
-  return vehs.reduce(function(s,v){return s+(parseInt(v.quantity)||1);},0);
+  if(!vehs.length)return 0;
+  return vehs.reduce(function(s,v){return s+Math.max(1,parseInt(v.quantity,10)||1);},0);
 }
 
-// vehicles 배열에서 "출고" 차량 목록 (연도/월 필터)
-function getDeliveredVehicles(list, filterY, filterYM){
-  var result=[]; // {customer, vehicle}
+function getDeliveredVehicles(list,filterY,filterYM){
+  var result=[];
   list.forEach(function(c){
     migrateVehicles(c).forEach(function(v){
       var dd=normalizeDateStr(v.deliveryDate||"");
-      if(!dd||dd.length<7) return;
-      if(filterY&&dd.substring(0,4)!==filterY) return;
-      if(filterYM&&dd.substring(0,7)!==filterYM) return;
-      result.push({customer:c, vehicle:v});
+      if(!dd||dd.length<7)return;
+      if(filterY&&dd.substring(0,4)!==filterY)return;
+      if(filterYM&&dd.substring(0,7)!==filterYM)return;
+      result.push({customer:c,vehicle:v});
     });
   });
   return result;
 }
 
-// 차량 row HTML 생성 (신규/수정 공용)
 var _vehIdx=0;
-function vehRowHtml(listId, v){
+function vehRowHtml(listId,v){
   var idx=_vehIdx++;
   var rid="vr-"+listId+"-"+idx;
-  var models=["","A-Class","CLA","GLA / GLB","C-Class","E-Class","S-Class","CLE","GLC","GLE","GLS","G-Class","AMG GT · SL","EQ","Mercedes-Maybach"];
-  var modelOpts=models.map(function(m){
-    return '<option value="'+esc(m)+'"'+(v&&v.modelName===m?' selected':'')+'>'+esc(m||"— 모델 선택 —")+'</option>';
-  }).join("");
-  var statuses=["","상담중","계약","출고","해약"];
-  var statusOpts=statuses.map(function(s){
-    return '<option value="'+s+'"'+(v&&v.vehicleStatus===s?' selected':'')+'>'+esc(s||"— 상태 선택 —")+'</option>';
-  }).join("");
-  var methods=["","일시불","할부","리스","장기렌트","법인할부","법인리스","미정"];
-  var methodOpts=methods.map(function(m){
-    return '<option value="'+m+'"'+(v&&v.purchaseMethod===m?' selected':'')+'>'+esc(m||"— 구매방식 —")+'</option>';
-  }).join("");
+  var models=["","A-Class","CLA","GLA / GLB","C-Class","E-Class","S-Class",
+    "CLE","GLC","GLE","GLS","G-Class","AMG GT · SL","EQ","Mercedes-Maybach"];
+  function opt(val,sel){return'<option value="'+esc(val)+'"'+(sel?' selected':'')+'>'+esc(val||"— 선택 —")+'</option>';}
+  var modelOpts=models.map(function(m){return opt(m,v&&v.modelName===m);}).join("");
+  var statusOpts=["","상담중","계약","출고","해약"].map(function(s){return opt(s,v&&v.vehicleStatus===s);}).join("");
+  var methodOpts=["","일시불","할부","리스","장기렌트","법인할부","법인리스","미정"].map(function(m){return opt(m,v&&v.purchaseMethod===m);}).join("");
   var dd=v?v.deliveryDate||"":"";
   var dm=dd&&dd.length>=7?dd.substring(0,7):"";
-  if(v&&v.deliveryMonth&&!dm) dm=v.deliveryMonth;
-  return '<div class="veh-card" id="'+rid+'">'+
+  if(v&&v.deliveryMonth&&!dm)dm=v.deliveryMonth;
+  var qty=v?Math.max(1,parseInt(v.quantity,10)||1):1;
+  return'<div class="veh-card" id="'+rid+'">'+
     '<div class="veh-card-header">'+
       '<span class="veh-card-num">차량 #'+(idx+1)+'</span>'+
       '<button class="veh-del-btn" type="button" onclick="removeVehicleRow(\''+rid+'\',\''+listId+'\')">🗑 삭제</button>'+
     '</div>'+
     '<div class="veh-grid">'+
-      '<div class="veh-field"><label>모델명</label>'+
-        '<select onchange="onVehModelChange(this)">'+modelOpts+'</select>'+
-      '</div>'+
-      '<div class="veh-field"><label>세부모델</label>'+
-        '<input type="text" value="'+esc(v?v.detailModel||"":"")+'" placeholder="예: E 300 4MATIC EXCLUSIVE"/>'+
-      '</div>'+
-      '<div class="veh-field"><label>구매방식</label>'+
-        '<select>'+methodOpts+'</select>'+
-      '</div>'+
-      '<div class="veh-field"><label>차량상태</label>'+
-        '<select onchange="onVehStatusChange(this,\''+rid+'\')">'+statusOpts+'</select>'+
-      '</div>'+
-      '<div class="veh-field"><label>계약일</label>'+
-        '<input type="date" value="'+esc(v?v.contractDate||"":"")+'" class="veh-contractDate"/>'+
-      '</div>'+
-      '<div class="veh-field"><label>출고일</label>'+
-        '<input type="date" value="'+esc(dd)+'" class="veh-deliveryDate" oninput="onVehDelDateChange(this,\''+rid+'\')" onchange="onVehDelDateChange(this,\''+rid+'\')"/>'+
-      '</div>'+
+      '<div class="veh-field"><label>모델명</label><select>'+modelOpts+'</select></div>'+
+      '<div class="veh-field"><label>세부모델</label><input type="text" value="'+esc(v?v.detailModel||"":"")+'" placeholder="예: E 300 4MATIC"/></div>'+
+      '<div class="veh-field"><label>구매방식</label><select>'+methodOpts+'</select></div>'+
+      '<div class="veh-field"><label>차량상태</label><select>'+statusOpts+'</select></div>'+
+      '<div class="veh-field"><label>계약일</label><input type="date" value="'+esc(v?v.contractDate||"":"")+'" class="veh-contractDate"/></div>'+
+      '<div class="veh-field"><label>출고일</label><input type="date" value="'+esc(dd)+'" class="veh-deliveryDate"'+
+        ' oninput="onVehDelDateChange(this,\''+rid+'\')" onchange="onVehDelDateChange(this,\''+rid+'\')"/></div>'+
       '<div class="veh-field"><label>출고월 <span style="font-size:10px;color:var(--text-lt);">(자동)</span></label>'+
-        '<input type="text" value="'+esc(dm)+'" class="veh-deliveryMonth auto-field" readonly placeholder="출고일 입력 시 자동"/>'+
-      '</div>'+
+        '<input type="text" value="'+esc(dm)+'" class="veh-deliveryMonth auto-field" readonly placeholder="자동"/></div>'+
       '<div class="veh-field"><label>수량</label>'+
-        '<input type="number" value="'+(v?v.quantity||1:1)+'" min="1" max="99" class="veh-quantity" style="text-align:center;font-weight:700;font-size:18px;"/>'+
-      '</div>'+
-    '</div>'+
-  '</div>';
+        '<input type="number" value="'+qty+'" min="1" max="99" class="veh-quantity" style="text-align:center;font-weight:700;font-size:18px;"/></div>'+
+    '</div></div>';
 }
 
 function addVehicleRow(listId){
-  var container=document.getElementById(listId);
-  var emptyEl=document.getElementById(listId.replace("-list","-empty"));
-  if(!container)return;
-  var div=document.createElement("div");
-  div.innerHTML=vehRowHtml(listId,null);
-  container.appendChild(div.firstChild);
-  if(emptyEl) emptyEl.style.display="none";
-  updateVehCardNums(listId);
+  var c=document.getElementById(listId),e=document.getElementById(listId.replace("-list","-empty"));
+  if(!c)return;
+  var d=document.createElement("div");d.innerHTML=vehRowHtml(listId,null);
+  c.appendChild(d.firstChild);if(e)e.style.display="none";updateVehCardNums(listId);
 }
-
-function removeVehicleRow(rowId, listId){
-  var row=document.getElementById(rowId);
-  if(row) row.remove();
-  var container=document.getElementById(listId);
-  var emptyEl=document.getElementById(listId.replace("-list","-empty"));
-  if(emptyEl) emptyEl.style.display=(container&&container.children.length===0)?"":"none";
-  updateVehCardNums(listId);
+function removeVehicleRow(rowId,listId){
+  var r=document.getElementById(rowId);if(r)r.remove();
+  var c=document.getElementById(listId),e=document.getElementById(listId.replace("-list","-empty"));
+  if(e)e.style.display=(c&&c.children.length===0)?"":"none";updateVehCardNums(listId);
 }
-
 function updateVehCardNums(listId){
-  var container=document.getElementById(listId);
-  if(!container)return;
-  var cards=container.querySelectorAll(".veh-card-num");
-  cards.forEach(function(el,i){el.textContent="차량 #"+(i+1);});
+  var c=document.getElementById(listId);if(!c)return;
+  c.querySelectorAll(".veh-card-num").forEach(function(el,i){el.textContent="차량 #"+(i+1);});
 }
-
-function onVehDelDateChange(input, rowId){
-  var row=document.getElementById(rowId);
-  if(!row)return;
-  var dmEl=row.querySelector(".veh-deliveryMonth");
-  if(!dmEl)return;
-  var d=input.value;
-  dmEl.value=(d&&d.length>=7)?d.substring(0,7):"";
+function onVehDelDateChange(input,rowId){
+  var row=document.getElementById(rowId);if(!row)return;
+  var dm=row.querySelector(".veh-deliveryMonth");if(!dm)return;
+  dm.value=(input.value&&input.value.length>=7)?input.value.substring(0,7):"";
 }
-
-function onVehStatusChange(sel, rowId){/* 상태 변경 시 추가 동작 필요하면 여기 */ }
-function onVehModelChange(sel){/* 모델 변경 시 세부모델 힌트 등 */ }
-
-// vehicles 배열 읽기 (listId 기준)
 function readVehiclesFromDom(listId){
-  var container=document.getElementById(listId);
-  if(!container)return[];
-  var cards=container.querySelectorAll(".veh-card");
+  var c=document.getElementById(listId);if(!c)return[];
   var result=[];
-  cards.forEach(function(card){
+  c.querySelectorAll(".veh-card").forEach(function(card){
     var sels=card.querySelectorAll("select");
     var inps=card.querySelectorAll("input");
-    // sels: [모델명, 구매방식, 차량상태]
-    // inps: [세부모델, 계약일, 출고일, 출고월, 수량]
-    var modelName   =(sels[0]&&sels[0].value)||"";
+    var modelName    =(sels[0]&&sels[0].value)||"";
     var purchaseMethod=(sels[1]&&sels[1].value)||"";
     var vehicleStatus=(sels[2]&&sels[2].value)||"";
-    var detailModel =(inps[0]&&inps[0].value)||"";
-    var contractDate=(inps[1]&&inps[1].value)||"";
-    var deliveryDate=(inps[2]&&inps[2].value)||"";
+    var detailModel  =(inps[0]&&inps[0].value)||"";
+    var contractDate =(inps[1]&&inps[1].value)||"";
+    var deliveryDate =(inps[2]&&inps[2].value)||"";
     var deliveryMonth=(inps[3]&&inps[3].value)||"";
-    var quantity    =parseInt((inps[4]&&inps[4].value)||"1")||1;
-    if(!deliveryMonth&&deliveryDate&&deliveryDate.length>=7) deliveryMonth=deliveryDate.substring(0,7);
-    result.push({modelName,detailModel,purchaseMethod,contractDate,deliveryDate,deliveryMonth,vehicleStatus,quantity});
+    var quantity     =Math.max(1,parseInt((inps[4]&&inps[4].value)||"1")||1);
+    if(!deliveryMonth&&deliveryDate&&deliveryDate.length>=7)deliveryMonth=deliveryDate.substring(0,7);
+    result.push({vehicleId:"",modelName:modelName,detailModel:detailModel,
+      purchaseMethod:purchaseMethod,contractDate:contractDate,deliveryDate:deliveryDate,
+      deliveryMonth:deliveryMonth,vehicleStatus:vehicleStatus,quantity:quantity});
   });
   return result;
 }
-
-// vehicles 배열을 DOM에 렌더링 (listId 기준)
-function renderVehiclesToDom(listId, vehicles){
-  var container=document.getElementById(listId);
-  var emptyEl=document.getElementById(listId.replace("-list","-empty"));
-  if(!container)return;
-  container.innerHTML="";
-  _vehIdx=0;
-  if(!vehicles||!vehicles.length){
-    if(emptyEl) emptyEl.style.display="";
-    return;
-  }
-  if(emptyEl) emptyEl.style.display="none";
+function renderVehiclesToDom(listId,vehicles){
+  var c=document.getElementById(listId),e=document.getElementById(listId.replace("-list","-empty"));
+  if(!c)return;c.innerHTML="";_vehIdx=0;
+  if(!vehicles||!vehicles.length){if(e)e.style.display="";return;}
+  if(e)e.style.display="none";
   vehicles.forEach(function(v){
-    var div=document.createElement("div");
-    div.innerHTML=vehRowHtml(listId,v);
-    container.appendChild(div.firstChild);
+    var d=document.createElement("div");d.innerHTML=vehRowHtml(listId,v);
+    c.appendChild(d.firstChild);
   });
   updateVehCardNums(listId);
 }
-function normP(p){return(p||"").replace(/\D/g,"");}
 function findC(phone){
   var list=load(),np=normP(phone);
   for(var i=0;i<list.length;i++)if(normP(list[i].phone)===np)return{idx:i,c:list[i]};
@@ -2219,7 +2134,7 @@ function updateDash(){
     var del=parseD(x.deliveryDate);
     if(del){var el=Math.round((now-del)/86400000);if(el>=365)y1++;if(el>=1095)y3++;}
 
-    // ── 판매실적 집계 (vehicles 기준) ──────────────────────
+    // ── 판매실적 집계 (vehicles.quantity 기준) ──────────────
     try{ mc+=sumContractQty(x,yyyyMM,null); }catch(e){}
     try{ yc+=sumContractQty(x,null,yyyyStr); }catch(e){}
     try{ md+=sumDeliveryQty(x,yyyyMM,null); }catch(e){}
@@ -2294,11 +2209,7 @@ function renderHomeContacts(){
     : '<div class="contact-empty">이번주 연락할 고객이 없습니다</div>';
 }
 function cItem(c,df){
-  var vehs=migrateVehicles(c);
-  var firstV=vehs[0]||{};
-  var model=vehs.length>1
-    ? (firstV.modelName||c.modelName||"모델미정")+" 외 "+(vehs.length-1)+"종"
-    : (c.modelName||firstV.modelName||"")+(c.detailModel||firstV.detailModel?" · "+(c.detailModel||firstV.detailModel):"");
+  var model=(c.modelName||"")+(c.detailModel?" · "+c.detailModel:"");
   var sd=mst(c.status)||c.status||"—";
   var safePhone=(c.phone||"").replace(/"/g,"&quot;");
   var safeName=(c.customerName||"").replace(/"/g,"&quot;");
@@ -2455,13 +2366,9 @@ function buildCard(c,idx){
     '</div>'+
   '</div>';
 
-  // 구매차량 총 수량
-  var vQty=totalVehicleQty(c);
-  var vLabel=vQty>0?"구매차량 "+vQty+"대":"";
   html+='<div class="chip-row">';
   if(c.phone)      html+='<a class="tel-link" href="tel:'+esc(c.phone)+'">📞 '+esc(c.phone)+'</a>';
-  if(vLabel)       html+='<span class="veh-badge">🚗 '+esc(vLabel)+'</span>';
-  else if(model)   html+='<span class="chip">'+esc(model)+'</span>';
+  if(model)        html+='<span class="chip">'+esc(model)+'</span>';
   if(c.region)     html+='<span class="chip">📍'+esc(c.region)+'</span>';
   if(c.nextContact)html+='<span class="chip">📅 '+esc(c.nextContact)+'</span>';
   if(c.leadSource) html+='<span class="chip">'+esc(c.leadSource)+'</span>';
@@ -2505,31 +2412,6 @@ function buildCard(c,idx){
   html+='<button class="tog-btn" onclick="togDet(this,\''+did+'\')" aria-expanded="false">'+
     '상세정보 보기 <span class="tog-arr">▼</span></button>';
   html+='<div class="detail-body" id="'+did+'">';
-
-  // ★ 구매차량 목록 카드
-  var vehs=migrateVehicles(c);
-  if(vehs.length>0){
-    html+='<div class="d-sec">🚗 구매차량 목록 (총 '+totalVehicleQty(c)+'대)</div>';
-    vehs.forEach(function(v,vi){
-      var st=v.vehicleStatus||"";
-      var stCls="veh-status-"+(st||"상담중");
-      html+='<div class="veh-detail-card">'+
-        '<div class="veh-detail-card-hd">'+
-          '<div class="veh-detail-model">'+esc((v.modelName||"모델미정")+(v.detailModel?" · "+v.detailModel:""))+'</div>'+
-          '<div style="display:flex;align-items:center;gap:6px;">'+
-            (st?'<span class="veh-status-badge '+stCls+'">'+esc(st)+'</span>':'' )+
-            '<span class="veh-detail-qty">×'+( parseInt(v.quantity)||1)+'대</span>'+
-          '</div>'+
-        '</div>'+
-        '<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--text-dim);">'+
-          (v.purchaseMethod?'<span style="background:#f0f0f5;border-radius:6px;padding:2px 8px;">'+esc(v.purchaseMethod)+'</span>':'' )+
-          (v.contractDate?'<span style="background:#e3f0ff;color:#1055a8;border-radius:6px;padding:2px 8px;">계약 '+esc(v.contractDate)+'</span>':'' )+
-          (v.deliveryDate?'<span style="background:#e3f7ec;color:#0f6e35;border-radius:6px;padding:2px 8px;">출고 '+esc(v.deliveryDate)+'</span>':'' )+
-        '</div>'+
-      '</div>';
-    });
-  }
-
   html+='<div class="d-sec">구매 정보</div>';
   if(c.purchaseMethod) html+=dr("구매방식",c.purchaseMethod);
   if(c.budget)         html+=dr("구매예산",c.budget);
@@ -2707,6 +2589,7 @@ function getFormData(){
     companyName:         document.getElementById("companyName").value.trim(),
     phone:               document.getElementById("phone").value.trim(),
     region:              document.getElementById("region").value.trim(),
+    // 호환: 첫 번째 차량 대표 필드 (구글시트 기존 컬럼 유지)
     modelName:           firstV.modelName||document.getElementById("modelName").value||"",
     detailModel:         firstV.detailModel||getDetailModelValue("detailModel","detailCustom")||"",
     purchaseMethod:      firstV.purchaseMethod||document.getElementById("purchaseMethod").value||"",
@@ -2733,7 +2616,7 @@ function getFormData(){
     nextServiceDate:      document.getElementById("nextServiceDate").value,
     nextServiceMileage:   document.getElementById("nextServiceMileage").value,
     birthDate:            document.getElementById("birthDate").value,
-    vehicles:             vehicles
+    vehicles:             vehicles  // ★ 구매차량 배열
   };
 }
 
@@ -2744,8 +2627,7 @@ function resetNewForm(){
     "financeStartDate","financeEndDate","tags","birthDate",
     "lastServiceDate","lastServiceMileage","currentMileageDate","currentMileage"];
   ids.forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
-  var nsEl=document.getElementById("nextServiceDate");if(nsEl)nsEl.value="";
-  var nsmEl=document.getElementById("nextServiceMileage");if(nsmEl)nsmEl.value="";
+  ["nextServiceDate","nextServiceMileage"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
   var mnEl=document.getElementById("modelName");if(mnEl)mnEl.value="";
   var dm=document.getElementById("detailModel");
   if(dm){dm.innerHTML='<option value="">— 모델을 먼저 선택하세요 —</option>';dm.disabled=true;}
@@ -2765,7 +2647,7 @@ function resetNewForm(){
 // ============================================================
 function submitNew(){
   hideMsg("msg-new");
-  // vehicles DOM에서 출고월 자동계산됨 (autoDeliveryMonth 불필요)
+  autoDeliveryMonth(); // ★ 저장 직전 출고월 강제 재계산
   var data=getFormData();
   if(!data.customerName){showMsg("msg-new","err","⚠ 고객명을 입력해주세요.");return;}
   if(!data.phone){showMsg("msg-new","err","⚠ 연락처를 입력해주세요.");return;}
@@ -2784,9 +2666,23 @@ function submitNew(){
   .then(function(){
     var list=load();
     var np=normP(data.phone),idx=-1;
-    for(var i=0;i<list.length;i++){if(normP(list[i].phone)===np){idx=i;break;}}
+    // 고객ID 우선, 없으면 연락처로 매칭
+    if(data.customerId){
+      for(var j=0;j<list.length;j++){if(list[j].customerId===data.customerId){idx=j;break;}}
+    }
+    if(idx<0){
+      for(var i=0;i<list.length;i++){if(normP(list[i].phone)===np){idx=i;break;}}
+    }
+    // ★ vehicles quantity 정규화 보장
+    if(Array.isArray(data.vehicles)){
+      data.vehicles = data.vehicles.map(function(v){
+        v.quantity = Math.max(1, parseInt(v.quantity, 10) || 1);
+        return v;
+      });
+    }
     if(idx>=0)list[idx]=data;else list.push(data);
     save(list);updateDash();renderAnalyticsIfVisible();
+    console.log("[신규저장 완료]", data.customerName, "vehicles:", data.vehicles);
     showMsg("msg-new","ok","✅ 저장되었습니다. 구글시트에 기록되었습니다.");
     resetNewForm();
   })
@@ -2889,7 +2785,7 @@ function _fillEditForm(c){
   sv("e-financeStartDate",   c.financeStartDate);
   sv("e-financeEndDate",     c.financeEndDate);
   sv("e-tags",               c.tags);
-  // ★ 구매차량 목록 렌더링 (vehicles 배열 또는 기존 데이터 마이그레이션)
+  // ★ 구매차량 목록 렌더링 (vehicles 있으면 그대로, 없으면 마이그레이션)
   renderVehiclesToDom("edit-veh-list", migrateVehicles(c));
   sv("e-lastServiceDate",    c.lastServiceDate);
   sv("e-lastServiceMileage", c.lastServiceMileage);
@@ -2998,9 +2894,11 @@ function _openCustDetailModal(c){
   // ── 기본 정보 테이블 ──
   var rows=[
     ["고객명",c.customerName],["연락처",c.phone],["법인명",c.companyName],
-    ["거주지역",c.region],["유입경로",c.leadSource],["현재상태",mst(c.status)||c.status],
+    ["거주지역",c.region],["모델명",c.modelName],["세부모델",c.detailModel],
+    ["구매방식",c.purchaseType],["현재상태",mst(c.status)||c.status],
     ["다음연락일",c.nextContact],["보험만기일",c.insuranceExpireDate],
-    ["자동차검사일",c.inspectionDueDate],["금융종료일",c.financeEndDate]
+    ["자동차검사일",c.inspectionDueDate],["금융종료일",c.financeEndDate],
+    ["출고일",c.deliveryDate]
   ];
   var html='<table style="width:100%;border-collapse:collapse;font-size:14px;">';
   rows.forEach(function(r){
@@ -3011,35 +2909,6 @@ function _openCustDetailModal(c){
     '</tr>';
   });
   html+='</table>';
-
-  // ── 구매차량 목록 섹션 ──
-  var detailVehs=migrateVehicles(c);
-  if(detailVehs.length>0){
-    html+='<div style="margin-top:16px;">'+
-      '<div style="font-size:13px;font-weight:800;color:var(--black);margin-bottom:10px;display:flex;align-items:center;gap:6px;">'+
-        '🚗 구매차량 목록 '+
-        '<span style="font-size:11px;font-weight:600;color:var(--text-dim);background:var(--border);padding:2px 8px;border-radius:20px;">총 '+totalVehicleQty(c)+'대</span>'+
-      '</div>';
-    detailVehs.forEach(function(v){
-      var st=v.vehicleStatus||"";
-      var stCls="veh-status-"+(st||"상담중");
-      html+='<div class="veh-detail-card">'+
-        '<div class="veh-detail-card-hd">'+
-          '<div class="veh-detail-model">'+esc((v.modelName||"모델미정")+(v.detailModel?" · "+v.detailModel:""))+'</div>'+
-          '<div style="display:flex;align-items:center;gap:6px;">'+
-            (st?'<span class="veh-status-badge '+stCls+'">'+esc(st)+'</span>':'' )+
-            '<span class="veh-detail-qty">×'+( parseInt(v.quantity)||1)+'대</span>'+
-          '</div>'+
-        '</div>'+
-        '<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:12px;">'+
-          (v.purchaseMethod?'<span style="background:#f0f0f5;border-radius:6px;padding:3px 9px;color:var(--text-dim);">'+esc(v.purchaseMethod)+'</span>':'' )+
-          (v.contractDate?'<span style="background:#e3f0ff;color:#1055a8;border-radius:6px;padding:3px 9px;font-weight:600;">계약 '+esc(v.contractDate)+'</span>':'' )+
-          (v.deliveryDate?'<span style="background:#e3f7ec;color:#0f6e35;border-radius:6px;padding:3px 9px;font-weight:600;">출고 '+esc(v.deliveryDate)+'</span>':'' )+
-        '</div>'+
-      '</div>';
-    });
-    html+='</div>';
-  }
 
   // ── 상담 이력 섹션 ──
   var raw=(c.consultation||"").trim();
@@ -3147,8 +3016,7 @@ function submitEdit(){
     return;
   }
 
-  // vehicles DOM에서 출고월 자동계산됨
-
+  // vehicles DOM에서 읽기 (출고월 자동 계산됨)
   var editVehicles=readVehiclesFromDom("edit-veh-list");
   var firstEV=editVehicles[0]||{};
 
@@ -3161,7 +3029,7 @@ function submitEdit(){
     companyName:         document.getElementById("e-companyName").value.trim(),
     newPhone:            ePhone,
     region:              document.getElementById("e-region").value.trim(),
-    // 호환성: 첫 번째 차량 대표 필드
+    // 호환: 첫 번째 차량 대표 필드
     modelName:           firstEV.modelName||document.getElementById("e-modelName").value||"",
     detailModel:         firstEV.detailModel||getDetailModelValue("e-detailModel","e-detailCustom")||"",
     purchaseMethod:      firstEV.purchaseMethod||document.getElementById("e-purchaseMethod").value||"",
@@ -3188,8 +3056,7 @@ function submitEdit(){
     nextServiceDate:     document.getElementById("e-nextServiceDate").value,
     nextServiceMileage:  document.getElementById("e-nextServiceMileage").value,
     birthDate:           document.getElementById("e-birthDate").value,
-    // ★ 구매차량 배열
-    vehicles:            editVehicles
+    vehicles:            editVehicles  // ★ 구매차량 배열
   };
 
   btn.disabled=true; btn.textContent="저장 중…";
@@ -3282,6 +3149,18 @@ function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn){
       console.warn("[동기화 경고] 시트에서 해당 고객을 찾지 못함. 시트 처리 지연 가능.");
     } else {
       console.log("[동기화 확인] rowNumber=" + found._rowNumber + " / " + found.customerName);
+      // ★ 시트 응답에 vehicles가 없을 경우 payload.vehicles로 즉시 주입
+      //   (Apps Script가 아직 구매차량 시트를 미구현 상태일 때 정확한 수량 보장)
+      if(payload && Array.isArray(payload.vehicles) && payload.vehicles.length > 0){
+        if(!Array.isArray(found.vehicles) || found.vehicles.length === 0){
+          found.vehicles = payload.vehicles.map(function(v){
+            v.quantity = Math.max(1, parseInt(v.quantity, 10) || 1);
+            return v;
+          });
+          console.log("[vehicles 주입]", found.customerName,
+            "payload vehicles:", found.vehicles);
+        }
+      }
     }
 
     // ── 구글시트 행 기준 필터 (연락처 기준 dedupe 완전 제거) ──
@@ -3299,6 +3178,43 @@ function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn){
       DATE_FIELDS_LIST.forEach(function(f){
         if(c[f] !== undefined && c[f] !== null && c[f] !== "") c[f] = normalizeDateStr(c[f]);
       });
+    });
+
+    // ★ vehicles 정규화 + 기존 vehicles 보존 (syncFromSheet와 동일 로직)
+    sheetRows = sheetRows.map(function(c){
+      if((!c.deliveryMonth || c.deliveryMonth === "") && c.deliveryDate && c.deliveryDate.length >= 7){
+        c.deliveryMonth = c.deliveryDate.substring(0,7);
+      }
+      if(Array.isArray(c.vehicles) && c.vehicles.length > 0){
+        c.vehicles = c.vehicles.map(function(v){
+          var dd = normalizeDateStr(v.deliveryDate || "");
+          return {
+            vehicleId:     v.vehicleId     || "",
+            modelName:     v.modelName     || "",
+            detailModel:   v.detailModel   || "",
+            purchaseMethod:v.purchaseMethod|| "",
+            vehicleStatus: v.vehicleStatus || "",
+            contractDate:  normalizeDateStr(v.contractDate  || ""),
+            deliveryDate:  dd,
+            deliveryMonth: v.deliveryMonth || (dd.length>=7 ? dd.substring(0,7) : ""),
+            quantity:      Math.max(1, parseInt(v.quantity, 10) || 1)
+          };
+        });
+      } else {
+        var existingList = load();
+        var matchC = null;
+        if(c._rowNumber) matchC = existingList.find(function(e){ return String(e._rowNumber)===String(c._rowNumber); });
+        if(!matchC && c.customerId) matchC = existingList.find(function(e){ return e.customerId===c.customerId; });
+        if(!matchC && c.phone) matchC = existingList.find(function(e){ return normP(e.phone)===normP(c.phone); });
+        if(matchC && Array.isArray(matchC.vehicles) && matchC.vehicles.length > 0){
+          c.vehicles = matchC.vehicles;
+          console.log("[vehicles 보존 _fetch]", c.customerName, c.vehicles.length+"종");
+        }
+      }
+      if(c.vehicles && c.vehicles.length > 0){
+        console.log("[차량 데이터 확인]", c.customerName, c.companyName||"", c.vehicles);
+      }
+      return c;
     });
 
     // rowNumber / customerId 보완
@@ -3502,19 +3418,17 @@ function renderLeadDelChart(list, yrStr, deliveredYear){
 function renderModelDelChart(list, yrStr, deliveredYear){
   var el=document.getElementById("model-del-chart");
   if(!el)return;
-
-  // vehicles 기준 집계 (quantity 합산)
+  // vehicles quantity 기준 집계
   var modelMap={};
   list.forEach(function(c){
     migrateVehicles(c).forEach(function(v){
       var dd=normalizeDateStr(v.deliveryDate||"");
-      if(!dd||dd.length<7) return;
-      if(yrStr&&dd.substring(0,4)!==yrStr) return;
+      if(!dd||dd.length<7)return;
+      if(yrStr&&dd.substring(0,4)!==yrStr)return;
       var k=(v.modelName||"미기재").trim()||"미기재";
-      modelMap[k]=(modelMap[k]||0)+(parseInt(v.quantity)||1);
+      modelMap[k]=(modelMap[k]||0)+Math.max(1,parseInt(v.quantity,10)||1);
     });
   });
-
   if(!Object.keys(modelMap).length){
     el.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-lt);font-size:13px;">'+(yrStr?yrStr+"년 ":"")+'출고 데이터 없음</div>';
     return;
@@ -3591,23 +3505,20 @@ var _anLeadYear2 = "";     // 년도별 유입경로 선택된 년도
 // ============================================================
 function renderLeadMonthlyChart(){
   var list = load();
-  var deliveredAll = list.filter(function(c){return (mst(c.status)||c.status)==="출고";});
   var kst = new Date(new Date().getTime()+9*3600000);
   var thisYear = kst.getUTCFullYear();
   var thisMonth = kst.getUTCMonth()+1;
 
-  // ── 실제 데이터에서 연도 목록 수집 ──────────────────────────
+  // ── vehicles 기반 연도 목록 수집 ─────────────────────────────
   var yearSet={};
-  deliveredAll.forEach(function(c){
-    var raw=c.deliveryDate||c.deliveryMonth||"";
-    var norm=normalizeDateStr(raw);
-    if(norm.length>=4){
-      var y=norm.substring(0,4);
-      if(/^\d{4}$/.test(y)) yearSet[y]=true;
-    }
+  list.forEach(function(c){
+    migrateVehicles(c).forEach(function(v){
+      var dd=normalizeDateStr(v.deliveryDate||"");
+      if(dd.length>=4) yearSet[dd.substring(0,4)]=true;
+    });
   });
-  var years=Object.keys(yearSet).sort(function(a,b){return parseInt(b)-parseInt(a);});
-  // 데이터 없으면 현재연도라도 넣어 버튼 생성
+  var years=Object.keys(yearSet).filter(function(y){return /^\d{4}$/.test(y);})
+             .sort(function(a,b){return parseInt(b)-parseInt(a);});
   if(!years.length) years=[String(thisYear)];
 
   // 기본값 세팅 (첫 진입 시)
@@ -3644,17 +3555,16 @@ function renderLeadMonthlyChart(){
   var chartEl=document.getElementById("lead-monthly-chart");
   if(!chartEl)return;
 
-  // vehicles 기준: 해당 연도+월에 deliveryDate가 있는 vehicle의 qty를 leadSource에 합산
+  // vehicles quantity 기준 집계
   var leadMap={};
   list.forEach(function(c){
     var src=c.leadSource||"미기재";
     migrateVehicles(c).forEach(function(v){
       var dd=normalizeDateStr(v.deliveryDate||"");
-      if(dd.substring(0,7)!==targetYM) return;
-      leadMap[src]=(leadMap[src]||0)+(parseInt(v.quantity)||1);
+      if(dd.substring(0,7)!==targetYM)return;
+      leadMap[src]=(leadMap[src]||0)+Math.max(1,parseInt(v.quantity,10)||1);
     });
   });
-
   if(!Object.keys(leadMap).length){
     chartEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-lt);font-size:13px;">'+
       _anLeadMonthYear+'년 '+_anLeadMonthNum+'월 출고 데이터가 없습니다.</div>';
@@ -3680,23 +3590,21 @@ function setAnLeadMonthNum(m){
 // ============================================================
 function renderLeadYearlyChart(){
   var list = load();
-  var deliveredAll = list.filter(function(c){return (mst(c.status)||c.status)==="출고";});
   var kst = new Date(new Date().getTime()+9*3600000);
   var thisYear = kst.getUTCFullYear();
 
-  if(!_anLeadYear2) _anLeadYear2=String(thisYear);
-
-  // 실데이터 기반 연도 버튼
+  // vehicles 기반 연도 목록 수집
   var yrSet2={};
   list.forEach(function(c){
     migrateVehicles(c).forEach(function(v){
       var dd=normalizeDateStr(v.deliveryDate||"");
-      if(dd.length>=4&&/^\d{4}$/.test(dd.substring(0,4))) yrSet2[dd.substring(0,4)]=true;
+      if(dd.length>=4) yrSet2[dd.substring(0,4)]=true;
     });
   });
-  var years2=Object.keys(yrSet2).sort(function(a,b){return parseInt(b)-parseInt(a);});
+  var years2=Object.keys(yrSet2).filter(function(y){return /^\d{4}$/.test(y);})
+              .sort(function(a,b){return parseInt(b)-parseInt(a);});
   if(!years2.length) years2=[String(thisYear)];
-  if(_anLeadYear2&&years2.indexOf(_anLeadYear2)===-1) _anLeadYear2=years2[0];
+  if(!_anLeadYear2||years2.indexOf(_anLeadYear2)===-1) _anLeadYear2=years2[0];
 
   var filterEl=document.getElementById("an-yr2-filter-lead");
   if(filterEl){
@@ -3713,18 +3621,17 @@ function renderLeadYearlyChart(){
   var chartEl=document.getElementById("lead-yearly-chart");
   if(!chartEl)return;
 
-  // vehicles 기준 집계
+  // vehicles quantity 기준 집계
   var leadMap2={};
   list.forEach(function(c){
     var src=c.leadSource||"미기재";
     migrateVehicles(c).forEach(function(v){
       var dd=normalizeDateStr(v.deliveryDate||"");
-      if(!dd||dd.length<7) return;
-      if(_anLeadYear2&&dd.substring(0,4)!==_anLeadYear2) return;
-      leadMap2[src]=(leadMap2[src]||0)+(parseInt(v.quantity)||1);
+      if(!dd||dd.length<7)return;
+      if(_anLeadYear2&&dd.substring(0,4)!==_anLeadYear2)return;
+      leadMap2[src]=(leadMap2[src]||0)+Math.max(1,parseInt(v.quantity,10)||1);
     });
   });
-
   if(!Object.keys(leadMap2).length){
     chartEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-lt);font-size:13px;">'+(_anLeadYear2||"전체")+'년 출고 데이터 없음</div>';
     return;
@@ -3930,12 +3837,11 @@ function renderAnalytics(){
     return getYM(raw)||(c.deliveryMonth&&c.deliveryMonth.length>=7?c.deliveryMonth.substring(0,7):"");
   }
 
-  // ── vehicles 기준 집계 ──────────────────────────────────────
-  // 출고 quantity 합계 (연도 필터)
+  // ── vehicles 기반 집계 ──────────────────────────────────────
   var totalDeliveryQty=0, totalContractQty=0;
   list.forEach(function(c){
-    totalDeliveryQty+=sumDeliveryQty(c,null,yrStr||null);
-    totalContractQty+=sumContractQty(c,null,yrStr||null);
+    totalDeliveryQty += sumDeliveryQty(c, null, yrStr||null);
+    totalContractQty += sumContractQty(c, null, yrStr||null);
   });
 
   // ── 요약 카드 ───────────────────────────────────────────────
@@ -3991,25 +3897,27 @@ function renderAnalytics(){
   setBadge("an-model-del-yr");
   renderModelDelChart(list, yrStr, []);
 
-  // ── 월별 계약/출고 통합 그래프 (Grouped Bar, vehicles 기준) ──
+  // ── 월별 계약/출고 통합 그래프 (vehicles quantity 기준) ────
   setBadge("an-contract-yr");
   (function(){
     var contractMap={}, deliveryMap={};
     months12.forEach(function(m){contractMap[m]=0;deliveryMap[m]=0;});
     list.forEach(function(c){
       migrateVehicles(c).forEach(function(v){
+        // 계약 집계
         var cd=normalizeDateStr(v.contractDate||"");
         if(cd.length>=7){
           if(!yrStr||cd.substring(0,4)===yrStr){
             var ym=cd.substring(0,7);
-            if(contractMap[ym]!==undefined) contractMap[ym]+=(parseInt(v.quantity)||1);
+            if(contractMap[ym]!==undefined) contractMap[ym]+=Math.max(1,parseInt(v.quantity,10)||1);
           }
         }
+        // 출고 집계
         var dd=normalizeDateStr(v.deliveryDate||"");
         if(dd.length>=7){
           if(!yrStr||dd.substring(0,4)===yrStr){
             var dym=dd.substring(0,7);
-            if(deliveryMap[dym]!==undefined) deliveryMap[dym]+=(parseInt(v.quantity)||1);
+            if(deliveryMap[dym]!==undefined) deliveryMap[dym]+=Math.max(1,parseInt(v.quantity,10)||1);
           }
         }
       });
@@ -4096,22 +4004,50 @@ function syncFromSheet(isAuto){
       });
     });
 
-    // ── deliveryMonth 자동 보정 + vehicles 날짜 정규화 ──────
+    // ── deliveryMonth 자동 보정 + vehicles 정규화 ────────────
     sheetRows = sheetRows.map(function(c){
       if((!c.deliveryMonth || c.deliveryMonth === "") && c.deliveryDate && c.deliveryDate.length >= 7){
         c.deliveryMonth = c.deliveryDate.substring(0,7);
       }
-      // vehicles 배열 내 날짜 필드도 정규화
-      if(Array.isArray(c.vehicles)){
+      // ★ vehicles 정규화 — 시트 응답에 vehicles 배열이 있으면 정규화하고,
+      //   없으면 localStorage 기존 vehicles를 보존 (시트 덮어쓰기로 인한 소실 방지)
+      if(Array.isArray(c.vehicles) && c.vehicles.length > 0){
         c.vehicles = c.vehicles.map(function(v){
-          var dd = normalizeDateStr(v.deliveryDate||"");
-          if(dd.length>=7 && (!v.deliveryMonth||v.deliveryMonth==="")){
-            v.deliveryMonth = dd.substring(0,7);
-          }
-          v.contractDate  = normalizeDateStr(v.contractDate||"");
-          v.deliveryDate  = normalizeDateStr(v.deliveryDate||"");
-          return v;
+          var dd = normalizeDateStr(v.deliveryDate || "");
+          return {
+            vehicleId:     v.vehicleId     || "",
+            modelName:     v.modelName     || "",
+            detailModel:   v.detailModel   || "",
+            purchaseMethod:v.purchaseMethod|| "",
+            vehicleStatus: v.vehicleStatus || "",
+            contractDate:  normalizeDateStr(v.contractDate  || ""),
+            deliveryDate:  dd,
+            deliveryMonth: v.deliveryMonth || (dd.length>=7 ? dd.substring(0,7) : ""),
+            quantity:      Math.max(1, parseInt(v.quantity, 10) || 1)
+          };
         });
+      } else {
+        // 시트에 vehicles 없음 → localStorage 기존 vehicles 복원
+        var existing = load();
+        var match = null;
+        if(c._rowNumber){
+          match = existing.find(function(e){ return String(e._rowNumber) === String(c._rowNumber); });
+        }
+        if(!match && c.customerId){
+          match = existing.find(function(e){ return e.customerId === c.customerId; });
+        }
+        if(!match && c.phone){
+          match = existing.find(function(e){ return normP(e.phone) === normP(c.phone); });
+        }
+        if(match && Array.isArray(match.vehicles) && match.vehicles.length > 0){
+          c.vehicles = match.vehicles; // ★ 기존 vehicles 보존
+          console.log("[vehicles 보존]", c.customerName, "vehicles:", c.vehicles.length+"종",
+            "qty:", c.vehicles.reduce(function(s,v){return s+(parseInt(v.quantity)||1);},0)+"대");
+        }
+      }
+      // 디버그 로그
+      if(c.vehicles && c.vehicles.length > 0){
+        console.log("[차량 데이터 확인]", c.customerName, c.companyName||"", c.vehicles);
       }
       return c;
     });
@@ -4177,15 +4113,6 @@ function syncFromSheet(isAuto){
       if((!c.deliveryMonth || c.deliveryMonth === "") && c.deliveryDate && c.deliveryDate.length >= 7){
         c.deliveryMonth = c.deliveryDate.substring(0, 7);
         changed = true;
-      }
-      // vehicles 내 출고월 보정
-      if(Array.isArray(c.vehicles)){
-        c.vehicles.forEach(function(v){
-          if((!v.deliveryMonth||v.deliveryMonth==="")&&v.deliveryDate&&v.deliveryDate.length>=7){
-            v.deliveryMonth=v.deliveryDate.substring(0,7);
-            changed=true;
-          }
-        });
       }
     });
     if(changed){
