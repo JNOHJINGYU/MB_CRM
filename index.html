@@ -3089,7 +3089,7 @@ function submitEdit(){
   .then(function(){
     // ── STEP 2: 시트에서 전체 고객 읽기 (syncFromSheet 내부 로직 직접 호출) ──
     console.log("[동기화 시작] 시트에서 최신 데이터 읽기");
-    return _fetchSheetAndSave(payload.phone, ePhone, msgEl, btn);
+    return _fetchSheetAndSave(payload.phone, ePhone, msgEl, btn, payload);
   })
   .catch(function(err){
     console.error("[submitEdit 오류]", err);
@@ -3105,21 +3105,28 @@ function submitEdit(){
 // submitEdit() 전용 동기화 함수.
 // syncFromSheet()와 동일한 fetch 방식을 사용하되,
 // _syncInProgress 플래그를 공유하지 않아 독립 실행 가능.
-function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn){
+function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn, editPayload){
+  editPayload = editPayload || {};
   var searchNorm = normP(searchPhone);
   var newNorm    = normP(newPhone);
+
+  console.log("[_fetchSheetAndSave 시작]", {
+    rowNumber:    editPayload.rowNumber    || "",
+    customerId:   editPayload.customerId   || "",
+    phone:        editPayload.phone        || "",
+    vehicleCount: Array.isArray(editPayload.vehicles) ? editPayload.vehicles.length : 0
+  });
 
   return fetch(SCRIPT_URL+"?action=list", {method:"GET"})
   .then(function(res){
     if(!res.ok) throw new Error("HTTP "+res.status+" (시트 읽기 실패)");
-    return res.text();   // text()로 먼저 받아 파싱 오류를 명확하게 처리
+    return res.text();
   })
   .then(function(text){
     var json;
     try{
       json=JSON.parse(text);
     }catch(e){
-      // HTML 오류 페이지 등이 반환된 경우 — 앞 200자 출력
       console.error("[시트 읽기] JSON 파싱 실패. 응답 앞부분:", text.substring(0,200));
       throw new Error("시트 응답이 JSON이 아닙니다. Apps Script 배포 상태를 확인하세요.");
     }
@@ -3142,32 +3149,47 @@ function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn){
         "건 보호. 시트명·헤더를 확인하세요.");
     }
 
-    // ── rowNumber 기준으로 수정된 고객 확인 (phone 기준 제거) ──
-    var found = incoming.find(function(c){
-      return String(c._rowNumber || "") === String(_editOriginalRowNumber || payload.rowNumber || "");
-    });
-    // rowNumber로 못 찾으면 customerId → phone 순으로 fallback
-    if(!found && payload.customerId){
-      found = incoming.find(function(c){ return c.customerId === payload.customerId; });
+    // ── 수정된 고객 찾기: rowNumber → customerId → phone 순 ──
+    var targetRowNumber  = _editOriginalRowNumber || editPayload.rowNumber || "";
+    var targetCustomerId = editPayload.customerId || "";
+
+    var found = null;
+    if(targetRowNumber){
+      found = incoming.find(function(c){
+        return String(c._rowNumber||"") === String(targetRowNumber);
+      });
+    }
+    if(!found && targetCustomerId){
+      found = incoming.find(function(c){
+        return String(c.customerId||"") === String(targetCustomerId);
+      });
     }
     if(!found && newNorm){
       found = incoming.find(function(c){ return normP(c.phone) === newNorm; });
     }
 
     if(!found){
-      console.warn("[동기화 경고] 시트에서 해당 고객을 찾지 못함. 시트 처리 지연 가능.");
+      console.warn("[동기화 경고] 시트에서 해당 고객을 찾지 못함.");
     } else {
-      console.log("[동기화 확인] rowNumber=" + found._rowNumber + " / " + found.customerName);
-      // ★ 시트 응답에 vehicles가 없을 경우 payload.vehicles로 즉시 주입
-      //   (Apps Script가 아직 구매차량 시트를 미구현 상태일 때 정확한 수량 보장)
-      if(payload && Array.isArray(payload.vehicles) && payload.vehicles.length > 0){
+      console.log("[동기화 확인] rowNumber="+found._rowNumber+" / "+found.customerName);
+      // ★ 시트 응답에 vehicles 없을 때 editPayload.vehicles 주입
+      if(Array.isArray(editPayload.vehicles) && editPayload.vehicles.length > 0){
         if(!Array.isArray(found.vehicles) || found.vehicles.length === 0){
-          found.vehicles = payload.vehicles.map(function(v){
-            v.quantity = Math.max(1, parseInt(v.quantity, 10) || 1);
-            return v;
+          found.vehicles = editPayload.vehicles.map(function(v){
+            return {
+              vehicleId:     v.vehicleId     || "",
+              modelName:     v.modelName     || "",
+              detailModel:   v.detailModel   || "",
+              purchaseMethod:v.purchaseMethod|| "",
+              vehicleStatus: v.vehicleStatus || "",
+              contractDate:  normalizeDateStr(v.contractDate  || ""),
+              deliveryDate:  normalizeDateStr(v.deliveryDate  || ""),
+              deliveryMonth: v.deliveryMonth ||
+                (normalizeDateStr(v.deliveryDate||"").substring(0,7)),
+              quantity: Math.max(1, parseInt(v.quantity,10)||1)
+            };
           });
-          console.log("[vehicles 주입]", found.customerName,
-            "payload vehicles:", found.vehicles);
+          console.log("[vehicles 주입]", found.customerName, found.vehicles);
         }
       }
     }
@@ -3249,6 +3271,15 @@ function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn){
       msgEl.className="st-msg edit-save-msg ok";
       msgEl.textContent="✅ 수정이 저장되었습니다.";
     }
+    // 성공 후 0.5초 뒤 모달 닫기 + 전체 갱신
+    setTimeout(function(){
+      closeEdit();
+      updateDash();
+      renderHomeContacts();
+      if(document.getElementById("listView")&&
+         document.getElementById("listView").classList.contains("active")) renderList();
+      renderAnalyticsIfVisible();
+    }, 500);
   })
   .catch(function(err){
     console.error("[_fetchSheetAndSave 오류]", err);
@@ -3256,6 +3287,7 @@ function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn){
       msgEl.className="st-msg edit-save-msg err";
       msgEl.textContent="❌ "+err.message;
     }
+    // 실패 시 모달 유지 (입력값 보존)
   })
   .finally(function(){
     if(btn){ btn.disabled=false; btn.textContent="✅ 수정 저장"; }
