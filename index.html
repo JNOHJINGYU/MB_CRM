@@ -7,7 +7,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycby0xQ-BWRGzPK9feu6vKZKVt7z0Wu3behx9pbp5Bd-5RlNP0fa84FvVe8TtB-x9tht33Q/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwe9eveUKBpv52o-_VEys5JHGvRI215dbY6XWoXEa8Jxpwej-9iZJc2N8cm1sQB30aEeQ/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   </script>
 
@@ -1842,9 +1842,13 @@ function normalizeDateStr(v){
   var r1=s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
   if(r1){y=+r1[1];m=+r1[2];d=+r1[3];}
 
-  // ② YYYY. M. D (한국어 점 구분)
+  // ② YYYY. M. D (한국어 점 구분, 오전/오후 타임스탬프 포함)
+  // 예: "2026. 6. 4. 오후 5:26:11" → 2026-06-04
   if(!y){var r2=s.match(/^(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})/);
     if(r2){y=+r2[1];m=+r2[2];d=+r2[3];}}
+  // ②-b YYYY년 M월 D일 형식
+  if(!y){var r2b=s.match(/^(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+    if(r2b){y=+r2b[1];m=+r2b[2];d=+r2b[3];}}
 
   // ③ M/D/YYYY 또는 MM/DD/YYYY (미국식)
   if(!y){var r3=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
@@ -3701,14 +3705,66 @@ var _anInquiryMonthNum  = 0;  // 선택된 월 번호 (1~12)
 
 // 고객의 "신규 등록일"을 최대한 정확히 뽑아내는 헬퍼
 // _savedAt(앱에서 신규 등록 시 자동 기록되는 타임스탬프)을 우선 사용
+// 고객 "신규 등록일" 추출 — 다양한 컬럼명 자동 탐색
+// _savedAt 이 "2026. 6. 4. 오후 5:26:11" 형식이어도 정상 추출됨
 function getRegDate(c){
-  return c._savedAt || c.regDate || c.createdDate || "";
+  // 1. 명시적 등록일 필드 우선순위 탐색
+  var candidates = [
+    c._savedAt, c.regDate, c.createdDate, c.registerDate,
+    c.createdAt, c.timestamp, c.sheetRowCreatedDate,
+    c.registrationDate, c.inputDate, c.entryDate
+  ];
+  for(var i=0;i<candidates.length;i++){
+    var v=candidates[i];
+    if(v && String(v).trim()){
+      var norm=normalizeDateStr(String(v).trim());
+      if(norm && norm.length>=7) return norm; // YYYY-MM 이상이면 유효
+    }
+  }
+  // 2. fallback: 필드명 동적 탐색 (날짜처럼 보이는 값)
+  var keys=Object.keys(c);
+  for(var k=0;k<keys.length;k++){
+    var key=keys[k];
+    // _로 시작하거나 날짜 관련 키워드를 포함하는 필드
+    if(/(date|at|time|reg|creat|stamp|입력|등록)/i.test(key)){
+      var val=c[key];
+      if(val && String(val).trim()){
+        var n=normalizeDateStr(String(val).trim());
+        if(n && n.length>=7) return n;
+      }
+    }
+  }
+  return "";
 }
 
 function renderNewInquiryMonthlyChart(){
   var list = load();
+
+  // ── 디버그: 첫 번째 고객 구조 출력 ──────────────────────────
+  if(list.length>0){
+    console.log("[신규문의 진단] 첫 번째 고객 구조:", list[0]);
+    console.log("[신규문의 진단] getRegDate 결과:", getRegDate(list[0]));
+    var noRegDate=list.filter(function(c){return !getRegDate(c);}).length;
+    if(noRegDate>0) console.warn("[신규문의 진단] 등록일 없는 고객:", noRegDate+"명");
+    // 샘플 10개 출력
+    console.table(list.slice(0,10).map(function(c){
+      return {
+        name:         c.customerName,
+        savedAt:      c._savedAt,
+        regDate:      c.regDate,
+        createdDate:  c.createdDate,
+        createdAt:    c.createdAt,
+        registerDate: c.registerDate,
+        resolvedRegDate: getRegDate(c),
+        leadSource:   c.leadSource,
+        status:       c.status
+      };
+    }));
+  }
+
   // ★ 상태(Status)는 절대 사용하지 않음 — 전체 고객 대상, 등록일 기준으로만 집계
-  var allWithRegDate = list.filter(function(c){return !!normalizeDateStr(getRegDate(c));});
+  var allWithRegDate = list.filter(function(c){return !!getRegDate(c);});
+  console.log("[신규문의 진단] 등록일 있는 고객:", allWithRegDate.length+"/"+list.length+"명");
   var kst = new Date(new Date().getTime()+9*3600000);
   var thisYear = kst.getUTCFullYear();
   var thisMonth = kst.getUTCMonth()+1;
@@ -3716,8 +3772,8 @@ function renderNewInquiryMonthlyChart(){
   // ── 실제 데이터에서 연도 목록 수집 (등록일 기준) ────────────
   var yearSet={};
   allWithRegDate.forEach(function(c){
-    var norm=normalizeDateStr(getRegDate(c));
-    if(norm.length>=4){
+    var norm=getRegDate(c); // 이미 YYYY-MM-DD 정규화된 값
+    if(norm && norm.length>=4){
       var y=norm.substring(0,4);
       if(/^\d{4}$/.test(y)) yearSet[y]=true;
     }
@@ -3762,9 +3818,15 @@ function renderNewInquiryMonthlyChart(){
   if(!chartEl)return;
 
   var filtered=allWithRegDate.filter(function(c){
-    var ym=normalizeDateStr(getRegDate(c)).substring(0,7);
+    var ym=getRegDate(c).substring(0,7); // 이미 YYYY-MM-DD
     return ym===targetYM;
   });
+  console.log("[신규문의 진단] targetYM="+targetYM+" / 해당 월 고객 수:", filtered.length);
+  if(filtered.length>0){
+    console.log("[신규문의 진단] 해당 월 샘플:", filtered.slice(0,3).map(function(c){
+      return {name:c.customerName, regDate:getRegDate(c), leadSource:c.leadSource};
+    }));
+  }
 
   if(!filtered.length){
     chartEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-lt);font-size:13px;">'+
