@@ -3,12 +3,20 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
   <title>노진규 고객관리 시스템</title>
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
     var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwe9eveUKBpv52o-_VEys5JHGvRI215dbY6XWoXEa8Jxpwej-9iZJc2N8cm1sQB30aEeQ/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
+    // PC·모바일이 같은 버전을 보고 있는지 확인하기 위한 버전 표식.
+    // 배포할 때마다 값을 바꿔서 캐시된 구버전과 구분한다.
+    var APP_VERSION = "2026-07-11-v86";
+    console.log("[CRM VERSION]", APP_VERSION);
   </script>
 
   <style>
@@ -1154,6 +1162,7 @@
       <button class="sync-btn" id="syncBtn" onclick="syncFromSheet()">☁ 불러오기</button>
     </div>
     <div class="sync-msg" id="sync-msg"></div>
+    <div id="crm-last-sync-label" style="font-size:11px;color:var(--text-lt);padding:0 2px 6px;"></div>
     <div class="filter-bar" id="filterBar">
       <div class="filter-label" id="filterLabel">전체 고객</div>
       <button class="filter-clear" onclick="clearFilter()">전체 보기 ✕</button>
@@ -1870,6 +1879,42 @@ function normalizeDateStr(v){
   return y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0");
 }
 
+// ── normalizeCreatedDate ─────────────────────────────────────
+// "신규문의 등록일(_savedAt/createdAt)" 전용 정규화 함수.
+// normalizeDateStr()과 달리 new Date(s) 같은 관대한 폴백을 쓰지 않는다.
+// 폴백 파싱이 생년월일이나 이상한 문자열을 그럴듯한 연도로 오인식해
+// 1968, 1976, 2041 같은 비정상 연도를 만들어내는 원인이었기 때문이다.
+// 명시적인 날짜 패턴에 매칭되지 않거나 연도가 2020~2100 범위를
+// 벗어나면 무조건 빈 문자열을 반환한다.
+function normalizeCreatedDate(v){
+  if(v===null||v===undefined)return "";
+  if(v instanceof Date){
+    if(isNaN(v.getTime()))return "";
+    var yy=v.getFullYear();
+    if(yy<2020||yy>2100)return "";
+    return yy+"-"+String(v.getMonth()+1).padStart(2,"0")+"-"+String(v.getDate()).padStart(2,"0");
+  }
+  var s=String(v).trim();
+  if(!s)return "";
+  var m=s.match(/^(20\d{2})[-.\/년\s]+(\d{1,2})[-.\/월\s]+(\d{1,2})/);
+  if(!m)return "";
+  var year=parseInt(m[1],10), month=parseInt(m[2],10), day=parseInt(m[3],10);
+  if(year<2020||year>2100)return "";
+  if(month<1||month>12)return "";
+  if(day<1||day>31)return "";
+  return String(year)+"-"+String(month).padStart(2,"0")+"-"+String(day).padStart(2,"0");
+}
+
+// ── isValidInquiryYear ────────────────────────────────────────
+// 신규문의 연도 버튼/집계에 사용할 연도인지 검증.
+// 2020년 미만이거나 내년을 초과하는 값(생년월일 오인식 등으로 생긴
+// 1968, 1976, 2041 같은 값)은 절대 통계에 포함시키지 않는다.
+function isValidInquiryYear(year){
+  var y=parseInt(year,10);
+  var currentYear=new Date().getFullYear();
+  return Number.isInteger(y) && y>=2020 && y<=currentYear+1;
+}
+
 // ── DATE_FIELDS: syncFromSheet에서 정규화할 필드 목록 ─────────
 var DATE_FIELDS_LIST=[
   "nextContact","insuranceStartDate","insuranceExpireDate",
@@ -2036,10 +2081,10 @@ function vehRowHtml(listId,v){
       '<button class="veh-del-btn" type="button" onclick="removeVehicleRow(\''+rid+'\',\''+listId+'\')">🗑 삭제</button>'+
     '</div>'+
     '<div class="veh-grid">'+
-      '<div class="veh-field"><label>모델명</label><select>'+modelOpts+'</select></div>'+
-      '<div class="veh-field"><label>세부모델</label><input type="text" value="'+esc(v?v.detailModel||"":"")+'" placeholder="예: E 300 4MATIC"/></div>'+
-      '<div class="veh-field"><label>구매방식</label><select>'+methodOpts+'</select></div>'+
-      '<div class="veh-field"><label>차량상태</label><select>'+statusOpts+'</select></div>'+
+      '<div class="veh-field"><label>모델명</label><select class="veh-modelName">'+modelOpts+'</select></div>'+
+      '<div class="veh-field"><label>세부모델</label><input type="text" value="'+esc(v?v.detailModel||"":"")+'" placeholder="예: E 300 4MATIC" class="veh-detailModel"/></div>'+
+      '<div class="veh-field"><label>구매방식</label><select class="veh-purchaseMethod">'+methodOpts+'</select></div>'+
+      '<div class="veh-field"><label>차량상태</label><select class="veh-vehicleStatus">'+statusOpts+'</select></div>'+
       '<div class="veh-field"><label>계약일</label><input type="date" value="'+esc(v?v.contractDate||"":"")+'" class="veh-contractDate"/></div>'+
       '<div class="veh-field"><label>출고일</label><input type="date" value="'+esc(dd)+'" class="veh-deliveryDate"'+
         ' oninput="onVehDelDateChange(this,\''+rid+'\')" onchange="onVehDelDateChange(this,\''+rid+'\')"/></div>'+
@@ -2070,24 +2115,31 @@ function onVehDelDateChange(input,rowId){
   var dm=row.querySelector(".veh-deliveryMonth");if(!dm)return;
   dm.value=(input.value&&input.value.length>=7)?input.value.substring(0,7):"";
 }
+// ★ select/input의 DOM 순서에 의존하지 않고, 각 필드에 지정된
+//   클래스명으로 정확히 값을 읽는다. PC/모바일 브라우저나 마크업
+//   변경으로 순서가 달라져도 항상 올바른 필드를 읽도록 안정화.
 function readVehiclesFromDom(listId){
-  var c=document.getElementById(listId);if(!c)return[];
+  var container=document.getElementById(listId);if(!container)return[];
   var result=[];
-  c.querySelectorAll(".veh-card").forEach(function(card){
-    var sels=card.querySelectorAll("select");
-    var inps=card.querySelectorAll("input");
-    var modelName    =(sels[0]&&sels[0].value)||"";
-    var purchaseMethod=(sels[1]&&sels[1].value)||"";
-    var vehicleStatus=(sels[2]&&sels[2].value)||"";
-    var detailModel  =(inps[0]&&inps[0].value)||"";
-    var contractDate =(inps[1]&&inps[1].value)||"";
-    var deliveryDate =(inps[2]&&inps[2].value)||"";
-    var deliveryMonth=(inps[3]&&inps[3].value)||"";
-    var quantity     =Math.max(1,parseInt((inps[4]&&inps[4].value)||"1")||1);
-    if(!deliveryMonth&&deliveryDate&&deliveryDate.length>=7)deliveryMonth=deliveryDate.substring(0,7);
-    result.push({vehicleId:"",modelName:modelName,detailModel:detailModel,
-      purchaseMethod:purchaseMethod,contractDate:contractDate,deliveryDate:deliveryDate,
-      deliveryMonth:deliveryMonth,vehicleStatus:vehicleStatus,quantity:quantity});
+  Array.prototype.forEach.call(container.querySelectorAll(".veh-card"),function(card){
+    function val(selector){
+      var el=card.querySelector(selector);
+      return el ? String(el.value||"").trim() : "";
+    }
+    var deliveryDate=val(".veh-deliveryDate");
+    var deliveryMonth=val(".veh-deliveryMonth");
+    if(!deliveryMonth&&deliveryDate.length>=7)deliveryMonth=deliveryDate.substring(0,7);
+    result.push({
+      vehicleId:      card.dataset.vehicleId||"",
+      modelName:      val(".veh-modelName"),
+      detailModel:    val(".veh-detailModel"),
+      purchaseMethod: val(".veh-purchaseMethod"),
+      vehicleStatus:  val(".veh-vehicleStatus"),
+      contractDate:   normalizeDateStr(val(".veh-contractDate"))||val(".veh-contractDate"),
+      deliveryDate:   normalizeDateStr(deliveryDate)||deliveryDate,
+      deliveryMonth:  deliveryMonth,
+      quantity:       Math.max(1,parseInt(val(".veh-quantity"),10)||1)
+    });
   });
   return result;
 }
@@ -3007,6 +3059,9 @@ function autoEditNextService(){
 function submitEdit(){
   var msgEl=document.getElementById("edit-save-msg");
   var btn=document.getElementById("editSaveBtn");
+  // ★ 저장 중 중복 클릭 방지 — 모바일 네트워크가 느릴 때 버튼을 여러 번
+  //   눌러도 요청이 겹치지 않도록 이미 저장 중이면 그냥 무시한다.
+  if(btn && btn.disabled) return;
   if(msgEl){msgEl.className="st-msg edit-save-msg";msgEl.textContent="";}
 
   var eName  = document.getElementById("e-customerName").value.trim();
@@ -3021,7 +3076,10 @@ function submitEdit(){
   }
 
   // vehicles DOM에서 읽기 (출고월 자동 계산됨)
+  console.log("[저장 시작]", window.innerWidth<=640?"mobile":"desktop", APP_VERSION);
+  console.log("[DOM 차량 수]", document.querySelectorAll("#edit-veh-list .veh-card").length);
   var editVehicles=readVehiclesFromDom("edit-veh-list");
+  console.log("[읽은 차량]", editVehicles);
   var firstEV=editVehicles[0]||{};
 
   var payload={
@@ -3063,6 +3121,7 @@ function submitEdit(){
     vehicles:            editVehicles  // ★ 구매차량 배열
   };
 
+  console.log("[전송 payload]", payload);
   btn.disabled=true; btn.textContent="저장 중…";
 
   console.log("[수정시작] customerId="+payload.customerId
@@ -3121,7 +3180,7 @@ function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn, editPayload){
     vehicleCount: Array.isArray(editPayload.vehicles) ? editPayload.vehicles.length : 0
   });
 
-  return fetch(SCRIPT_URL+"?action=list", {method:"GET"})
+  return fetch(SCRIPT_URL+"?action=list&_ts="+Date.now(), {method:"GET", cache:"no-store"})
   .then(function(res){
     if(!res.ok) throw new Error("HTTP "+res.status+" (시트 읽기 실패)");
     return res.text();
@@ -3176,25 +3235,43 @@ function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn, editPayload){
       console.warn("[동기화 경고] 시트에서 해당 고객을 찾지 못함.");
     } else {
       console.log("[동기화 확인] rowNumber="+found._rowNumber+" / "+found.customerName);
-      // ★ 시트 응답에 vehicles 없을 때 editPayload.vehicles 주입
-      if(Array.isArray(editPayload.vehicles) && editPayload.vehicles.length > 0){
-        if(!Array.isArray(found.vehicles) || found.vehicles.length === 0){
-          found.vehicles = editPayload.vehicles.map(function(v){
-            return {
-              vehicleId:     v.vehicleId     || "",
-              modelName:     v.modelName     || "",
-              detailModel:   v.detailModel   || "",
-              purchaseMethod:v.purchaseMethod|| "",
-              vehicleStatus: v.vehicleStatus || "",
-              contractDate:  normalizeDateStr(v.contractDate  || ""),
-              deliveryDate:  normalizeDateStr(v.deliveryDate  || ""),
-              deliveryMonth: v.deliveryMonth ||
-                (normalizeDateStr(v.deliveryDate||"").substring(0,7)),
-              quantity: Math.max(1, parseInt(v.quantity,10)||1)
-            };
-          });
-          console.log("[vehicles 주입]", found.customerName, found.vehicles);
-        }
+
+      // ★ 저장 직후 서버 응답 검증 — 방금 보낸 vehicles 개수와
+      //   서버 GET 응답의 vehicles 개수가 실제로 일치하는지 확인한다.
+      //   불일치하면 프론트에서 임의로 보정하지 않고 콘솔에 그대로 드러낸다.
+      var sentCount   = Array.isArray(editPayload.vehicles) ? editPayload.vehicles.length : -1;
+      var serverHasField = Object.prototype.hasOwnProperty.call(found, "vehicles");
+      var serverCount = (serverHasField && Array.isArray(found.vehicles)) ? found.vehicles.length : -1;
+      console.log("[저장 후 서버 차량 확인]", {
+        customerId: found.customerId,
+        customerName: found.customerName,
+        sentVehicleCount: sentCount,
+        serverHasVehiclesField: serverHasField,
+        serverVehicleCount: serverCount,
+        serverVehicles: found.vehicles
+      });
+      if(serverHasField && sentCount >= 0 && serverCount !== sentCount){
+        console.warn("[⚠ 저장 검증 실패] 보낸 차량 수("+sentCount+")와 서버 저장 차량 수("+
+          serverCount+")가 다릅니다. Apps Script handleEdit()의 구매차량 저장 로직을 확인하세요.");
+      }
+      // 서버 응답에 vehicles 필드 자체가 없는 구버전 Apps Script일 때만
+      // 방금 보낸 값을 임시로 화면에 반영한다 (서버 데이터를 덮어쓰는 것이 아님).
+      if(!serverHasField && Array.isArray(editPayload.vehicles) && editPayload.vehicles.length > 0){
+        found.vehicles = editPayload.vehicles.map(function(v){
+          return {
+            vehicleId:     v.vehicleId     || "",
+            modelName:     v.modelName     || "",
+            detailModel:   v.detailModel   || "",
+            purchaseMethod:v.purchaseMethod|| "",
+            vehicleStatus: v.vehicleStatus || "",
+            contractDate:  normalizeDateStr(v.contractDate  || ""),
+            deliveryDate:  normalizeDateStr(v.deliveryDate  || ""),
+            deliveryMonth: v.deliveryMonth ||
+              (normalizeDateStr(v.deliveryDate||"").substring(0,7)),
+            quantity: Math.max(1, parseInt(v.quantity,10)||1)
+          };
+        });
+        console.warn("[구버전 Apps Script 임시 호환 — vehicles 필드 없음]", found.customerName, found.vehicles);
       }
     }
 
@@ -3222,8 +3299,11 @@ function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn, editPayload){
       if((!c.deliveryMonth || c.deliveryMonth === "") && c.deliveryDate && c.deliveryDate.length >= 7){
         c.deliveryMonth = c.deliveryDate.substring(0,7);
       }
-      if(Array.isArray(c.vehicles) && c.vehicles.length > 0){
-        c.vehicles = c.vehicles.map(function(v){
+      // ★ 서버 우선 원칙 — syncFromSheet()와 동일한 3-경우 분기.
+      var serverHasVehiclesField2 = Object.prototype.hasOwnProperty.call(c, "vehicles");
+
+      if(serverHasVehiclesField2){
+        c.vehicles = Array.isArray(c.vehicles) ? c.vehicles.map(function(v){
           var dd = normalizeDateStr(v.deliveryDate || "");
           return {
             vehicleId:     v.vehicleId     || "",
@@ -3236,17 +3316,16 @@ function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn, editPayload){
             deliveryMonth: v.deliveryMonth || (dd.length>=7 ? dd.substring(0,7) : ""),
             quantity:      Math.max(1, parseInt(v.quantity, 10) || 1)
           };
-        });
+        }) : [];
       } else {
+        console.warn("[서버 응답에 vehicles 필드 없음 — 구버전 Apps Script 의심]",
+          c.customerName, c.customerId);
         var existingList = load();
         var matchC = null;
         if(c._rowNumber) matchC = existingList.find(function(e){ return String(e._rowNumber)===String(c._rowNumber); });
         if(!matchC && c.customerId) matchC = existingList.find(function(e){ return e.customerId===c.customerId; });
         if(!matchC && c.phone) matchC = existingList.find(function(e){ return normP(e.phone)===normP(c.phone); });
-        if(matchC && Array.isArray(matchC.vehicles) && matchC.vehicles.length > 0){
-          c.vehicles = matchC.vehicles;
-          console.log("[vehicles 보존 _fetch]", c.customerName, c.vehicles.length+"종");
-        }
+        c.vehicles = (matchC && Array.isArray(matchC.vehicles)) ? matchC.vehicles : [];
       }
       if(c.vehicles && c.vehicles.length > 0){
         console.log("[차량 데이터 확인]", c.customerName, c.companyName||"", c.vehicles);
@@ -3703,38 +3782,19 @@ function setAnLeadYear2(y){
 var _anInquiryMonthYear = ""; // 선택된 연도
 var _anInquiryMonthNum  = 0;  // 선택된 월 번호 (1~12)
 
-// 고객의 "신규 등록일"을 최대한 정확히 뽑아내는 헬퍼
-// _savedAt(앱에서 신규 등록 시 자동 기록되는 타임스탬프)을 우선 사용
-// 고객 "신규 등록일" 추출 — 다양한 컬럼명 자동 탐색
-// _savedAt 이 "2026. 6. 4. 오후 5:26:11" 형식이어도 정상 추출됨
+// 고객의 "신규 등록일"을 뽑아내는 헬퍼.
+// ★ 오직 createdAt(있다면) 또는 _savedAt 두 필드만 사용한다.
+//   생년월일(birthDate), 계약일(contractDate), 출고일(deliveryDate),
+//   다음연락일(nextContact), 보험만기일 등 다른 날짜 필드를 등록일로
+//   fallback하지 않는다 — 이 fallback이 1968/1976(생년월일 오인식),
+//   2041(잘못된 문자열 오인식) 같은 비정상 연도가 신규문의 통계에
+//   섞여 들어오던 근본 원인이었다.
+// _savedAt이 "2026. 6. 4. 오후 5:26:11" 형식이어도 normalizeCreatedDate가
+// 정상 추출한다. 패턴에 맞지 않거나 연도가 2020~2100 범위를 벗어나면
+// 빈 문자열을 반환하며, 그 고객은 등록일 미기재로 통계에서 제외된다.
 function getRegDate(c){
-  // 1. 명시적 등록일 필드 우선순위 탐색
-  var candidates = [
-    c._savedAt, c.regDate, c.createdDate, c.registerDate,
-    c.createdAt, c.timestamp, c.sheetRowCreatedDate,
-    c.registrationDate, c.inputDate, c.entryDate
-  ];
-  for(var i=0;i<candidates.length;i++){
-    var v=candidates[i];
-    if(v && String(v).trim()){
-      var norm=normalizeDateStr(String(v).trim());
-      if(norm && norm.length>=7) return norm; // YYYY-MM 이상이면 유효
-    }
-  }
-  // 2. fallback: 필드명 동적 탐색 (날짜처럼 보이는 값)
-  var keys=Object.keys(c);
-  for(var k=0;k<keys.length;k++){
-    var key=keys[k];
-    // _로 시작하거나 날짜 관련 키워드를 포함하는 필드
-    if(/(date|at|time|reg|creat|stamp|입력|등록)/i.test(key)){
-      var val=c[key];
-      if(val && String(val).trim()){
-        var n=normalizeDateStr(String(val).trim());
-        if(n && n.length>=7) return n;
-      }
-    }
-  }
-  return "";
+  var raw = c.createdAt || c._savedAt || "";
+  return normalizeCreatedDate(raw);
 }
 
 function renderNewInquiryMonthlyChart(){
@@ -3763,7 +3823,11 @@ function renderNewInquiryMonthlyChart(){
   }
 
   // ★ 상태(Status)는 절대 사용하지 않음 — 전체 고객 대상, 등록일 기준으로만 집계
-  var allWithRegDate = list.filter(function(c){return !!getRegDate(c);});
+  // 등록일이 있어도 연도가 2020~내년+1 범위를 벗어나면 통계에서 제외한다.
+  var allWithRegDate = list.filter(function(c){
+    var rd=getRegDate(c);
+    return !!rd && isValidInquiryYear(rd.substring(0,4));
+  });
   console.log("[신규문의 진단] 등록일 있는 고객:", allWithRegDate.length+"/"+list.length+"명");
   var kst = new Date(new Date().getTime()+9*3600000);
   var thisYear = kst.getUTCFullYear();
@@ -3775,7 +3839,11 @@ function renderNewInquiryMonthlyChart(){
     var norm=getRegDate(c); // 이미 YYYY-MM-DD 정규화된 값
     if(norm && norm.length>=4){
       var y=norm.substring(0,4);
-      if(/^\d{4}$/.test(y)) yearSet[y]=true;
+      if(isValidInquiryYear(y)){
+        yearSet[y]=true;
+      } else {
+        console.warn("[비정상 신규문의 등록일 제외]", c.customerName, c.customerId, norm);
+      }
     }
   });
   var years=Object.keys(yearSet).sort(function(a,b){return parseInt(b)-parseInt(a);});
@@ -4079,7 +4147,7 @@ function syncFromSheet(isAuto){
   if(btn){btn.disabled=true;btn.textContent="불러오는 중…";}
   if(msgEl){msgEl.className="sync-msg";msgEl.textContent="";}
 
-  fetch(SCRIPT_URL+"?action=list",{method:"GET"})
+  fetch(SCRIPT_URL+"?action=list&_ts="+Date.now(),{method:"GET", cache:"no-store"})
   .then(function(res){
     if(!res.ok)throw new Error("HTTP "+res.status);
     return res.json();
@@ -4137,10 +4205,18 @@ function syncFromSheet(isAuto){
       if((!c.deliveryMonth || c.deliveryMonth === "") && c.deliveryDate && c.deliveryDate.length >= 7){
         c.deliveryMonth = c.deliveryDate.substring(0,7);
       }
-      // ★ vehicles 정규화 — 시트 응답에 vehicles 배열이 있으면 정규화하고,
-      //   없으면 localStorage 기존 vehicles를 보존 (시트 덮어쓰기로 인한 소실 방지)
-      if(Array.isArray(c.vehicles) && c.vehicles.length > 0){
-        c.vehicles = c.vehicles.map(function(v){
+      // ★ 서버 우선 원칙 (Server-first).
+      //   경우 A: 서버가 vehicles: [차량...] 을 보냈다 → 서버 데이터 그대로 사용.
+      //   경우 B: 서버가 vehicles: [] 를 보냈다 → 차량이 0대로 저장된 것이므로
+      //           빈 배열을 그대로 사용한다. localStorage 차량으로 복구하지 않는다.
+      //           (이 case B를 "필드 없음"과 동일하게 취급한 것이 PC/모바일
+      //            차량 대수가 서로 달라 보이던 근본 원인이었다.)
+      //   경우 C: 서버 응답에 vehicles 속성 자체가 없다(구버전 Apps Script) →
+      //           경고를 출력하고, 이 경우에 한해서만 localStorage로 임시 호환한다.
+      var serverHasVehiclesField = Object.prototype.hasOwnProperty.call(c, "vehicles");
+
+      if(serverHasVehiclesField){
+        c.vehicles = Array.isArray(c.vehicles) ? c.vehicles.map(function(v){
           var dd = normalizeDateStr(v.deliveryDate || "");
           return {
             vehicleId:     v.vehicleId     || "",
@@ -4153,9 +4229,11 @@ function syncFromSheet(isAuto){
             deliveryMonth: v.deliveryMonth || (dd.length>=7 ? dd.substring(0,7) : ""),
             quantity:      Math.max(1, parseInt(v.quantity, 10) || 1)
           };
-        });
+        }) : [];
       } else {
-        // 시트에 vehicles 없음 → localStorage 기존 vehicles 복원
+        console.warn("[서버 응답에 vehicles 필드 없음 — 구버전 Apps Script 의심]",
+          c.customerName, c.customerId);
+        // 구버전 호환 시에만 임시로 localStorage 차량을 복구한다.
         var existing = load();
         var match = null;
         if(c._rowNumber){
@@ -4167,11 +4245,7 @@ function syncFromSheet(isAuto){
         if(!match && c.phone){
           match = existing.find(function(e){ return normP(e.phone) === normP(c.phone); });
         }
-        if(match && Array.isArray(match.vehicles) && match.vehicles.length > 0){
-          c.vehicles = match.vehicles; // ★ 기존 vehicles 보존
-          console.log("[vehicles 보존]", c.customerName, "vehicles:", c.vehicles.length+"종",
-            "qty:", c.vehicles.reduce(function(s,v){return s+(parseInt(v.quantity)||1);},0)+"대");
-        }
+        c.vehicles = (match && Array.isArray(match.vehicles)) ? match.vehicles : [];
       }
       // 디버그 로그
       if(c.vehicles && c.vehicles.length > 0){
@@ -4192,6 +4266,35 @@ function syncFromSheet(isAuto){
       throw new Error("⚠ 최종 저장 직전 0건 감지 — 기존 "+prevCount+"건 보호.");
     }
     save(sheetRows);
+    localStorage.setItem("crm_last_sync", new Date().toISOString());
+
+    // ── PC·모바일 동일성 진단 ────────────────────────────────
+    // PC와 모바일 콘솔에서 아래 값을 서로 비교하면 두 기기가 정말
+    // 같은 서버 데이터를 보고 있는지 바로 확인할 수 있다.
+    (function(){
+      var targetCustomer = sheetRows.find(function(c){
+        return c.companyName === "정우이앤씨" || c.customerName === "정우이앤씨";
+      });
+      console.log("[CRM 데이터 진단]", {
+        version: APP_VERSION,
+        device: window.innerWidth <= 640 ? "mobile" : "desktop",
+        customerCount: sheetRows.length,
+        storageCount: load().length,
+        syncTime: localStorage.getItem("crm_last_sync") || "",
+        targetCustomerId: targetCustomer ? targetCustomer.customerId : null
+      });
+      if(targetCustomer){
+        console.log("[정우이앤씨 차량 수]",
+          Array.isArray(targetCustomer.vehicles) ? targetCustomer.vehicles.length : 0,
+          targetCustomer.vehicles || []);
+      }
+    })();
+    var syncTimeEl = document.getElementById("crm-last-sync-label");
+    if(syncTimeEl){
+      var st = new Date();
+      syncTimeEl.textContent = "마지막 동기화: " +
+        st.toLocaleString("ko-KR",{timeZone:"Asia/Seoul",hour12:false}).replace(/:\d{2}$/,"");
+    }
 
     // ── 화면 전체 갱신 ──
     updateDash();
