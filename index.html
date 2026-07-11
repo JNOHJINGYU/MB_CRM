@@ -10,7 +10,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwe9eveUKBpv52o-_VEys5JHGvRI215dbY6XWoXEa8Jxpwej-9iZJc2N8cm1sQB30aEeQ/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwgzDUYHJ5OUcZ_I6RfBFmIcbqa3hIy4Zx43BSvJZ1Bo2X6HFO1qYS5SpCCi0eJP9ezVg/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     // PC·모바일이 같은 버전을 보고 있는지 확인하기 위한 버전 표식.
@@ -2753,6 +2753,8 @@ function submitNew(){
 // 추가상담 저장 (주행거리 업데이트 포함)
 // ============================================================
 function submitUpdate(){
+  var updBtn0=document.getElementById("updateBtn");
+  if(updBtn0 && updBtn0.disabled) return; // 중복 클릭 방지
   hideMsg("msg-update");
   var phone=document.getElementById("u-phone").value.trim();
   var addC=document.getElementById("addConsultation").value.trim();
