@@ -10,7 +10,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwgzDUYHJ5OUcZ_I6RfBFmIcbqa3hIy4Zx43BSvJZ1Bo2X6HFO1qYS5SpCCi0eJP9ezVg/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-PdwQ4hAz5Cgyp43HrnSTtGd0bGVb19NIC-hUxXAa-O519Md6KomHEpuFxUrEdtWgSw/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     // PC·모바일이 같은 버전을 보고 있는지 확인하기 위한 버전 표식.
@@ -1232,6 +1232,7 @@
       <div class="an-month-filter" id="an-month-filter-inquiry"></div>
       <div id="inquiry-monthly-chart" style="margin-top:4px;"></div>
       <div id="inquiry-monthly-total" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);text-align:center;"></div>
+      <div id="inquiry-diag-info" style="margin-top:8px;font-size:11px;color:var(--text-lt);line-height:1.6;"></div>
     </div>
 
     <!-- 년도별 유입경로별 출고대수 -->
@@ -1985,6 +1986,33 @@ function save(l){localStorage.setItem(LS_KEY,JSON.stringify(l));}
 function normP(p){return(p||"").replace(/\D/g,"");}
 
 // ============================================================
+// 신규문의이력(inquiries) — 서버(Apps Script "신규문의이력" 시트)를
+// 최종 원본으로 사용한다. 우선순위:
+//   1. Apps Script 응답의 inquiries 배열
+//   2. localStorage 캐시(crm_inquiries) — 응답에 필드 자체가 없을 때만
+//   3. 캐시도 없으면 빈 배열
+// 서버가 inquiries: [] 를 내려주면 그것이 곧 사실이므로, 로컬 캐시로
+// 임의 복구하지 않는다 (vehicles와 동일한 서버 우선 원칙).
+var INQ_LS_KEY="crm_inquiries";
+function loadInquiryHistory(){
+  try{
+    var raw=localStorage.getItem(INQ_LS_KEY);
+    var list=raw?JSON.parse(raw):[];
+    return Array.isArray(list)?list:[];
+  }catch(e){return[];}
+}
+function applyInquiriesFromServer(json){
+  var hasField=Object.prototype.hasOwnProperty.call(json,"inquiries");
+  if(hasField){
+    var inquiries=Array.isArray(json.inquiries)?json.inquiries:[];
+    localStorage.setItem(INQ_LS_KEY,JSON.stringify(inquiries));
+    return inquiries;
+  }
+  console.warn("[신규문의이력] 서버 응답에 inquiries 필드 없음 — 구버전 Apps Script 의심. 기존 캐시 유지.");
+  return loadInquiryHistory();
+}
+
+// ============================================================
 // 구매차량(vehicles) 헬퍼 — 다중 구매차량 관리
 // ============================================================
 function migrateVehicles(c){
@@ -2641,6 +2669,10 @@ function getFormData(){
   return {
     action:              "new",
     _savedAt:            getNow(),
+    // ★ 신규문의이력 기록용 — 서버(Apps Script)가 등록기기/버전/중복방지에 사용
+    deviceType:          window.innerWidth<=640 ? "mobile" : "desktop",
+    appVersion:          APP_VERSION,
+    requestId:           "REQ-"+Date.now()+"-"+Math.random().toString(36).slice(2),
     customerName:        document.getElementById("customerName").value.trim(),
     companyName:         document.getElementById("companyName").value.trim(),
     phone:               document.getElementById("phone").value.trim(),
@@ -3206,6 +3238,7 @@ function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn, editPayload){
     }
 
     var incoming = json.customers || [];
+    applyInquiriesFromServer(json);
 
     // ★ 0건 안전장치
     var existingForCheck2 = load();
@@ -3774,78 +3807,45 @@ function setAnLeadYear2(y){
 
 // ============================================================
 // 월별 유입경로별 신규문의(신규 유입) 건수 렌더
-// ── 기준: 현재상태(Status)는 절대 사용하지 않음.
-//         오직 "신규 등록일(고객 생성일 = _savedAt)" + "유입경로"
-//         두 가지만으로 집계한다.
-//         즉 등록월 이후 상태가 상담중→계약유력→계약→출고로
-//         바뀌어도, 최초 등록월의 신규 유입 건수에서는 절대
-//         빠지지 않는다.
+// ── 기준: "신규문의이력" 시트(서버) 데이터만 사용한다.
+//         고객의 현재상태(status), 고객카드 수정일, 계약일, 출고일은
+//         절대 사용하지 않는다. 신규문의이력은 action:"new"로 신규
+//         고객이 등록되는 그 순간에만 Apps Script가 한 건씩 쌓아두므로,
+//         이후 상태가 상담중→계약유력→계약→출고로 바뀌어도 최초 등록월의
+//         신규 유입 건수에서는 절대 빠지지 않는다.
+// getRegDate()/normalizeCreatedDate 기반 계산은 신규문의이력이 아직
+// 없는 과거 데이터를 migrateExistingInquiryHistory()로 이관할 때만
+// 보조용으로 쓰인다 (실시간 통계에는 더 이상 사용하지 않음).
 // ============================================================
 var _anInquiryMonthYear = ""; // 선택된 연도
 var _anInquiryMonthNum  = 0;  // 선택된 월 번호 (1~12)
 
-// 고객의 "신규 등록일"을 뽑아내는 헬퍼.
+// 고객의 "신규 등록일"을 뽑아내는 헬퍼 — 마이그레이션 전용 보조 함수.
 // ★ 오직 createdAt(있다면) 또는 _savedAt 두 필드만 사용한다.
 //   생년월일(birthDate), 계약일(contractDate), 출고일(deliveryDate),
 //   다음연락일(nextContact), 보험만기일 등 다른 날짜 필드를 등록일로
 //   fallback하지 않는다 — 이 fallback이 1968/1976(생년월일 오인식),
 //   2041(잘못된 문자열 오인식) 같은 비정상 연도가 신규문의 통계에
 //   섞여 들어오던 근본 원인이었다.
-// _savedAt이 "2026. 6. 4. 오후 5:26:11" 형식이어도 normalizeCreatedDate가
-// 정상 추출한다. 패턴에 맞지 않거나 연도가 2020~2100 범위를 벗어나면
-// 빈 문자열을 반환하며, 그 고객은 등록일 미기재로 통계에서 제외된다.
 function getRegDate(c){
   var raw = c.createdAt || c._savedAt || "";
   return normalizeCreatedDate(raw);
 }
 
 function renderNewInquiryMonthlyChart(){
-  var list = load();
+  var inquiries = loadInquiryHistory();
+  var customers = load();
 
-  // ── 디버그: 첫 번째 고객 구조 출력 ──────────────────────────
-  if(list.length>0){
-    console.log("[신규문의 진단] 첫 번째 고객 구조:", list[0]);
-    console.log("[신규문의 진단] getRegDate 결과:", getRegDate(list[0]));
-    var noRegDate=list.filter(function(c){return !getRegDate(c);}).length;
-    if(noRegDate>0) console.warn("[신규문의 진단] 등록일 없는 고객:", noRegDate+"명");
-    // 샘플 10개 출력
-    console.table(list.slice(0,10).map(function(c){
-      return {
-        name:         c.customerName,
-        savedAt:      c._savedAt,
-        regDate:      c.regDate,
-        createdDate:  c.createdDate,
-        createdAt:    c.createdAt,
-        registerDate: c.registerDate,
-        resolvedRegDate: getRegDate(c),
-        leadSource:   c.leadSource,
-        status:       c.status
-      };
-    }));
-  }
-
-  // ★ 상태(Status)는 절대 사용하지 않음 — 전체 고객 대상, 등록일 기준으로만 집계
-  // 등록일이 있어도 연도가 2020~내년+1 범위를 벗어나면 통계에서 제외한다.
-  var allWithRegDate = list.filter(function(c){
-    var rd=getRegDate(c);
-    return !!rd && isValidInquiryYear(rd.substring(0,4));
-  });
-  console.log("[신규문의 진단] 등록일 있는 고객:", allWithRegDate.length+"/"+list.length+"명");
   var kst = new Date(new Date().getTime()+9*3600000);
   var thisYear = kst.getUTCFullYear();
   var thisMonth = kst.getUTCMonth()+1;
 
-  // ── 실제 데이터에서 연도 목록 수집 (등록일 기준) ────────────
+  // ── 신규문의이력 데이터에서 연도 목록 수집 ──────────────────
   var yearSet={};
-  allWithRegDate.forEach(function(c){
-    var norm=getRegDate(c); // 이미 YYYY-MM-DD 정규화된 값
-    if(norm && norm.length>=4){
-      var y=norm.substring(0,4);
-      if(isValidInquiryYear(y)){
-        yearSet[y]=true;
-      } else {
-        console.warn("[비정상 신규문의 등록일 제외]", c.customerName, c.customerId, norm);
-      }
+  inquiries.forEach(function(item){
+    var ym=String(item.inquiryMonth||"").trim();
+    if(/^\d{4}-\d{2}$/.test(ym) && isValidInquiryYear(ym.substring(0,4))){
+      yearSet[ym.substring(0,4)]=true;
     }
   });
   var years=Object.keys(yearSet).sort(function(a,b){return parseInt(b)-parseInt(a);});
@@ -3880,23 +3880,32 @@ function renderNewInquiryMonthlyChart(){
     moFilterEl.innerHTML=moHtml;
   }
 
-  // ── 데이터 필터링: 선택 연도 + 선택 월 (등록일 기준, 상태 무관) ─
+  // ── 데이터 필터링: 선택 연도 + 선택 월 (신규문의이력 기준, 상태 무관) ─
   var targetYM=_anInquiryMonthYear+"-"+String(_anInquiryMonthNum).padStart(2,"0");
 
   var chartEl=document.getElementById("inquiry-monthly-chart");
   var totalEl=document.getElementById("inquiry-monthly-total");
+  var diagEl=document.getElementById("inquiry-diag-info");
   if(!chartEl)return;
 
-  var filtered=allWithRegDate.filter(function(c){
-    var ym=getRegDate(c).substring(0,7); // 이미 YYYY-MM-DD
-    return ym===targetYM;
+  var filtered=inquiries.filter(function(item){
+    return String(item.inquiryMonth||"").trim()===targetYM;
   });
-  console.log("[신규문의 진단] targetYM="+targetYM+" / 해당 월 고객 수:", filtered.length);
-  if(filtered.length>0){
-    console.log("[신규문의 진단] 해당 월 샘플:", filtered.slice(0,3).map(function(c){
-      return {name:c.customerName, regDate:getRegDate(c), leadSource:c.leadSource};
-    }));
+
+  // ── 진단 정보 ─────────────────────────────────────────────
+  var missingRegDate=customers.filter(function(c){return !getRegDate(c);}).length;
+  var missingLeadSource=inquiries.filter(function(item){return !String(item.leadSource||"").trim();}).length;
+  if(diagEl){
+    diagEl.innerHTML=
+      "신규문의이력 전체: "+inquiries.length+"건 · "+
+      targetYM+": "+filtered.length+"건 · "+
+      "고객 등록일 미기재(참고): "+missingRegDate+"건 · "+
+      "유입경로 누락: "+missingLeadSource+"건";
   }
+  console.log("[신규문의 진단] targetYM="+targetYM+" / 신규문의이력 전체 "+inquiries.length+"건 / 해당월 "+filtered.length+"건");
+  console.table(inquiries.filter(function(i){return i.inquiryMonth===targetYM;}).map(function(i){
+    return {customerId:i.customerId, customerName:i.customerName, inquiryDate:i.inquiryDate, leadSource:i.leadSource};
+  }));
 
   if(!filtered.length){
     chartEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-lt);font-size:13px;">'+
@@ -3908,11 +3917,11 @@ function renderNewInquiryMonthlyChart(){
   }
 
   var leadMap={};
-  filtered.forEach(function(c){
-    var k=c.leadSource||"미기재";
+  filtered.forEach(function(item){
+    var k=String(item.leadSource||"").trim()||"미입력";
     leadMap[k]=(leadMap[k]||0)+1;
   });
-  chartEl.innerHTML=renderHBar(leadMap,"#e94560","건");
+  chartEl.innerHTML=renderHBar(leadMap,"#e94560","건"); // renderHBar가 내림차순 정렬 처리
 
   if(totalEl) totalEl.innerHTML=
     '<span style="font-size:13px;color:var(--text-dim);font-weight:600;">'+_anInquiryMonthNum+'월 신규 유입</span><br/>'+
@@ -4167,6 +4176,7 @@ function syncFromSheet(isAuto){
     }
 
     var incoming = json.customers || [];
+    applyInquiriesFromServer(json);
 
     // ★ 0건 안전장치 — 기존 localStorage 데이터 보호
     var existingForCheck = load();
