@@ -10,12 +10,12 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzX1Gqm72F380gS_fgT3JKHxrCzyrxU5im20QJ-Rp70VFolLozxAsCt3i06NiQxl3fmhg/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwe9eveUKBpv52o-_VEys5JHGvRI215dbY6XWoXEa8Jxpwej-9iZJc2N8cm1sQB30aEeQ/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     // PC·모바일이 같은 버전을 보고 있는지 확인하기 위한 버전 표식.
     // 배포할 때마다 값을 바꿔서 캐시된 구버전과 구분한다.
-    var APP_VERSION = "2026-07-11-v86";
+    var APP_VERSION = "2026-07-13-v94-nullfix";
     console.log("[CRM VERSION]", APP_VERSION);
   </script>
 
@@ -1668,10 +1668,16 @@ function onEditModelChange(){
 
 // 출고일 → 출고월 자동 생성
 function autoDeliveryMonth(){
-  var d=document.getElementById("deliveryDate").value;
-  var m=document.getElementById("deliveryMonth");
-  if(d&&d.length>=7)m.value=d.substring(0,7);
-  else m.value="";
+  // ★ deliveryDate/deliveryMonth는 메인 폼에서 제거되고 개별 차량 목록으로
+  //   이동했다. 요소가 없으면(null) 아무 것도 하지 않고 조용히 리턴한다 —
+  //   이전에는 .value를 바로 읽어 TypeError가 발생, submitNew() 전체가
+  //   중단되어 저장 버튼을 눌러도 아무 요청도 나가지 않는 문제가 있었다.
+  var dEl=document.getElementById("deliveryDate");
+  var mEl=document.getElementById("deliveryMonth");
+  if(!dEl || !mEl) { autoNextService(); return; }
+  var d=dEl.value;
+  if(d&&d.length>=7)mEl.value=d.substring(0,7);
+  else mEl.value="";
   autoNextService(); // 출고일 변경 시 정기점검도 재계산
 }
 
@@ -1705,7 +1711,11 @@ function parseMileage(s){
 function autoNextService(){
   // 기준일 결정
   var baseDate=document.getElementById("lastServiceDate").value;
-  if(!baseDate)baseDate=document.getElementById("deliveryDate").value;
+  if(!baseDate){
+    // ★ deliveryDate는 메인 폼에서 제거되었으므로 요소 존재 여부를 먼저 확인한다.
+    var dEl0=document.getElementById("deliveryDate");
+    baseDate = dEl0 ? dEl0.value : "";
+  }
 
   // 다음 점검일 = 기준일 + 1년
   var nextDateEl=document.getElementById("nextServiceDate");
@@ -2658,83 +2668,99 @@ function resetNewForm(){
 // ============================================================
 // 신규 고객 저장
 // ============================================================
+function wait(ms){
+  return new Promise(function(resolve){ setTimeout(resolve, ms); });
+}
+
 function submitNew(){
   hideMsg("msg-new");
-  autoDeliveryMonth(); // ★ 저장 직전 출고월 강제 재계산
 
   var btn=document.getElementById("submitBtn");
-  if(btn.disabled) return; // 중복 클릭 방지
+  if(!btn || btn.disabled) return; // 중복 클릭 방지
+
+  autoDeliveryMonth(); // ★ 저장 직전 출고월 강제 재계산
 
   var data=getFormData();
   if(!data.customerName){showMsg("msg-new","err","⚠ 고객명을 입력해주세요.");return;}
   if(!data.phone){showMsg("msg-new","err","⚠ 연락처를 입력해주세요.");return;}
 
+  // ★ GitHub Pages(다른 origin)에서 Apps Script로 보내는 POST 응답은
+  //   CORS 정책상 브라우저가 직접 읽을 수 없다(Access-Control-Allow-Origin 미설정).
+  //   그래서 no-cors로 "전송"만 하고, 실제 저장 여부는 이후 GET ?action=list
+  //   재조회로 확인한다. 이 재조회에서 방금 보낸 고객을 정확히 찾기 위해
+  //   requestToken을 함께 보낸다(동명이인/동일 연락처 재등록과 구분).
+  data.requestToken = "REQ-"+Date.now()+"-"+Math.random().toString(36).slice(2,10);
+
   // ★ vehicles quantity 정규화
   if(Array.isArray(data.vehicles)){
     data.vehicles = data.vehicles.map(function(v){
-      v.quantity = Math.max(1, parseInt(v.quantity, 10) || 1);
-      return v;
+      return {
+        vehicleId:      v.vehicleId||"",
+        modelName:      v.modelName||"",
+        detailModel:    v.detailModel||"",
+        purchaseMethod: v.purchaseMethod||"",
+        vehicleStatus:  v.vehicleStatus||"",
+        contractDate:   v.contractDate||"",
+        deliveryDate:   v.deliveryDate||"",
+        deliveryMonth:  v.deliveryMonth||"",
+        quantity:       Math.max(1, parseInt(v.quantity,10)||1)
+      };
     });
   }
 
   btn.disabled=true;btn.textContent="저장 중…";
-  console.log("[신규 저장 payload]", data);
+  console.log("[신규 저장 요청]", data);
 
-  // ★ no-cors를 제거하여 실제 서버 응답(success/message)을 읽을 수 있도록 한다.
-  //    no-cors 상태에서는 응답이 opaque가 되어 서버가 저장에 실패해도
-  //    .then()이 그냥 실행되어 "저장 성공" 메시지가 잘못 표시되는 문제가 있었다.
   fetch(SCRIPT_URL,{
     method:"POST",
+    mode:"no-cors",
     headers:{"Content-Type":"text/plain;charset=utf-8"},
     body:JSON.stringify(data),
     cache:"no-store"
   })
+  .then(function(){
+    // ★ no-cors 응답은 opaque라 response.ok/status/json()을 절대 읽지 않는다.
+    //   Apps Script가 실제로 시트에 반영할 시간을 확보하기 위해 대기 후 재조회한다.
+    return wait(2500);
+  })
+  .then(function(){
+    return fetch(SCRIPT_URL+"?action=list&_ts="+Date.now(), {method:"GET", cache:"no-store"});
+  })
   .then(function(response){
-    if(!response.ok){throw new Error("HTTP 오류: "+response.status);}
+    if(!response.ok){throw new Error("저장 확인 실패: HTTP "+response.status);}
     return response.json();
   })
   .then(function(result){
-    console.log("[신규 저장 응답]", result);
-    if(!result || result.success!==true){
-      throw new Error(result && result.message ? result.message : "서버 저장에 실패했습니다.");
+    console.log("[저장 확인 응답]", result, "[SERVER VERSION]", result && result.serverVersion);
+    if(!result || result.success!==true || !Array.isArray(result.customers)){
+      throw new Error(result && result.message ? result.message : "고객목록 응답 오류");
     }
 
-    // ★ 저장 성공 응답만으로 끝내지 않고, 실제로 목록에 반영됐는지 재조회로 확인한다.
-    return fetch(SCRIPT_URL+"?action=list&_ts="+Date.now(), {method:"GET", cache:"no-store"})
-      .then(function(response){
-        if(!response.ok){throw new Error("저장 후 목록 확인 실패 (HTTP "+response.status+")");}
-        return response.json();
-      })
-      .then(function(listResult){
-        if(!listResult || listResult.success!==true || !Array.isArray(listResult.customers)){
-          throw new Error("저장 후 고객목록 응답이 올바르지 않습니다.");
-        }
-
-        var savedCustomer = listResult.customers.find(function(c){
-          return String(c.customerId||"")===String(result.customerId||"");
-        });
-        if(!savedCustomer){
-          savedCustomer = listResult.customers.find(function(c){
-            return normP(c.phone)===normP(data.phone);
-          });
-        }
-        if(!savedCustomer){
-          throw new Error("서버는 저장 성공을 반환했지만 고객목록에서 방금 저장한 고객을 확인하지 못했습니다.");
-        }
-
-        // ★ 서버 확인이 끝난 뒤에만 localStorage를 서버 목록으로 갱신한다.
-        save(listResult.customers);
-        updateDash();
-        renderList();
-        renderAnalyticsIfVisible();
-
-        console.log("[신규저장 완료]", data.customerName, "customerId:", result.customerId, "rowNumber:", result.rowNumber);
-        showMsg("msg-new","ok","✅ 고객정보가 구글시트에 저장되었습니다. (customerId: "+result.customerId+")");
-        resetNewForm();
+    var savedCustomer = result.customers.find(function(c){
+      return String(c.requestToken||"")===String(data.requestToken||"");
+    });
+    if(!savedCustomer){
+      savedCustomer = result.customers.find(function(c){
+        return String(c.customerName||"").trim()===String(data.customerName||"").trim()
+          && normP(c.phone)===normP(data.phone);
       });
+    }
+    if(!savedCustomer){
+      throw new Error("저장 요청은 전송됐지만 구글시트에서 방금 등록한 고객을 확인하지 못했습니다.");
+    }
+
+    // ★ 서버 확인이 끝난 뒤에만 localStorage를 서버 목록으로 갱신한다.
+    save(result.customers);
+    updateDash();
+    renderList();
+    renderAnalyticsIfVisible();
+
+    console.log("[신규저장 완료]", data.customerName, "customerId:", savedCustomer.customerId);
+    showMsg("msg-new","ok","✅ 고객정보가 구글시트에 저장되었습니다. (customerId: "+savedCustomer.customerId+")");
+    resetNewForm();
   })
   .catch(function(err){
-    console.error("[신규 저장 실패]", err);
+    console.error("[신규 저장 오류]", err);
     showMsg("msg-new","err","❌ 저장 실패: "+(err && err.message ? err.message : "알 수 없는 오류"));
   })
   .finally(function(){btn.disabled=false;btn.textContent="고객 정보 저장";});
