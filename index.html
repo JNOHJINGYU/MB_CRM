@@ -15,7 +15,7 @@
 
     // PC·모바일이 같은 버전을 보고 있는지 확인하기 위한 버전 표식.
     // 배포할 때마다 값을 바꿔서 캐시된 구버전과 구분한다.
-    var APP_VERSION = "2026-07-14-v96-server-vehicles";
+    var APP_VERSION = "2026-07-14-v97-legacy-stats-fix";
     console.log("[CRM VERSION]", APP_VERSION);
   </script>
 
@@ -1993,17 +1993,35 @@ function migrateLegacyVehicle(c){
   return[v];
 }
 
-// ★ 통계/집계에 사용할 차량 목록을 결정하는 단일 진입점.
-//   - 고객 객체에 vehicles 속성이 "존재"하면(빈 배열이라도) 그 값만 사용한다.
-//   - vehicles 속성 자체가 없는 구형 레코드에 한해서만 레거시 단일차량으로 대체한다.
-//   이 hasOwnProperty 체크가 핵심이다. Array.isArray(c.vehicles)&&length>0 방식은
-//   "서버가 실제로 0대라고 응답한 경우"와 "필드가 아예 없는 구형 레코드"를
-//   구별하지 못해 유령 차량을 만들어냈다.
+// ★ 통계/집계에 사용할 차량 목록을 결정하는 단일 진입점 (마이그레이션 완료 전 임시 호환판).
+//   기존에는 hasOwnProperty(customer,"vehicles")로 판단했는데, Apps Script의
+//   handleList()가 모든 고객에게 vehicles 필드를 강제로 포함시키기 때문에
+//   (차량이 없으면 vehicles:[]) 이 체크는 항상 true가 되어 migrateLegacyVehicle()이
+//   전혀 호출되지 않았다. 그 결과 구매차량 시트로 아직 옮겨지지 않은 기존 고객들의
+//   계약/출고 실적이 통계에서 통째로 누락됐다.
+//
+//   규칙:
+//   A. vehicles.length > 0            → vehicles만 사용 (다중차량 고객, 예: 정우이앤씨)
+//   B. vehicles.length === 0 이고 기존 단일차량 필드(모델명/계약일/출고일)가 있음
+//                                      → 레거시 단일차량 1대로 대체
+//   C. 둘 다 없음                     → 0대
+//
+//   vehicles가 1대 이상이면 레거시 필드를 "추가"로 더하지 않는다 — 그래야
+//   다중차량 2대 + 레거시 대표차량 1대 = 3대로 중복 집계되는 것을 막는다.
+//
+//   ※ migrateLegacyCustomersToVehicles() 마이그레이션(Code.gs)을 실행하고
+//      전체 검증이 끝나면, 아래 함수를
+//      "return Array.isArray(customer.vehicles)?customer.vehicles:[];" 로
+//      단순화해야 한다. 마이그레이션 전에 미리 바꾸면 기존 실적이 다시 사라진다.
 function getCustomerVehiclesForStats(customer){
-  if(Object.prototype.hasOwnProperty.call(customer,"vehicles")){
-    return Array.isArray(customer.vehicles)?customer.vehicles:[];
+  if(Array.isArray(customer.vehicles)&&customer.vehicles.length>0){
+    return customer.vehicles;
   }
-  return migrateLegacyVehicle(customer);
+  var hasLegacyVehicle=!!(customer.modelName||customer.contractDate||customer.deliveryDate);
+  if(hasLegacyVehicle){
+    return migrateLegacyVehicle(customer);
+  }
+  return [];
 }
 
 function sumContractQty(c,filterYM,filterY){
@@ -2250,6 +2268,31 @@ function updateDash(opts){
     try{ yd+=sumDeliveryQty(x,null,yyyyStr); }
     catch(e){ console.error("[출고(연) 집계 오류]",x.customerId,x.customerName,x.companyName,e); }
   });
+
+  // ★ 판매실적 집계 진단 로그 — 매번 대시보드가 갱신될 때마다 콘솔에서
+  //   확인 가능. console.table로 어떤 고객이 얼마나 집계에 기여했는지 볼 수 있다.
+  console.log("[판매실적 집계]", {
+    year: yyyyStr, month: yyyyMM,
+    monthlyContract: mc, monthlyDelivery: md,
+    yearlyContract: yc, yearlyDelivery: yd
+  });
+  try{
+    console.table(
+      list.map(function(c){
+        return {
+          customerId: c.customerId,
+          customerName: c.companyName||c.customerName,
+          vehicleCount: Array.isArray(c.vehicles)?c.vehicles.length:-1,
+          legacyContractDate: c.contractDate||"",
+          legacyDeliveryDate: c.deliveryDate||"",
+          contractQty2026: sumContractQty(c,null,"2026"),
+          deliveryQty2026: sumDeliveryQty(c,null,"2026")
+        };
+      }).filter(function(row){
+        return row.contractQty2026>0 || row.deliveryQty2026>0 || row.legacyContractDate || row.legacyDeliveryDate;
+      })
+    );
+  }catch(e){ console.error("[판매실적 진단표 오류]", e); }
 
   function set(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
   set("d-total",tot);set("d-new",ni);set("d-a",ag);set("d-c",co);
