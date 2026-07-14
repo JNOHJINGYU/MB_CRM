@@ -15,7 +15,7 @@
 
     // PC·모바일이 같은 버전을 보고 있는지 확인하기 위한 버전 표식.
     // 배포할 때마다 값을 바꿔서 캐시된 구버전과 구분한다.
-    var APP_VERSION = "2026-07-13-v94-nullfix";
+    var APP_VERSION = "2026-07-14-v96-server-vehicles";
     console.log("[CRM VERSION]", APP_VERSION);
   </script>
 
@@ -1775,7 +1775,7 @@ function showView(v){
     if(pbs[i])pbs[i].classList.toggle("active",k===v);
   });
   if(v==="list")renderList();
-  if(v==="home"){updateDash();renderHomeContacts();}
+  if(v==="home"){updateDash(_firstServerSyncDone?{}:{pending:true});renderHomeContacts();}
   if(v==="analytics")renderAnalytics();
   window.scrollTo({top:0,behavior:"smooth"});
   hideMsg("msg-new");hideMsg("msg-update");
@@ -1954,22 +1954,31 @@ try{ localStorage.removeItem("crm_inquiries"); }catch(e){ console.warn("[crm_inq
 // ============================================================
 // 구매차량(vehicles) 헬퍼 — 다중 구매차량 관리
 // ============================================================
-function migrateVehicles(c){
-  if(Array.isArray(c.vehicles)&&c.vehicles.length>0){
-    return c.vehicles.map(function(v){
-      return {
-        vehicleId:     v.vehicleId     ||"",
-        modelName:     v.modelName     ||"",
-        detailModel:   v.detailModel   ||"",
-        purchaseMethod:v.purchaseMethod||"",
-        vehicleStatus: v.vehicleStatus ||"",
-        contractDate:  v.contractDate  ||"",
-        deliveryDate:  v.deliveryDate  ||"",
-        deliveryMonth: v.deliveryMonth ||"",
-        quantity:      Math.max(1,parseInt(v.quantity,10)||1)
-      };
-    });
-  }
+// ★ 서버 vehicles 정규화 공통 함수 — syncFromSheet(), _fetchSheetAndSave()가
+//   모두 이 함수 하나만 사용한다. 서로 다른 로직을 갖지 않도록 통일.
+function normalizeVehicles(vehicles){
+  if(!Array.isArray(vehicles))return[];
+  return vehicles.map(function(v){
+    var deliveryDate=normalizeDateStr(v.deliveryDate||"");
+    return {
+      vehicleId:     String(v.vehicleId     ||"").trim(),
+      modelName:     String(v.modelName     ||"").trim(),
+      detailModel:   String(v.detailModel   ||"").trim(),
+      purchaseMethod:String(v.purchaseMethod||"").trim(),
+      vehicleStatus: String(v.vehicleStatus ||"").trim(),
+      contractDate:  normalizeDateStr(v.contractDate||""),
+      deliveryDate:  deliveryDate,
+      deliveryMonth: String(v.deliveryMonth || (deliveryDate.length>=7?deliveryDate.substring(0,7):"")).trim(),
+      quantity:      Math.max(1,parseInt(v.quantity,10)||1)
+    };
+  });
+}
+
+// ★ 과거(구형) 고객 — vehicles 필드 자체가 없던 시절에 만들어진 단일차량
+//   레코드를 위한 마이그레이션. "서버가 vehicles:[]를 명시적으로 보낸 경우"
+//   에는 절대 호출하지 않는다 (그러면 실제 0대인 고객에게 유령 차량이
+//   하나 생겨버린다 — 이번 정우이앤씨 버그와 같은 종류의 문제).
+function migrateLegacyVehicle(c){
   var v={
     vehicleId:"",
     modelName:c.modelName||"",detailModel:c.detailModel||"",
@@ -1984,9 +1993,22 @@ function migrateVehicles(c){
   return[v];
 }
 
+// ★ 통계/집계에 사용할 차량 목록을 결정하는 단일 진입점.
+//   - 고객 객체에 vehicles 속성이 "존재"하면(빈 배열이라도) 그 값만 사용한다.
+//   - vehicles 속성 자체가 없는 구형 레코드에 한해서만 레거시 단일차량으로 대체한다.
+//   이 hasOwnProperty 체크가 핵심이다. Array.isArray(c.vehicles)&&length>0 방식은
+//   "서버가 실제로 0대라고 응답한 경우"와 "필드가 아예 없는 구형 레코드"를
+//   구별하지 못해 유령 차량을 만들어냈다.
+function getCustomerVehiclesForStats(customer){
+  if(Object.prototype.hasOwnProperty.call(customer,"vehicles")){
+    return Array.isArray(customer.vehicles)?customer.vehicles:[];
+  }
+  return migrateLegacyVehicle(customer);
+}
+
 function sumContractQty(c,filterYM,filterY){
   var total=0;
-  migrateVehicles(c).forEach(function(v){
+  getCustomerVehiclesForStats(c).forEach(function(v){
     var cd=normalizeDateStr(v.contractDate||"");
     if(!cd||cd.length<7)return;
     if(filterYM&&cd.substring(0,7)!==filterYM)return;
@@ -1998,7 +2020,7 @@ function sumContractQty(c,filterYM,filterY){
 
 function sumDeliveryQty(c,filterYM,filterY){
   var total=0;
-  migrateVehicles(c).forEach(function(v){
+  getCustomerVehiclesForStats(c).forEach(function(v){
     var dd=normalizeDateStr(v.deliveryDate||"");
     if(!dd||dd.length<7)return;
     if(filterYM&&dd.substring(0,7)!==filterYM)return;
@@ -2009,7 +2031,7 @@ function sumDeliveryQty(c,filterYM,filterY){
 }
 
 function totalVehicleQty(c){
-  var vehs=migrateVehicles(c);
+  var vehs=getCustomerVehiclesForStats(c);
   if(!vehs.length)return 0;
   return vehs.reduce(function(s,v){return s+Math.max(1,parseInt(v.quantity,10)||1);},0);
 }
@@ -2017,7 +2039,7 @@ function totalVehicleQty(c){
 function getDeliveredVehicles(list,filterY,filterYM){
   var result=[];
   list.forEach(function(c){
-    migrateVehicles(c).forEach(function(v){
+    getCustomerVehiclesForStats(c).forEach(function(v){
       var dd=normalizeDateStr(v.deliveryDate||"");
       if(!dd||dd.length<7)return;
       if(filterY&&dd.substring(0,4)!==filterY)return;
@@ -2026,6 +2048,61 @@ function getDeliveredVehicles(list,filterY,filterYM){
     });
   });
   return result;
+}
+
+// 하위 호환용 별칭 — 기존 코드에서 migrateVehicles(c)를 호출하는 부분이
+// 남아있어도 동일하게 동작하도록 유지한다 (내부적으로는 getCustomerVehiclesForStats 사용).
+function migrateVehicles(c){ return getCustomerVehiclesForStats(c); }
+
+// ============================================================
+// ★ 서버 응답 정규화 — syncFromSheet()와 _fetchSheetAndSave()가
+//   반드시 공통으로 사용하는 단일 함수. 두 함수가 서로 다른 동작을
+//   하지 않도록 여기에만 로직을 둔다.
+//
+//   중요: 서버 응답에 vehicles 필드 자체가 없으면(구버전 Apps Script
+//   배포) localStorage로 "복구"하지 않는다. 그 복구 로직이 바로
+//   PC 2대 / 모바일 1대처럼 기기마다 다른 숫자가 보이던 근본 원인이었다.
+//   대신 명확한 오류를 던져서 배포 문제를 화면에 드러낸다.
+// ============================================================
+// ★ 특정 고객(기본: 정우이앤씨)의 서버 데이터를 콘솔에 출력하는 진단 함수.
+//   반드시 GET 응답에서 나온 customers 배열(서버 데이터)을 넘겨야 하며,
+//   localStorage 데이터를 넘기면 안 된다 — 이 함수는 "서버가 실제로
+//   무엇을 반환했는지"를 확인하기 위한 것이다.
+function debugTargetCustomer(customers, nameOrCompany){
+  nameOrCompany = nameOrCompany || "정우이앤씨";
+  var list = Array.isArray(customers) ? customers : [];
+  var target = list.find(function(c){
+    return c.companyName === nameOrCompany || c.customerName === nameOrCompany;
+  });
+  console.log("["+nameOrCompany+" 서버 진단]", {
+    appVersion: APP_VERSION,
+    customerId: target ? target.customerId : "",
+    vehicleCount: (target && Array.isArray(target.vehicles)) ? target.vehicles.length : -1,
+    vehicles: target ? target.vehicles : [],
+    julyContractQty: target ? sumContractQty(target, "2026-07", null) : 0
+  });
+  return target || null;
+}
+
+function normalizeServerCustomers(customers){
+  if(!Array.isArray(customers)){
+    throw new Error("customers 응답이 배열이 아닙니다.");
+  }
+  return customers.map(function(c){
+    if(!Object.prototype.hasOwnProperty.call(c,"vehicles")){
+      throw new Error(
+        "고객 "+(c.companyName||c.customerName||c.customerId||"알 수 없음")+
+        "의 서버 응답에 vehicles 필드가 없습니다. Apps Script 웹앱이 구버전입니다. "+
+        "handleList()가 모든 고객 객체에 vehicles 필드(구매차량이 없으면 빈 배열)를 "+
+        "반환하도록 수정하고 새 버전으로 재배포하세요."
+      );
+    }
+    c.vehicles = normalizeVehicles(Array.isArray(c.vehicles)?c.vehicles:[]);
+    if(c.vehicles.length>0){
+      console.log("[차량 데이터 확인]", c.customerName, c.companyName||"", c.vehicles);
+    }
+    return c;
+  });
 }
 
 var _vehIdx=0;
@@ -2130,7 +2207,12 @@ function findC(phone){
 // ============================================================
 // 대시보드 계산
 // ============================================================
-function updateDash(){
+// ★ 서버 동기화가 아직 완료되지 않았음을 표시 — 이 값이 false인 동안은
+//   판매실적(mc/md/yc/yd)을 "확정된 실적"으로 표시하지 않는다.
+var _firstServerSyncDone = false;
+
+function updateDash(opts){
+  opts = opts || {};
   var list=load(),now=todayD();
   var tot=list.length,ni=0,ag=0,co=0,li=0,kt=0,de=0,ca=0;
   var bday=0,ins=0,maint=0,fin=0,y1=0,y3=0;
@@ -2158,10 +2240,15 @@ function updateDash(){
     if(del){var el=Math.round((now-del)/86400000);if(el>=365)y1++;if(el>=1095)y3++;}
 
     // ── 판매실적 집계 (vehicles.quantity 기준) ──────────────
-    try{ mc+=sumContractQty(x,yyyyMM,null); }catch(e){}
-    try{ yc+=sumContractQty(x,null,yyyyStr); }catch(e){}
-    try{ md+=sumDeliveryQty(x,yyyyMM,null); }catch(e){}
-    try{ yd+=sumDeliveryQty(x,null,yyyyStr); }catch(e){}
+    // ★ 오류를 빈 catch로 삼키지 않는다 — 집계가 틀리면 반드시 콘솔에 남긴다.
+    try{ mc+=sumContractQty(x,yyyyMM,null); }
+    catch(e){ console.error("[계약(월) 집계 오류]",x.customerId,x.customerName,x.companyName,e); }
+    try{ yc+=sumContractQty(x,null,yyyyStr); }
+    catch(e){ console.error("[계약(연) 집계 오류]",x.customerId,x.customerName,x.companyName,e); }
+    try{ md+=sumDeliveryQty(x,yyyyMM,null); }
+    catch(e){ console.error("[출고(월) 집계 오류]",x.customerId,x.customerName,x.companyName,e); }
+    try{ yd+=sumDeliveryQty(x,null,yyyyStr); }
+    catch(e){ console.error("[출고(연) 집계 오류]",x.customerId,x.customerName,x.companyName,e); }
   });
 
   function set(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
@@ -2172,10 +2259,20 @@ function updateDash(){
   set("list-count",tot+"명");
 
   // ── 판매실적 숫자 반영 ──────────────────────────────────
-  set("sp-mc", mc);
-  set("sp-md", md);
-  set("sp-yc", yc);
-  set("sp-yd", yd);
+  // ★ 서버 동기화가 아직 끝나지 않았거나(최초 로딩), 직전 동기화가
+  //   실패했다면 로컬 캐시 숫자를 "확정 실적"인 것처럼 보여주지 않는다.
+  if(opts.pending){
+    set("sp-mc","동기화 중…");set("sp-md","동기화 중…");
+    set("sp-yc","동기화 중…");set("sp-yd","동기화 중…");
+  } else if(opts.syncError){
+    set("sp-mc","⚠ 확인필요");set("sp-md","⚠ 확인필요");
+    set("sp-yc","⚠ 확인필요");set("sp-yd","⚠ 확인필요");
+  } else {
+    set("sp-mc", mc);
+    set("sp-md", md);
+    set("sp-yc", yc);
+    set("sp-yd", yd);
+  }
 
   // ── 판매실적 레이블 (현재 월/연도 자동 표시) ────────────
   var monLabel = thisMon+"월";
@@ -3273,25 +3370,10 @@ function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn, editPayload){
         console.warn("[⚠ 저장 검증 실패] 보낸 차량 수("+sentCount+")와 서버 저장 차량 수("+
           serverCount+")가 다릅니다. Apps Script handleEdit()의 구매차량 저장 로직을 확인하세요.");
       }
-      // 서버 응답에 vehicles 필드 자체가 없는 구버전 Apps Script일 때만
-      // 방금 보낸 값을 임시로 화면에 반영한다 (서버 데이터를 덮어쓰는 것이 아님).
-      if(!serverHasField && Array.isArray(editPayload.vehicles) && editPayload.vehicles.length > 0){
-        found.vehicles = editPayload.vehicles.map(function(v){
-          return {
-            vehicleId:     v.vehicleId     || "",
-            modelName:     v.modelName     || "",
-            detailModel:   v.detailModel   || "",
-            purchaseMethod:v.purchaseMethod|| "",
-            vehicleStatus: v.vehicleStatus || "",
-            contractDate:  normalizeDateStr(v.contractDate  || ""),
-            deliveryDate:  normalizeDateStr(v.deliveryDate  || ""),
-            deliveryMonth: v.deliveryMonth ||
-              (normalizeDateStr(v.deliveryDate||"").substring(0,7)),
-            quantity: Math.max(1, parseInt(v.quantity,10)||1)
-          };
-        });
-        console.warn("[구버전 Apps Script 임시 호환 — vehicles 필드 없음]", found.customerName, found.vehicles);
-      }
+      // ★ 서버 응답에 vehicles 필드가 없다고 해서 방금 보낸 editPayload 값을
+      //   화면에 임시로 반영하지 않는다. 그 "임시 호환"이 PC/모바일 숫자가
+      //   갈라지던 원인 중 하나였다. 필드가 없으면 아래 normalizeServerCustomers()에서
+      //   예외가 발생해 명확한 배포 오류로 표시된다.
     }
 
     // ── 구글시트 행 기준 필터 ────────────────────────────────
@@ -3313,44 +3395,17 @@ function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn, editPayload){
       });
     });
 
-    // ★ vehicles 정규화 + 기존 vehicles 보존 (syncFromSheet와 동일 로직)
-    sheetRows = sheetRows.map(function(c){
+    // ★ deliveryMonth 자동 보정
+    sheetRows.forEach(function(c){
       if((!c.deliveryMonth || c.deliveryMonth === "") && c.deliveryDate && c.deliveryDate.length >= 7){
         c.deliveryMonth = c.deliveryDate.substring(0,7);
       }
-      // ★ 서버 우선 원칙 — syncFromSheet()와 동일한 3-경우 분기.
-      var serverHasVehiclesField2 = Object.prototype.hasOwnProperty.call(c, "vehicles");
-
-      if(serverHasVehiclesField2){
-        c.vehicles = Array.isArray(c.vehicles) ? c.vehicles.map(function(v){
-          var dd = normalizeDateStr(v.deliveryDate || "");
-          return {
-            vehicleId:     v.vehicleId     || "",
-            modelName:     v.modelName     || "",
-            detailModel:   v.detailModel   || "",
-            purchaseMethod:v.purchaseMethod|| "",
-            vehicleStatus: v.vehicleStatus || "",
-            contractDate:  normalizeDateStr(v.contractDate  || ""),
-            deliveryDate:  dd,
-            deliveryMonth: v.deliveryMonth || (dd.length>=7 ? dd.substring(0,7) : ""),
-            quantity:      Math.max(1, parseInt(v.quantity, 10) || 1)
-          };
-        }) : [];
-      } else {
-        console.warn("[서버 응답에 vehicles 필드 없음 — 구버전 Apps Script 의심]",
-          c.customerName, c.customerId);
-        var existingList = load();
-        var matchC = null;
-        if(c._rowNumber) matchC = existingList.find(function(e){ return String(e._rowNumber)===String(c._rowNumber); });
-        if(!matchC && c.customerId) matchC = existingList.find(function(e){ return e.customerId===c.customerId; });
-        if(!matchC && c.phone) matchC = existingList.find(function(e){ return normP(e.phone)===normP(c.phone); });
-        c.vehicles = (matchC && Array.isArray(matchC.vehicles)) ? matchC.vehicles : [];
-      }
-      if(c.vehicles && c.vehicles.length > 0){
-        console.log("[차량 데이터 확인]", c.customerName, c.companyName||"", c.vehicles);
-      }
-      return c;
     });
+
+    // ★ vehicles 정규화 — syncFromSheet()와 완전히 동일한 공통 함수 사용.
+    //   서버 응답에 vehicles 필드가 없으면 예외를 던지고, 아래 .catch()에서
+    //   저장 실패로 표시한다. 로컬 vehicles로 임의 복구하지 않는다.
+    sheetRows = normalizeServerCustomers(sheetRows);
 
     // rowNumber / customerId 보완
     sheetRows.forEach(function(c, i){
@@ -4058,59 +4113,18 @@ function syncFromSheet(isAuto){
       });
     });
 
-    // ── deliveryMonth 자동 보정 + vehicles 정규화 ────────────
-    sheetRows = sheetRows.map(function(c){
+    // ── deliveryMonth 자동 보정 ───────────────────────────────
+    sheetRows.forEach(function(c){
       if((!c.deliveryMonth || c.deliveryMonth === "") && c.deliveryDate && c.deliveryDate.length >= 7){
         c.deliveryMonth = c.deliveryDate.substring(0,7);
       }
-      // ★ 서버 우선 원칙 (Server-first).
-      //   경우 A: 서버가 vehicles: [차량...] 을 보냈다 → 서버 데이터 그대로 사용.
-      //   경우 B: 서버가 vehicles: [] 를 보냈다 → 차량이 0대로 저장된 것이므로
-      //           빈 배열을 그대로 사용한다. localStorage 차량으로 복구하지 않는다.
-      //           (이 case B를 "필드 없음"과 동일하게 취급한 것이 PC/모바일
-      //            차량 대수가 서로 달라 보이던 근본 원인이었다.)
-      //   경우 C: 서버 응답에 vehicles 속성 자체가 없다(구버전 Apps Script) →
-      //           경고를 출력하고, 이 경우에 한해서만 localStorage로 임시 호환한다.
-      var serverHasVehiclesField = Object.prototype.hasOwnProperty.call(c, "vehicles");
-
-      if(serverHasVehiclesField){
-        c.vehicles = Array.isArray(c.vehicles) ? c.vehicles.map(function(v){
-          var dd = normalizeDateStr(v.deliveryDate || "");
-          return {
-            vehicleId:     v.vehicleId     || "",
-            modelName:     v.modelName     || "",
-            detailModel:   v.detailModel   || "",
-            purchaseMethod:v.purchaseMethod|| "",
-            vehicleStatus: v.vehicleStatus || "",
-            contractDate:  normalizeDateStr(v.contractDate  || ""),
-            deliveryDate:  dd,
-            deliveryMonth: v.deliveryMonth || (dd.length>=7 ? dd.substring(0,7) : ""),
-            quantity:      Math.max(1, parseInt(v.quantity, 10) || 1)
-          };
-        }) : [];
-      } else {
-        console.warn("[서버 응답에 vehicles 필드 없음 — 구버전 Apps Script 의심]",
-          c.customerName, c.customerId);
-        // 구버전 호환 시에만 임시로 localStorage 차량을 복구한다.
-        var existing = load();
-        var match = null;
-        if(c._rowNumber){
-          match = existing.find(function(e){ return String(e._rowNumber) === String(c._rowNumber); });
-        }
-        if(!match && c.customerId){
-          match = existing.find(function(e){ return e.customerId === c.customerId; });
-        }
-        if(!match && c.phone){
-          match = existing.find(function(e){ return normP(e.phone) === normP(c.phone); });
-        }
-        c.vehicles = (match && Array.isArray(match.vehicles)) ? match.vehicles : [];
-      }
-      // 디버그 로그
-      if(c.vehicles && c.vehicles.length > 0){
-        console.log("[차량 데이터 확인]", c.customerName, c.companyName||"", c.vehicles);
-      }
-      return c;
     });
+
+    // ★ vehicles 정규화 — 공통 함수 하나만 사용 (서버 우선, 로컬 복구 금지).
+    //   서버 응답에 vehicles 필드가 없으면 여기서 예외가 발생하고, 아래
+    //   .catch()에서 배포 오류 메시지로 표시된다. PC/모바일 localStorage로
+    //   임의 복구하지 않는다.
+    sheetRows = normalizeServerCustomers(sheetRows);
 
     // ── rowNumber / customerId 보완 ───────────────────────────
     sheetRows.forEach(function(c, i){
@@ -4127,26 +4141,16 @@ function syncFromSheet(isAuto){
     localStorage.setItem("crm_last_sync", new Date().toISOString());
 
     // ── PC·모바일 동일성 진단 ────────────────────────────────
-    // PC와 모바일 콘솔에서 아래 값을 서로 비교하면 두 기기가 정말
-    // 같은 서버 데이터를 보고 있는지 바로 확인할 수 있다.
-    (function(){
-      var targetCustomer = sheetRows.find(function(c){
-        return c.companyName === "정우이앤씨" || c.customerName === "정우이앤씨";
-      });
-      console.log("[CRM 데이터 진단]", {
-        version: APP_VERSION,
-        device: window.innerWidth <= 640 ? "mobile" : "desktop",
-        customerCount: sheetRows.length,
-        storageCount: load().length,
-        syncTime: localStorage.getItem("crm_last_sync") || "",
-        targetCustomerId: targetCustomer ? targetCustomer.customerId : null
-      });
-      if(targetCustomer){
-        console.log("[정우이앤씨 차량 수]",
-          Array.isArray(targetCustomer.vehicles) ? targetCustomer.vehicles.length : 0,
-          targetCustomer.vehicles || []);
-      }
-    })();
+    // PC와 모바일 콘솔에서 debugTargetCustomer() 출력을 서로 비교하면
+    // 두 기기가 정말 같은 서버 데이터를 보고 있는지 바로 확인할 수 있다.
+    console.log("[CRM 동기화 진단]", {
+      version: APP_VERSION,
+      device: window.innerWidth <= 640 ? "mobile" : "desktop",
+      customerCount: sheetRows.length,
+      storageCount: load().length,
+      syncTime: localStorage.getItem("crm_last_sync") || ""
+    });
+    debugTargetCustomer(sheetRows, "정우이앤씨");
     var syncTimeEl = document.getElementById("crm-last-sync-label");
     if(syncTimeEl){
       var st = new Date();
@@ -4155,6 +4159,8 @@ function syncFromSheet(isAuto){
     }
 
     // ── 화면 전체 갱신 ──
+    // ★ 서버 데이터로 검증이 끝난 지금 시점에만 판매실적을 확정 표시한다.
+    _firstServerSyncDone = true;
     updateDash();
     renderHomeContacts();
     if(document.getElementById("listView") &&
@@ -4174,6 +4180,13 @@ function syncFromSheet(isAuto){
     if(msgEl){
       msgEl.className="sync-msg err";
       msgEl.textContent="❌ "+err.message;
+    }
+    // ★ 서버 조회 실패 시 로컬 숫자를 최신 실적인 것처럼 확정 표시하지 않는다.
+    //   아직 한 번도 성공적으로 동기화된 적이 없다면 "확인필요" 상태를 유지.
+    if(!_firstServerSyncDone){
+      updateDash({syncError:true});
+      var syncTimeEl2 = document.getElementById("crm-last-sync-label");
+      if(syncTimeEl2) syncTimeEl2.textContent = "⚠ 최신 서버 데이터를 불러오지 못했습니다.";
     }
   })
   .finally(function(){
@@ -4214,7 +4227,10 @@ function syncFromSheet(isAuto){
     }
   })();
 })();
-updateDash();
+// ★ 최초 로딩 시점 — 아직 서버 동기화가 끝나지 않았으므로 판매실적은
+//   "동기화 중…"으로만 표시한다. 나머지(고객 상태 카운트, 오늘/이번주
+//   연락처 등)는 로컬 캐시로 즉시 보여줘도 무방하다.
+updateDash({pending:true});
 renderHomeContacts();
 // ============================================================
 // 자동 동기화 (60초마다, 입력 중일 때는 건너뜀)
