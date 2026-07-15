@@ -15,7 +15,7 @@
 
     // PC·모바일이 같은 버전을 보고 있는지 확인하기 위한 버전 표식.
     // 배포할 때마다 값을 바꿔서 캐시된 구버전과 구분한다.
-    var APP_VERSION = "2026-07-14-v97-legacy-stats-fix";
+    var APP_VERSION = "2026-07-15-v98-customer-delete";
     console.log("[CRM VERSION]", APP_VERSION);
   </script>
 
@@ -575,10 +575,15 @@
     .edit-modal-body{padding:16px 14px 8px;}
     .edit-modal-footer{
       padding:12px 14px 16px;
-      display:flex;gap:10px;
+      display:flex;gap:10px;flex-wrap:wrap;
+      align-items:center;justify-content:space-between;
     }
+    .edit-modal-footer-right{
+      display:flex;gap:10px;flex:1;min-width:0;
+    }
+    .edit-modal-footer-right .btn-edit-save{flex:1;}
     .btn-edit-save{
-      flex:1;padding:15px;border:none;border-radius:var(--radius);
+      padding:15px;border:none;border-radius:var(--radius);
       background:var(--gold);color:#fff;font-family:var(--font);
       font-size:15px;font-weight:700;cursor:pointer;
       transition:background .15s,transform .1s;
@@ -593,6 +598,17 @@
       transition:background .15s;
     }
     .btn-edit-cancel:hover{background:var(--bg);}
+    /* ── 고객 삭제 버튼 (경고 스타일, 저장 버튼보다 낮은 강조) ── */
+    .btn-customer-delete{
+      min-height:48px;padding:12px 18px;border-radius:var(--radius);
+      border:1.5px solid #e8a8a0;background:#fdf0ef;
+      color:var(--danger);font-family:var(--font);
+      font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;
+      transition:background .15s,transform .1s;flex-shrink:0;
+    }
+    .btn-customer-delete:hover{background:#fbe0dd;}
+    .btn-customer-delete:active{transform:scale(.99);}
+    .btn-customer-delete:disabled{opacity:.5;cursor:not-allowed;transform:none;}
     .st-msg.edit-save-msg{margin:0 14px 12px;}
 
     /* ── 반응형 ── */
@@ -614,6 +630,9 @@
       .memo-field textarea{background:#fffdf4;border:1px solid #e8d59a;}
       .memo-field label{color:#8a6a00;font-weight:600;}
       .badge{font-size:12px;padding:4px 10px;}
+      .edit-modal-footer{flex-direction:column;align-items:stretch;}
+      .edit-modal-footer-right{order:1;width:100%;}
+      .btn-customer-delete{order:2;width:100%;margin-top:2px;}
     }
     @media(max-width:380px){
       .stat-num{font-size:17px;} .stat-label{font-size:8px;}
@@ -1501,8 +1520,11 @@
 
     <div class="st-msg edit-save-msg" id="edit-save-msg"></div>
     <div class="edit-modal-footer">
-      <button class="btn-edit-cancel" onclick="closeEdit()">취소</button>
-      <button class="btn-edit-save" id="editSaveBtn" onclick="submitEdit()">✅ 수정 저장</button>
+      <button class="btn-customer-delete" id="editDeleteBtn" onclick="deleteCurrentCustomer()">🗑 고객 삭제</button>
+      <div class="edit-modal-footer-right">
+        <button class="btn-edit-cancel" id="editCancelBtn" onclick="closeEdit()">취소</button>
+        <button class="btn-edit-save" id="editSaveBtn" onclick="submitEdit()">✅ 수정 저장</button>
+      </div>
     </div>
   </div><!-- /.edit-modal -->
 </div><!-- /.edit-overlay -->
@@ -3491,6 +3513,188 @@ function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn, editPayload){
   })
   .finally(function(){
     if(btn){ btn.disabled=false; btn.textContent="✅ 수정 저장"; }
+  });
+}
+
+// ============================================================
+// 고객 삭제 (수정 모달에서 실행) — 구글시트 고객 행 + 구매차량 완전 삭제
+// ============================================================
+function deleteCurrentCustomer(){
+  var msgEl    = document.getElementById("edit-save-msg");
+  var delBtn   = document.getElementById("editDeleteBtn");
+  var saveBtn  = document.getElementById("editSaveBtn");
+  var cancelBtn= document.getElementById("editCancelBtn");
+
+  // 중복 클릭 방지 — 이미 삭제 처리 중이면 무시
+  if(delBtn && delBtn.disabled) return;
+
+  var custName      = (document.getElementById("e-customerName").value || "").trim() || "이 고객";
+  var rowNumber      = _editOriginalRowNumber || "";
+  var customerId     = _editOriginalId || "";
+  var originalPhone  = _editOriginalPhone || "";
+
+  // 식별자가 전부 비어 있으면 삭제 중단
+  if(!rowNumber && !customerId && !originalPhone){
+    if(msgEl){
+      msgEl.className="st-msg edit-save-msg err";
+      msgEl.textContent="⚠ 삭제할 고객을 식별할 수 없습니다. (rowNumber/customerId/연락처 없음)";
+    }
+    return;
+  }
+
+  // ── 2단계 confirm ──────────────────────────────────────────
+  if(!confirm("정말로 "+custName+" 고객을 삭제하시겠습니까?\n고객정보와 연결된 구매차량 정보가 함께 삭제됩니다.")){
+    return;
+  }
+  if(!confirm("삭제한 데이터는 CRM에서 복구할 수 없습니다.\n최종 삭제하시겠습니까?")){
+    return;
+  }
+
+  if(msgEl){msgEl.className="st-msg edit-save-msg";msgEl.textContent="";}
+
+  var payload = {
+    action:        "deleteCustomer",
+    rowNumber:     rowNumber,
+    customerId:    customerId,
+    originalPhone: originalPhone
+  };
+
+  console.log("[고객삭제 요청]", payload);
+
+  // 삭제 처리 중 UI 잠금
+  delBtn.disabled = true;  delBtn.textContent = "삭제 중…";
+  if(saveBtn)   saveBtn.disabled = true;
+  if(cancelBtn) cancelBtn.disabled = true;
+
+  // ── STEP 1: 구글시트에 삭제 요청 POST (no-cors) ───────────────────────
+  fetch(SCRIPT_URL,{
+    method:"POST",
+    mode:"no-cors",
+    headers:{"Content-Type":"text/plain"},
+    body:JSON.stringify(payload)
+  })
+  .then(function(){
+    // no-cors이므로 opaque response — POST 완료만으로 삭제 성공 처리하지 않는다.
+    console.log("[고객삭제 POST 완료] Apps Script 처리 대기 중…");
+    if(msgEl){
+      msgEl.className="st-msg edit-save-msg";
+      msgEl.textContent="⏳ 구글시트에서 삭제 처리 중… 잠시 후 확인합니다.";
+    }
+    // Apps Script 처리 시간 고려 — 약 2.8초 대기
+    return new Promise(function(resolve){setTimeout(resolve,2800);});
+  })
+  .then(function(){
+    // ── STEP 2: 삭제 검증을 위해 최신 목록 재조회 ───────────────────────
+    console.log("[삭제 검증 시작] 시트에서 최신 데이터 읽기");
+    return fetch(SCRIPT_URL+"?action=list&_ts="+Date.now(), {method:"GET", cache:"no-store"});
+  })
+  .then(function(res){
+    if(!res.ok) throw new Error("HTTP "+res.status+" (시트 읽기 실패)");
+    return res.text();
+  })
+  .then(function(text){
+    var json;
+    try{
+      json = JSON.parse(text);
+    }catch(e){
+      console.error("[삭제 검증] JSON 파싱 실패. 응답 앞부분:", text.substring(0,200));
+      throw new Error("시트 응답이 JSON이 아닙니다. Apps Script 배포 상태를 확인하세요.");
+    }
+
+    if(json.debug) console.log("[Apps Script 진단 _delete]", json.debug);
+    if(!json.success){
+      throw new Error(json.message || "Apps Script 오류 (success:false)");
+    }
+
+    var incoming = json.customers || [];
+
+    // ★ 0건 안전장치 — 삭제 후 남아있어야 할 고객이 있는데 0건이면 검증 중단
+    var existingForCheck = load();
+    if(incoming.length === 0 && existingForCheck.length > 1){
+      throw new Error("⚠ 구글시트 응답 0건 — 삭제 검증 불가. 시트명·헤더를 확인하세요.");
+    }
+
+    // ── 삭제 검증: customerId 우선, 없으면 고객명+정규화된 기존 연락처 ──
+    var normOriginal = normP(originalPhone);
+    var stillExists;
+    if(customerId){
+      stillExists = incoming.some(function(c){
+        return String(c.customerId||"") === String(customerId);
+      });
+    } else {
+      stillExists = incoming.some(function(c){
+        return (c.customerName||"") === custName &&
+               normOriginal && normP(c.phone) === normOriginal;
+      });
+    }
+
+    if(stillExists){
+      throw new Error("❌ 삭제 요청은 전송됐지만 구글시트에서 고객이 계속 확인됩니다. Apps Script 배포 상태를 확인해주세요.");
+    }
+
+    // ── 삭제 검증 성공 — 서버 최신 데이터로 localStorage 완전 갱신 ──
+    var sheetRows = incoming.filter(function(c){
+      return c && (
+        (c.customerName && String(c.customerName).trim()) ||
+        (c.phone        && String(c.phone).trim())
+      );
+    });
+
+    sheetRows.forEach(function(c){
+      DATE_FIELDS_LIST.forEach(function(f){
+        if(c[f] !== undefined && c[f] !== null && c[f] !== "") c[f] = normalizeDateStr(c[f]);
+      });
+    });
+    sheetRows.forEach(function(c){
+      if((!c.deliveryMonth || c.deliveryMonth === "") && c.deliveryDate && c.deliveryDate.length >= 7){
+        c.deliveryMonth = c.deliveryDate.substring(0,7);
+      }
+    });
+
+    sheetRows = normalizeServerCustomers(sheetRows);
+
+    sheetRows.forEach(function(c, i){
+      if(!c._rowNumber) c._rowNumber = i + 2;
+      if(!c.customerId) c.customerId = "ROW-" + c._rowNumber;
+    });
+
+    save(sheetRows);
+    console.log("[고객삭제 동기화 완료] localStorage에 " + sheetRows.length + "건 저장 (삭제 반영)");
+
+    // ── 화면 전체 갱신 ─────────────────────────────────────────
+    updateDash();
+    renderHomeContacts();
+    if(document.getElementById("listView") &&
+       document.getElementById("listView").classList.contains("active")) renderList();
+    renderAnalyticsIfVisible();
+
+    if(msgEl){
+      msgEl.className="st-msg edit-save-msg ok";
+      msgEl.textContent="✅ 고객정보가 삭제되었습니다.";
+    }
+
+    // 성공 후 0.5초 뒤 모달 닫기 + 전체 갱신
+    setTimeout(function(){
+      closeEdit();
+      updateDash();
+      renderHomeContacts();
+      if(document.getElementById("listView") &&
+         document.getElementById("listView").classList.contains("active")) renderList();
+      renderAnalyticsIfVisible();
+    }, 500);
+  })
+  .catch(function(err){
+    console.error("[고객삭제 오류]", err);
+    if(msgEl){
+      msgEl.className="st-msg edit-save-msg err";
+      msgEl.textContent = String(err.message||"").indexOf("❌") === 0 ? err.message : ("❌ "+err.message);
+    }
+    // 실패 시 모달 유지 (검증 실패 상태 확인 가능하도록)
+  })
+  .finally(function(){
+    delBtn.disabled = false; delBtn.textContent = "🗑 고객 삭제";
+    if(saveBtn)   saveBtn.disabled = false;
+    if(cancelBtn) cancelBtn.disabled = false;
   });
 }
 
