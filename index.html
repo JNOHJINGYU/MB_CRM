@@ -10,7 +10,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxbYOx3_DPda4FPcb3IRJFZ_md7gNYksyTG7WGel4HXe-DgRZbUk3qz70ItGF7GAIHW/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9zCCFT7xfZndP-TeYqbHKk2na2PZ7fX1JbDfXVbUWwmdjmTonSCb-eBB0rdxpxxku_g/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     // PC·모바일이 같은 버전을 보고 있는지 확인하기 위한 버전 표식.
@@ -670,20 +670,22 @@
     }
     .veh-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
     .veh-field{display:flex;flex-direction:column;gap:4px;}
+    .veh-field.veh-field-full{grid-column:1/-1;}
     .veh-field label{font-size:11px;font-weight:600;color:var(--text-dim);}
-    .veh-field input,.veh-field select{
+    .veh-field input,.veh-field select,.veh-field textarea{
       width:100%;background:#fff;border:1px solid var(--border2);
       border-radius:8px;color:var(--text);font-family:var(--font);
       font-size:14px;padding:10px 12px;outline:none;
       -webkit-appearance:none;appearance:none;
     }
-    .veh-field input:focus,.veh-field select:focus{border-color:var(--gold);}
+    .veh-field input:focus,.veh-field select:focus,.veh-field textarea:focus{border-color:var(--gold);}
+    .veh-field textarea{resize:vertical;min-height:76px;line-height:1.5;white-space:pre-wrap;}
     .veh-field .auto-field{
       background:var(--surface2,#f5f5f5)!important;
       border:1px dashed var(--border2)!important;
       color:var(--text-dim)!important;cursor:default;
     }
-    @media(max-width:480px){.veh-grid{grid-template-columns:1fr;}}
+    @media(max-width:480px){.veh-grid{grid-template-columns:1fr;}.veh-field textarea{min-height:88px;}}
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -1991,7 +1993,8 @@ function normalizeVehicles(vehicles){
       contractDate:  normalizeDateStr(v.contractDate||""),
       deliveryDate:  deliveryDate,
       deliveryMonth: String(v.deliveryMonth || (deliveryDate.length>=7?deliveryDate.substring(0,7):"")).trim(),
-      quantity:      Math.max(1,parseInt(v.quantity,10)||1)
+      quantity:      Math.max(1,parseInt(v.quantity,10)||1),
+      memo:          String(v.memo||"")
     };
   });
 }
@@ -2009,7 +2012,8 @@ function migrateLegacyVehicle(c){
     deliveryMonth:c.deliveryMonth||"",
     vehicleStatus:c.status&&(c.status==="계약"||c.status==="출고"||c.status==="해약")?c.status:
                   (c.contractDate&&!c.deliveryDate?"계약":(c.deliveryDate?"출고":"")),
-    quantity:1
+    quantity:1,
+    memo:""
   };
   if(!v.modelName&&!v.contractDate&&!v.deliveryDate)return[];
   return[v];
@@ -2176,6 +2180,8 @@ function vehRowHtml(listId,v){
         '<input type="text" value="'+esc(dm)+'" class="veh-deliveryMonth auto-field" readonly placeholder="자동"/></div>'+
       '<div class="veh-field"><label>수량</label>'+
         '<input type="number" value="'+qty+'" min="1" max="99" class="veh-quantity" style="text-align:center;font-weight:700;font-size:18px;"/></div>'+
+      '<div class="veh-field veh-field-full"><label>메모</label>'+
+        '<textarea class="veh-memo" rows="3" placeholder="외관색상 : 옵시디언 블랙&#10;실내색상 : 마키아토 베이지&#10;옵션 : HUD / 통풍시트&#10;특이사항 : 기존차 보상판매 예정">'+esc(v?v.memo||"":"")+'</textarea></div>'+
     '</div></div>';
 }
 
@@ -2222,7 +2228,8 @@ function readVehiclesFromDom(listId){
       contractDate:   normalizeDateStr(val(".veh-contractDate"))||val(".veh-contractDate"),
       deliveryDate:   normalizeDateStr(deliveryDate)||deliveryDate,
       deliveryMonth:  deliveryMonth,
-      quantity:       Math.max(1,parseInt(val(".veh-quantity"),10)||1)
+      quantity:       Math.max(1,parseInt(val(".veh-quantity"),10)||1),
+      memo:           val(".veh-memo")
     });
   });
   return result;
@@ -2865,7 +2872,8 @@ function submitNew(){
         contractDate:   v.contractDate||"",
         deliveryDate:   v.deliveryDate||"",
         deliveryMonth:  v.deliveryMonth||"",
-        quantity:       Math.max(1, parseInt(v.quantity,10)||1)
+        quantity:       Math.max(1, parseInt(v.quantity,10)||1),
+        memo:           v.memo||""
       };
     });
   }
@@ -3146,6 +3154,24 @@ function _openCustDetailModal(c){
     '</tr>';
   });
   html+='</table>';
+
+  // ── 구매차량별 메모 섹션 (v37) ──
+  // 차량마다 외관색상/실내색상/옵션/특이사항 등을 자유 기록한 메모를
+  // 모델명과 함께 보여준다. 메모가 없는 차량은 표시하지 않는다.
+  var vehList=(typeof migrateVehicles==="function")?migrateVehicles(c):(c.vehicles||[]);
+  var vehiclesWithMemo=(vehList||[]).filter(function(v){return v&&String(v.memo||"").trim();});
+  if(vehiclesWithMemo.length>0){
+    html+='<div style="margin-top:18px;">'+
+      '<div style="font-size:13px;font-weight:800;color:var(--black);margin-bottom:10px;">🚗 차량별 메모</div>';
+    vehiclesWithMemo.forEach(function(v){
+      var title=(v.modelName||"")+(v.detailModel?" · "+v.detailModel:"")||"모델미정";
+      html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;">'+
+        '<div style="font-size:12px;font-weight:700;color:var(--black);margin-bottom:6px;">'+esc(title)+'</div>'+
+        '<div style="font-size:13px;color:var(--black);line-height:1.6;white-space:pre-wrap;">'+esc(v.memo)+'</div>'+
+      '</div>';
+    });
+    html+='</div>';
+  }
 
   // ── 상담 이력 섹션 ──
   var raw=(c.consultation||"").trim();
