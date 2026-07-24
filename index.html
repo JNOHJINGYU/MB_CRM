@@ -456,6 +456,43 @@
     .memo-detail-row .d-key{color:#8a6a00;}
     .memo-detail-val{color:#5a4200;}
 
+    /* ★ 고객 상세정보 구매차량 아코디언 추가 */
+    .d-sec.vehicle-list-title{display:flex;align-items:center;justify-content:space-between;
+      gap:8px;flex-wrap:wrap;}
+    .vehicle-count-badge{font-size:11px;font-weight:700;color:var(--gold-dk);
+      background:#fdf6e3;border-radius:20px;padding:2px 9px;letter-spacing:0;
+      text-transform:none;}
+    .customer-vehicle-list{margin:0 0 6px;}
+    .customer-vehicle-summary{display:flex;align-items:center;gap:8px;
+      padding:9px 10px;background:var(--surface2,#fafafa);
+      border:1px solid var(--border);border-radius:8px;margin-bottom:6px;}
+    .customer-vehicle-summary.open{border-radius:8px 8px 0 0;margin-bottom:0;}
+    .customer-vehicle-name{min-width:0;flex:1;font-size:13px;font-weight:600;
+      color:var(--text);overflow-wrap:anywhere;}
+    .customer-vehicle-qty{color:var(--text-dim);font-weight:600;font-size:12px;}
+    .customer-vehicle-toggle{flex-shrink:0;width:36px;height:36px;min-width:36px;
+      min-height:36px;border-radius:8px;border:1px solid var(--border2);
+      background:#fff;color:var(--text-dim);font-size:17px;font-weight:700;
+      line-height:1;cursor:pointer;display:flex;align-items:center;
+      justify-content:center;font-family:var(--font);
+      -webkit-tap-highlight-color:transparent;}
+    .customer-vehicle-toggle:hover{background:#f0f0f0;}
+    .customer-vehicle-toggle.open{background:var(--gold);color:#fff;border-color:var(--gold);}
+    .customer-vehicle-detail{display:none;padding:9px 10px 10px;margin:-6px 0 6px;
+      background:#f7f7f9;border:1px solid var(--border);border-top:none;
+      border-radius:0 0 8px 8px;box-sizing:border-box;max-width:100%;overflow-wrap:anywhere;}
+    .customer-vehicle-detail.open{display:block;}
+    .customer-vehicle-meta .d-row{margin-bottom:4px;}
+    .customer-vehicle-memo-label{font-size:11px;font-weight:700;color:#8a6a00;margin-bottom:4px;}
+    .customer-vehicle-memo{background:#fffdf4;border:1px solid #e8d59a;border-radius:6px;
+      padding:8px 10px;margin-top:6px;font-size:13px;color:#5a4200;
+      white-space:pre-wrap;overflow-wrap:anywhere;box-sizing:border-box;max-width:100%;}
+    @media(max-width:640px){
+      .customer-vehicle-name{font-size:12px;}
+      .customer-vehicle-toggle{min-width:38px;min-height:38px;}
+      .customer-vehicle-summary{flex-wrap:nowrap;}
+    }
+
     /* D-day 태그 */
     .dd{display:inline-block;font-size:10px;font-weight:700;
       padding:1px 6px;border-radius:6px;margin-left:4px;vertical-align:middle;}
@@ -2608,6 +2645,8 @@ function buildCard(c,idx){
   if(c.purchaseMethod) html+=dr("구매방식",c.purchaseMethod);
   if(c.budget)         html+=dr("구매예산",c.budget);
   if(c.purchaseTiming) html+=dr("구매예정시기",c.purchaseTiming);
+  // ★ 고객 상세정보 구매차량 아코디언 추가
+  html+=renderCustomerVehicleList(c, idx);
   html+='<div class="d-sec">상담</div>';
   if(c.consultation) html+='<div class="d-row"><span class="d-key">상담내용</span><span class="d-val">'+esc(c.consultation)+'</span></div>';
   if(c.memo) html+='<div class="d-row memo-detail-row"><span class="d-key">📝 메모</span><span class="d-val memo-detail-val">'+esc(c.memo)+'</span></div>';
@@ -2686,12 +2725,131 @@ function buildCard(c,idx){
 function dr(k,v){if(!v)return"";
   return'<div class="d-row"><span class="d-key">'+k+'</span><span class="d-val">'+esc(v)+'</span></div>';}
 
+// ============================================================
+// ★ 고객 상세정보 구매차량 아코디언 추가
+// ============================================================
+// 상세정보 보기 안에서 [구매 정보] 다음, [상담] 이전에 삽입되는
+// 구매차량 목록 아코디언. 기존 단일차량/다중차량 고객을 모두 지원하는
+// migrateVehicles(c)(내부적으로 getCustomerVehiclesForStats() 호출)만
+// 데이터 소스로 사용한다 — c.vehicles를 직접 쓰지 않는다.
+// 이렇게 해야 vehicles 배열이 있는 고객(예: 정우이앤씨)은 그 배열만
+// 사용되고, 대표차량 필드까지 더해져 중복 집계되지 않는다.
+function renderCustomerVehicleList(c, customerIndex){
+  var vehicles = migrateVehicles(c);
+  if(!vehicles || !vehicles.length) return "";
+
+  // 총 구매대수 = 각 차량 quantity 합산(없으면 1대로 계산). 하드코딩 금지.
+  var totalVehicleQty = vehicles.reduce(function(sum, v){
+    return sum + Math.max(1, parseInt(v.quantity, 10) || 1);
+  }, 0);
+
+  var groupId = "veh-acc-" + customerIndex;
+  var html = '<div class="d-sec vehicle-list-title">'+
+      '<span>🚗 구매차량 목록</span>'+
+      '<span class="vehicle-count-badge">총 '+totalVehicleQty+'대</span>'+
+    '</div>';
+  html += '<div class="customer-vehicle-list" id="'+groupId+'">';
+
+  vehicles.forEach(function(v, vehicleIndex){
+    // 고객명/전화번호/차량명 등 원문 대신 인덱스 조합만으로 고유 ID 생성.
+    var detailId = "vehicle-detail-" + customerIndex + "-" + vehicleIndex;
+
+    var nameParts = [];
+    if(v.modelName)   nameParts.push(v.modelName);
+    if(v.detailModel) nameParts.push(v.detailModel);
+    var nameLabel = nameParts.length
+      ? esc(nameParts.join(" · "))
+      : ("차량 " + (vehicleIndex + 1));
+
+    var qty = Math.max(1, parseInt(v.quantity, 10) || 1);
+    var qtyLabel = qty > 1 ? '<span class="customer-vehicle-qty">× '+qty+'대</span>' : "";
+
+    html += '<div class="customer-vehicle-summary">'+
+        '<span class="customer-vehicle-name">'+nameLabel+'</span>'+
+        qtyLabel+
+        '<button type="button" class="customer-vehicle-toggle" '+
+          'onclick="toggleCustomerVehicle(this,\''+detailId+'\',\''+groupId+'\')" '+
+          'aria-expanded="false" aria-controls="'+detailId+'">＋</button>'+
+      '</div>';
+
+    var metaRows = "";
+    if(v.modelName)      metaRows += dr("모델명", v.modelName);
+    if(v.detailModel)    metaRows += dr("세부모델", v.detailModel);
+    if(v.purchaseMethod) metaRows += dr("구매방식", v.purchaseMethod);
+    if(v.vehicleStatus)  metaRows += dr("차량상태", v.vehicleStatus);
+    if(v.contractDate)   metaRows += dr("계약일", v.contractDate);
+    if(v.deliveryDate)   metaRows += dr("출고일", v.deliveryDate);
+    metaRows += dr("수량", qty+"대");
+
+    var memoBlock = "";
+    var memoText = String(v.memo||"").trim();
+    if(memoText){
+      // ★ 차량별 메모는 반드시 v.memo(각 차량 객체)만 사용 — 고객 전체 메모(c.memo)와 다름.
+      // innerHTML에 원문을 그대로 넣지 않고 esc()로 이스케이프한다.
+      memoBlock = '<div class="customer-vehicle-memo-label">📝 차량메모</div>'+
+        '<div class="customer-vehicle-memo">'+esc(memoText)+'</div>';
+    }
+
+    html += '<div class="customer-vehicle-detail" id="'+detailId+'">'+
+        '<div class="customer-vehicle-meta">'+metaRows+'</div>'+
+        memoBlock+
+      '</div>';
+  });
+
+  html += '</div>';
+  return html;
+}
+
+// 같은 고객(같은 groupId) 안에서만 아코디언을 여닫는다 — 다른 고객카드의
+// 차량 목록에는 영향을 주지 않는다. 동시에 한 차량만 열리도록 하고,
+// 이미 열려 있는 차량을 다시 누르면 모두 닫힌 상태가 될 수 있다.
+function toggleCustomerVehicle(button, detailId, groupId){
+  var detail = document.getElementById(detailId);
+  var group  = document.getElementById(groupId);
+  if(!detail || !group) return;
+
+  var willOpen = !detail.classList.contains("open");
+
+  // 같은 그룹 내 다른 차량은 모두 닫는다.
+  Array.prototype.forEach.call(group.querySelectorAll(".customer-vehicle-detail.open"), function(d){
+    if(d === detail) return;
+    d.classList.remove("open");
+    var otherBtn = group.querySelector('.customer-vehicle-toggle[aria-controls="'+d.id+'"]');
+    if(otherBtn){
+      otherBtn.classList.remove("open");
+      otherBtn.textContent = "＋";
+      otherBtn.setAttribute("aria-expanded","false");
+    }
+  });
+
+  detail.classList.toggle("open", willOpen);
+  button.classList.toggle("open", willOpen);
+  button.textContent = willOpen ? "−" : "＋";
+  button.setAttribute("aria-expanded", String(willOpen));
+}
+
+// [상세정보 닫기] 시 그 안의 구매차량 아코디언을 모두 ＋(닫힘) 상태로 초기화.
+function resetCustomerVehicleAccordions(detailBody){
+  if(!detailBody) return;
+  Array.prototype.forEach.call(detailBody.querySelectorAll(".customer-vehicle-detail.open"), function(d){
+    d.classList.remove("open");
+  });
+  Array.prototype.forEach.call(detailBody.querySelectorAll(".customer-vehicle-toggle"), function(btn){
+    btn.classList.remove("open");
+    btn.textContent = "＋";
+    btn.setAttribute("aria-expanded","false");
+  });
+}
+
 function togDet(btn,id){
   var d=document.getElementById(id);var open=d.classList.contains("open");
   d.classList.toggle("open",!open);btn.classList.toggle("open",!open);
   btn.querySelector(".tog-arr").textContent=open?"▼":"▲";
   btn.childNodes[0].textContent=open?"상세정보 보기 ":"상세정보 닫기 ";
   btn.setAttribute("aria-expanded",!open);
+  // ★ 고객 상세정보 구매차량 아코디언 추가 — 상세정보를 닫을 때(open이었다가 닫히는 경우)
+  //   내부에 열려 있던 구매차량 아코디언도 함께 초기화한다.
+  if(open){ resetCustomerVehicleAccordions(d); }
 }
 function togCare(btn,id){
   var d=document.getElementById(id);var open=d.classList.contains("open");
