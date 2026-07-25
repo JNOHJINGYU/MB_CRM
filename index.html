@@ -15,7 +15,11 @@
 
     // PC·모바일이 같은 버전을 보고 있는지 확인하기 위한 버전 표식.
     // 배포할 때마다 값을 바꿔서 캐시된 구버전과 구분한다.
-    var APP_VERSION = "2026-07-15-v98-customer-delete";
+    // ★ Google Drive 고객·구매차량 문서관리 추가 — 고객 공통서류/차량서류를
+    //   Google Drive에 업로드·조회·교체·삭제할 수 있는 UI와 통신 함수가
+    //   추가되었다. 기존 고객 등록/수정/삭제, 구매차량, 캘린더 연동,
+    //   대시보드/분석 로직은 전혀 수정하지 않았다.
+    var APP_VERSION = "2026-07-25-v99-drive-document-management";
     console.log("[CRM VERSION]", APP_VERSION);
   </script>
 
@@ -776,6 +780,120 @@
       .veh-del-btn{min-height:38px;padding:8px 14px;}
       .veh-card-title{font-size:12px;}
     }
+    /* ============================================================ */
+    /* ★ Google Drive 고객·구매차량 문서관리 추가 — 문서 UI 스타일     */
+    /* ============================================================ */
+    .doc-summary-row{
+      display:flex;align-items:center;justify-content:space-between;
+      gap:8px;flex-wrap:wrap;padding:2px 0;
+    }
+    .doc-summary-label{font-size:13px;font-weight:700;color:var(--text);}
+    .doc-summary-count{color:var(--text-dim);font-weight:600;font-size:12px;}
+    .doc-summary-actions{display:flex;gap:6px;flex-wrap:wrap;}
+    .doc-btn{
+      min-height:42px;padding:9px 14px;border-radius:20px;
+      border:1.5px solid var(--border2);background:#fff;
+      color:var(--text-dim);font-family:var(--font);
+      font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;
+      transition:background .15s,transform .1s;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .doc-btn:hover{background:var(--bg);}
+    .doc-btn:active{transform:scale(.98);}
+    .doc-btn.gold{border-color:var(--gold);color:var(--gold-dk);}
+    .doc-btn.gold:hover{background:var(--gold);color:#fff;}
+    .doc-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+    .doc-disabled-note{font-size:12px;color:var(--text-lt);padding:6px 0;}
+    .doc-required-progress{font-size:11px;font-weight:700;padding:2px 0;}
+    .doc-required-progress.ok{color:var(--success);}
+    .doc-required-progress.warn{color:var(--danger);}
+
+    /* ── 문서 모달 (고객 공통서류 / 차량서류 공용) ── */
+    .doc-overlay{
+      display:none;position:fixed;inset:0;z-index:700;
+      background:rgba(0,0,0,.6);backdrop-filter:blur(2px);
+      overflow-y:auto;-webkit-overflow-scrolling:touch;
+    }
+    .doc-overlay.open{display:flex;align-items:flex-start;justify-content:center;padding:16px 0 40px;}
+    .doc-modal{
+      background:var(--bg);width:100%;max-width:560px;
+      border-radius:20px;overflow:hidden;
+      box-shadow:0 12px 48px rgba(0,0,0,.3);
+      margin:0 10px;animation:vIn .2s ease;
+    }
+    .doc-modal-header{
+      position:sticky;top:0;z-index:10;background:var(--black);
+      padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    }
+    .doc-modal-title{font-size:15px;font-weight:800;color:#fff;letter-spacing:-.3px;min-width:0;}
+    .doc-modal-subtitle{font-size:11px;color:rgba(255,255,255,.65);margin-top:2px;}
+    .doc-modal-close{
+      width:34px;height:34px;border-radius:50%;border:none;flex-shrink:0;
+      background:rgba(255,255,255,.15);color:#fff;font-size:18px;
+      cursor:pointer;display:flex;align-items:center;justify-content:center;
+    }
+    .doc-modal-close:hover{background:rgba(255,255,255,.28);}
+    .doc-modal-body{padding:16px 14px;}
+    .doc-modal-section{margin-bottom:16px;}
+    .doc-modal-section-title{font-size:12px;font-weight:800;color:var(--gold-dk);margin-bottom:8px;}
+    .doc-unit-select-wrap{margin-bottom:12px;}
+    .doc-unit-select-wrap select{
+      width:100%;padding:11px 12px;border-radius:10px;border:1.5px solid var(--border2);
+      font-family:var(--font);font-size:14px;background:#fff;
+    }
+    .doc-list{display:flex;flex-direction:column;gap:8px;}
+    .doc-item{
+      background:#fff;border:1.5px solid var(--border);border-radius:10px;
+      padding:10px 12px;
+    }
+    .doc-item-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+    .doc-item-type{font-size:13px;font-weight:700;color:var(--text);}
+    .doc-item-filename{font-size:12px;color:var(--text-dim);margin-top:3px;
+      word-break:break-all;overflow-wrap:anywhere;}
+    .doc-item-meta{font-size:11px;color:var(--text-lt);margin-top:3px;}
+    .doc-item-memo{font-size:11px;color:#8a6a00;background:#fffdf4;border:1px solid #e8d59a;
+      border-radius:6px;padding:5px 8px;margin-top:6px;}
+    .doc-item-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+    .doc-item-actions .doc-btn{min-height:38px;padding:7px 12px;font-size:11px;}
+    .doc-empty-note{text-align:center;padding:18px 0;color:var(--text-lt);font-size:13px;}
+    .doc-upload-drop{
+      border:1.5px dashed var(--border2);border-radius:12px;
+      padding:14px;text-align:center;background:#fff;
+    }
+    .doc-upload-drop input[type=file]{display:none;}
+    .doc-upload-label{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:10px 16px;border-radius:20px;background:var(--gold);
+      color:#fff;font-size:13px;font-weight:700;cursor:pointer;
+    }
+    .doc-upload-label:hover{background:var(--gold-dk);}
+    .doc-upload-hint{font-size:11px;color:var(--text-lt);margin-top:8px;line-height:1.5;}
+    .doc-type-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+    .doc-type-row select,.doc-type-row input{
+      flex:1;min-width:120px;padding:10px 12px;border-radius:10px;
+      border:1.5px solid var(--border2);font-family:var(--font);font-size:13px;
+    }
+    .doc-progress-box{
+      background:#fff;border:1.5px solid var(--border2);border-radius:10px;
+      padding:10px 12px;font-size:12px;color:var(--text-dim);margin-top:10px;
+    }
+    .doc-progress-box.err{border-color:#e8a8a0;background:#fdf0ef;color:var(--danger);}
+    .doc-progress-box.ok{border-color:#b7e3c9;background:#eaf8f0;color:var(--success);}
+    .doc-link-toggle{
+      display:block;margin-top:10px;font-size:12px;color:var(--blue);
+      cursor:pointer;text-decoration:underline;background:none;border:none;padding:0;font-family:var(--font);
+    }
+    .doc-link-panel{display:none;margin-top:10px;background:#fff;border:1.5px solid var(--border2);
+      border-radius:10px;padding:10px 12px;}
+    .doc-link-panel.open{display:block;}
+    .doc-link-panel input{
+      width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border2);
+      font-family:var(--font);font-size:13px;margin-bottom:8px;
+    }
+    @media(max-width:640px){
+      .doc-modal{max-width:100%;margin:0 8px;}
+      .doc-type-row select,.doc-type-row input{min-width:100%;}
+    }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
@@ -1169,6 +1287,14 @@
         <div id="new-veh-empty" style="text-align:center;padding:16px 0;color:var(--text-lt);font-size:13px;">
           + 차량 추가 버튼을 눌러 구매차량을 등록하세요
         </div>
+      </div>
+    </div>
+
+    <!-- ★ Google Drive 고객·구매차량 문서관리 추가 — 신규 고객은 저장 전이므로 안내만 표시 -->
+    <div class="form-card">
+      <div class="form-card-header">📁 고객 공통서류</div>
+      <div class="form-body">
+        <div class="doc-disabled-note">고객을 먼저 저장한 후 문서를 등록해주세요.</div>
       </div>
     </div>
 
@@ -1607,6 +1733,23 @@
         </div>
       </div>
 
+      <!-- ★ Google Drive 고객·구매차량 문서관리 추가 — 고객 공통서류 -->
+      <div class="form-card">
+        <div class="form-card-header">📁 고객 공통서류</div>
+        <div class="form-body">
+          <div class="doc-summary-row">
+            <div><div class="doc-summary-label">등록된 서류</div>
+              <div class="doc-summary-count" id="e-customerDocCount">-</div></div>
+            <div class="doc-summary-actions">
+              <button type="button" class="doc-btn gold" id="e-customerDocBtn" onclick="openCustomerDocModalFromEdit()">📁 문서 관리</button>
+            </div>
+          </div>
+          <div class="doc-disabled-note" id="e-customerDocNote" style="display:none;">
+            고객을 먼저 저장한 후 문서를 등록해주세요.
+          </div>
+        </div>
+      </div>
+
       <!-- 기타 -->
       <div class="form-card">
         <div class="form-card-header">기타</div>
@@ -1642,6 +1785,56 @@
     </div>
   </div>
 </div><!-- /.customer-detail-overlay -->
+
+<!-- ★ Google Drive 고객·구매차량 문서관리 추가 — 문서 모달 (고객 공통서류 / 차량서류 공용) -->
+<div class="doc-overlay" id="docOverlay" onclick="docOverlayClick(event)">
+  <div class="doc-modal" id="docModal">
+    <div class="doc-modal-header">
+      <div style="min-width:0;">
+        <div class="doc-modal-title" id="docModalTitle">문서관리</div>
+        <div class="doc-modal-subtitle" id="docModalSubtitle"></div>
+      </div>
+      <button class="doc-modal-close" onclick="closeDocModal()" aria-label="닫기">✕</button>
+    </div>
+    <div class="doc-modal-body">
+      <div class="doc-unit-select-wrap" id="docModalUnitWrap" style="display:none;">
+        <label style="font-size:12px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:6px;">호차 선택</label>
+        <select id="docModalUnitSelect" onchange="onDocModalUnitChange()"></select>
+      </div>
+
+      <div class="doc-modal-section" id="docModalUploadSection">
+        <div class="doc-modal-section-title">문서 업로드</div>
+        <div class="doc-type-row">
+          <select id="docModalTypeSelect" onchange="onDocModalTypeSelectChange()"></select>
+          <input type="text" id="docModalCustomTypeInput" placeholder="문서명 직접입력 (문서 종류를 '기타'로 선택 시)" style="display:none;"/>
+        </div>
+        <input type="text" id="docModalMemoInput" placeholder="메모 (선택)" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border2);font-family:var(--font);font-size:13px;margin-bottom:10px;"/>
+        <div class="doc-upload-drop">
+          <label class="doc-upload-label" for="docModalFileInput">📎 파일 선택 (여러 개 가능)</label>
+          <input type="file" id="docModalFileInput" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.hwp" onchange="onDocModalFilesChosen(this)"/>
+          <div class="doc-upload-hint">PDF·JPG·PNG·WEBP·DOC·DOCX·XLS·XLSX·HWP, 파일당 최대 8MB</div>
+        </div>
+        <button type="button" class="doc-link-toggle" onclick="toggleDocLinkPanel()">대용량 파일은 Google Drive 링크로 직접 등록 →</button>
+        <div class="doc-link-panel" id="docLinkPanel">
+          <input type="text" id="docLinkTypeCustom" placeholder="문서명 (선택)"/>
+          <input type="text" id="docLinkUrlInput" placeholder="Google Drive 파일 링크 붙여넣기"/>
+          <input type="text" id="docLinkMemoInput" placeholder="메모 (선택)"/>
+          <button type="button" class="doc-btn gold" onclick="submitDocLinkRegister()">링크로 등록</button>
+        </div>
+        <div class="doc-progress-box" id="docModalProgress" style="display:none;"></div>
+      </div>
+
+      <div class="doc-modal-section">
+        <div class="doc-modal-section-title" id="docModalRequiredProgress"></div>
+        <div class="doc-summary-actions" style="margin-bottom:10px;">
+          <button type="button" class="doc-btn" onclick="refreshDocModalList()">🔄 목록 새로고침</button>
+          <button type="button" class="doc-btn" onclick="docModalOpenDriveFolder()">📂 Drive 폴더 열기</button>
+        </div>
+        <div class="doc-list" id="docModalList"></div>
+      </div>
+    </div>
+  </div>
+</div><!-- /.doc-overlay -->
 
 <!-- 하단 네비 (모바일) -->
 <nav class="bottom-nav">
@@ -2274,8 +2467,17 @@ function vehRowHtml(listId,v){
   var qty=v?Math.max(1,parseInt(v.quantity,10)||1):1;
   var titleText=vehCardTitleText(v);
   var hasMemo=!!(v&&String(v.memo||"").trim());
+  var vid=v?v.vehicleId||"":"";
+  var vQty=qty;
+  // ★ Google Drive 고객·구매차량 문서관리 추가 — 카드에 vehicleId를 data 속성으로
+  //   심어둔다. 기존에는 이 값이 어디에도 저장되지 않아 readVehiclesFromDom()이
+  //   항상 vehicleId:"" 를 반환했고(카드에 저장할 값이 없었음), 그 결과 고객을
+  //   수정 저장할 때마다 이미 있던 차량까지 매번 새 vehicleId가 발급되는 상태였다.
+  //   문서관리는 vehicleId가 저장 후에도 안정적으로 유지되어야 폴더 연결이
+  //   끊어지지 않으므로, 여기서 data-vehicle-id 속성으로 값을 보존한다.
+  //   (차량 저장/수정/삭제/메모/수량/계약·출고 통계 로직 자체는 전혀 건드리지 않음)
   // ★ 구매차량 수정 카드 열기/닫기 추가 — 헤더에 차량명/메모뱃지/열기버튼 표시, 본문은 .veh-card-body로 분리
-  return'<div class="veh-card" id="'+rid+'">'+
+  return'<div class="veh-card" id="'+rid+'" data-vehicle-id="'+esc(vid)+'" data-veh-qty="'+vQty+'">'+
     '<div class="veh-card-header">'+
       '<div class="veh-card-header-info">'+
         '<span class="veh-card-num">차량 #'+(idx+1)+'</span>'+
@@ -2304,6 +2506,14 @@ function vehRowHtml(listId,v){
         '<input type="number" value="'+qty+'" min="1" max="99" class="veh-quantity" style="text-align:center;font-weight:700;font-size:18px;"/></div>'+
       '<div class="veh-field veh-field-full"><label>메모</label>'+
         '<textarea class="veh-memo" rows="3" placeholder="외관색상 : 옵시디언 블랙&#10;실내색상 : 마키아토 베이지&#10;옵션 : HUD / 통풍시트&#10;특이사항 : 기존차 보상판매 예정" oninput="updateVehicleMemoIndicator(this.closest(\'.veh-card\'))">'+esc(v?v.memo||"":"")+'</textarea></div>'+
+    '</div>'+
+    // ★ Google Drive 고객·구매차량 문서관리 추가 — 📂 차량서류 섹션
+    '<div class="doc-summary-row" style="margin-top:10px;border-top:1px dashed var(--border2);padding-top:10px;">'+
+      '<div><div class="doc-summary-label">📂 차량서류</div>'+
+        '<div class="doc-summary-count" id="'+rid+'-docCount">문서 정보를 불러오려면 관리 버튼을 눌러주세요</div></div>'+
+      '<div class="doc-summary-actions">'+
+        '<button type="button" class="doc-btn gold" onclick="openVehicleDocModalFromCard(this)">📂 문서관리</button>'+
+      '</div>'+
     '</div>'+
     '</div>'+
   '</div>';
@@ -2796,6 +3006,17 @@ function buildCard(c,idx){
   if(c.purchaseMethod) html+=dr("구매방식",c.purchaseMethod);
   if(c.budget)         html+=dr("구매예산",c.budget);
   if(c.purchaseTiming) html+=dr("구매예정시기",c.purchaseTiming);
+  // ★ Google Drive 고객·구매차량 문서관리 추가 — 고객 공통서류 (읽기 전용)
+  if(c.customerId){
+    html+='<div class="doc-summary-row" style="margin-top:6px;">'+
+      '<div><div class="doc-summary-label">📁 고객 공통서류</div>'+
+        '<div class="doc-summary-count" id="detail-docCount-'+idx+'">문서 개수 확인 중…</div></div>'+
+      '<div class="doc-summary-actions">'+
+        '<button type="button" class="doc-btn" onclick="openCustomerDocModalReadOnly(\''+esc(c.customerId)+'\',\''+esc(c.customerName||"")+'\',\''+esc(c.companyName||"")+'\')">문서 목록 보기</button>'+
+        '<button type="button" class="doc-btn" onclick="openDriveFolderDirect(\'CUSTOMER\',\''+esc(c.customerId)+'\',\'\',\'\')">Drive 폴더 열기</button>'+
+      '</div>'+
+    '</div>';
+  }
   // ★ 고객 상세정보 구매차량 아코디언 추가
   html+=renderCustomerVehicleList(c, idx);
   html+='<div class="d-sec">상담</div>';
@@ -2941,9 +3162,24 @@ function renderCustomerVehicleList(c, customerIndex){
         '<div class="customer-vehicle-memo">'+esc(memoText)+'</div>';
     }
 
+    // ★ Google Drive 고객·구매차량 문서관리 추가 — 차량서류 (읽기 전용)
+    var vehDocBlock = "";
+    if(v.vehicleId && c.customerId){
+      var vdCountId = "detail-vehDocCount-"+customerIndex+"-"+vehicleIndex;
+      vehDocBlock = '<div class="doc-summary-row" style="margin-top:8px;">'+
+        '<div><div class="doc-summary-label">📂 차량서류</div>'+
+          '<div class="doc-summary-count" id="'+vdCountId+'">문서 개수 확인 중…</div></div>'+
+        '<div class="doc-summary-actions">'+
+          '<button type="button" class="doc-btn" onclick="openVehicleDocModalReadOnly(\''+esc(c.customerId)+'\',\''+esc(v.vehicleId)+'\',\''+esc(c.customerName||"")+'\',\''+esc(c.companyName||"")+'\',\''+esc(v.modelName||"")+'\',\''+esc(v.detailModel||"")+'\','+qty+')">문서 목록 보기</button>'+
+          '<button type="button" class="doc-btn" onclick="openDriveFolderDirect(\'VEHICLE\',\''+esc(c.customerId)+'\',\''+esc(v.vehicleId)+'\',\'\')">차량 폴더 열기</button>'+
+        '</div>'+
+      '</div>';
+    }
+
     html += '<div class="customer-vehicle-detail" id="'+detailId+'">'+
         '<div class="customer-vehicle-meta">'+metaRows+'</div>'+
         memoBlock+
+        vehDocBlock+
       '</div>';
   });
 
@@ -3001,6 +3237,9 @@ function togDet(btn,id){
   // ★ 고객 상세정보 구매차량 아코디언 추가 — 상세정보를 닫을 때(open이었다가 닫히는 경우)
   //   내부에 열려 있던 구매차량 아코디언도 함께 초기화한다.
   if(open){ resetCustomerVehicleAccordions(d); }
+  // ★ Google Drive 고객·구매차량 문서관리 추가 — 상세정보를 열 때만 문서 개수를 조회한다.
+  //   (목록 전체를 렌더링할 때마다 매번 서버를 조회하지 않기 위해 지연 로드)
+  if(!open){ loadDetailDocSummary(d); }
 }
 function togCare(btn,id){
   var d=document.getElementById(id);var open=d.classList.contains("open");
@@ -3383,6 +3622,9 @@ function _fillEditForm(c){
       }
     },0);
   }
+
+  // ★ Google Drive 고객·구매차량 문서관리 추가 — 고객 공통서류/차량서류 개수 갱신
+  refreshEditDocSummary();
 
   // 메시지 초기화 후 모달 열기
   var msg=document.getElementById("edit-save-msg");
@@ -4852,6 +5094,471 @@ function startAutoSync(){
 // 페이지 로드 시 자동 불러오기 + 60초마다 자동 동기화
 syncFromSheet(true);
 startAutoSync();
+
+// ============================================================
+// ★ Google Drive 고객·구매차량 문서관리 추가 — 프론트엔드 로직
+//   (기존 고객 등록/수정/삭제, 구매차량, 캘린더 연동, 대시보드/분석
+//    로직은 이 구역에서 전혀 건드리지 않는다. 아래는 전부 신규 코드.)
+// ============================================================
+
+var DOC_TYPES_CUSTOMER = ["신분증","사업자등록증","법인등기부등본","법인인감증명서","대표자 신분증","통장사본","위임장","개인정보동의서","기타"];
+var DOC_TYPES_VEHICLE  = ["차량계약서","자동차등록증","입금확인서","세금계산서","보험증권","금융계약서","리스계약서","렌트계약서","인수증","탁송확인서","출고사진","기타"];
+var DOC_REQUIRED_BY_METHOD = {
+  "현금":     ["차량계약서","입금확인서","자동차등록증","보험증권"],
+  "할부":     ["차량계약서","금융계약서","입금확인서","자동차등록증","보험증권"],
+  "리스":     ["차량계약서","리스계약서","입금확인서","자동차등록증","보험증권"],
+  "장기렌트": ["차량계약서","렌트계약서","입금확인서","자동차등록증","보험증권"]
+};
+var DOC_ALLOWED_EXT = ["pdf","jpg","jpeg","png","webp","heic","heif","doc","docx","xls","xlsx","hwp"];
+var DOC_MAX_SIZE = 8*1024*1024; // 8MB
+
+// 현재 문서 모달이 다루고 있는 대상 상태
+var _docModal = {
+  scope:"", customerId:"", vehicleId:"", unitNo:"", quantity:1,
+  modelName:"", detailModel:"", customerName:"", companyName:"",
+  purchaseMethod:"", readOnly:false
+};
+
+function normalizeMethodForChecklist(m){
+  if(m==="일시불"||m==="현금") return "현금";
+  if(m==="할부"||m==="법인할부") return "할부";
+  if(m==="리스"||m==="법인리스") return "리스";
+  if(m==="장기렌트") return "장기렌트";
+  return "";
+}
+
+// ── Apps Script 문서관리 API 통신 ──────────────────────────────
+// ★ 기존 고객 저장(no-cors + 지연 GET 검증)과 달리, 문서 업로드는
+//   성공 여부/documentId/fileUrl/오류 메시지를 즉시 확인해야 하므로
+//   no-cors를 쓰지 않는다. 커스텀 헤더를 붙이지 않은 순수 POST 문자열
+//   본문은 브라우저가 자동으로 text/plain 로 취급해 preflight 없이
+//   전송되며, Apps Script 웹앱의 JSON 응답을 그대로 읽을 수 있다.
+function docApiFetch(payload){
+  return fetch(SCRIPT_URL, { method:"POST", body: JSON.stringify(payload) })
+    .then(function(res){ return res.text(); })
+    .then(function(text){
+      var json;
+      try{ json = JSON.parse(text); }
+      catch(e){
+        console.error("[문서 API 응답 파싱 실패]", text.substring(0,300));
+        throw new Error("서버 응답을 해석할 수 없습니다. 배포 상태를 확인해주세요.");
+      }
+      return json;
+    });
+}
+
+function fileToBase64(file){
+  return new Promise(function(resolve,reject){
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{ resolve(String(reader.result).split(",")[1]||""); }
+      catch(e){ reject(e); }
+    };
+    reader.onerror = function(){ reject(new Error("파일을 읽는 중 오류가 발생했습니다.")); };
+    reader.readAsDataURL(file);
+  });
+}
+
+function validateFileClientSide(file){
+  var ext = (file.name.split(".").pop()||"").toLowerCase();
+  if(DOC_ALLOWED_EXT.indexOf(ext)<0){
+    return "지원하지 않는 파일 형식입니다. (.pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.hwp 만 허용)";
+  }
+  if(file.size > DOC_MAX_SIZE){
+    return "파일 크기가 8MB를 초과합니다. 파일을 압축하거나 Google Drive에 직접 저장한 후 링크를 등록해주세요.";
+  }
+  return null;
+}
+
+// ── 진입점: 고객 수정 화면 [📁 문서 관리] 버튼 ──────────────────
+function openCustomerDocModalFromEdit(){
+  if(!_editOriginalId){
+    alert("고객을 먼저 저장한 후 문서를 등록해주세요.");
+    return;
+  }
+  openDocModal({
+    scope:"CUSTOMER",
+    customerId:_editOriginalId,
+    customerName:(document.getElementById("e-customerName").value||"").trim(),
+    companyName:(document.getElementById("e-companyName").value||"").trim(),
+    readOnly:false
+  });
+}
+
+// ── 진입점: 차량 카드 [📂 문서관리] 버튼 ────────────────────────
+function openVehicleDocModalFromCard(btn){
+  var card = btn.closest(".veh-card");
+  if(!card) return;
+  var listEl = card.closest("#edit-veh-list, #new-veh-list");
+  var listId = listEl ? listEl.id : "";
+  var vehicleId = card.dataset.vehicleId || "";
+  var customerId = (listId==="edit-veh-list") ? _editOriginalId : "";
+
+  if(!customerId){
+    alert("고객을 먼저 저장한 후 문서를 등록해주세요.");
+    return;
+  }
+  if(!vehicleId){
+    alert("차량을 먼저 저장한 후 차량서류를 등록해주세요.");
+    return;
+  }
+  function val(sel){ var el=card.querySelector(sel); return el?String(el.value||"").trim():""; }
+  var quantity = Math.max(1, parseInt(val(".veh-quantity"),10)||1);
+
+  openDocModal({
+    scope:"VEHICLE",
+    customerId:customerId,
+    vehicleId:vehicleId,
+    unitNo: quantity>=2 ? "1" : "",
+    quantity:quantity,
+    modelName:val(".veh-modelName"),
+    detailModel:val(".veh-detailModel"),
+    purchaseMethod:val(".veh-purchaseMethod"),
+    customerName:(document.getElementById("e-customerName").value||"").trim(),
+    companyName:(document.getElementById("e-companyName").value||"").trim(),
+    readOnly:false
+  });
+}
+
+// ── 진입점: 고객/고객 상세정보의 읽기 전용 버튼들 ───────────────
+function openCustomerDocModalReadOnly(customerId, customerName, companyName){
+  openDocModal({ scope:"CUSTOMER", customerId:customerId, customerName:customerName, companyName:companyName, readOnly:true });
+}
+function openVehicleDocModalReadOnly(customerId, vehicleId, customerName, companyName, modelName, detailModel, quantity){
+  quantity = Math.max(1, parseInt(quantity,10)||1);
+  openDocModal({
+    scope:"VEHICLE", customerId:customerId, vehicleId:vehicleId,
+    unitNo: quantity>=2 ? "1" : "", quantity:quantity,
+    modelName:modelName, detailModel:detailModel,
+    customerName:customerName, companyName:companyName, readOnly:true
+  });
+}
+function openDriveFolderDirect(scope, customerId, vehicleId, unitNo){
+  docApiFetch({ action:"getDocumentFolder", documentScope:scope, customerId:customerId, vehicleId:vehicleId||"", unitNo:unitNo||"" })
+    .then(function(json){
+      if(json.success && json.folderUrl){ window.open(json.folderUrl, "_blank"); }
+      else { alert(json.message||"폴더를 열 수 없습니다."); }
+    })
+    .catch(function(err){ alert("폴더를 여는 중 오류가 발생했습니다: "+err.message); });
+}
+
+// ── 문서 모달 공통 열기/닫기 ─────────────────────────────────
+function openDocModal(opts){
+  _docModal = {
+    scope: opts.scope, customerId: opts.customerId||"", vehicleId: opts.vehicleId||"",
+    unitNo: opts.unitNo||"", quantity: Math.max(1, parseInt(opts.quantity,10)||1),
+    modelName: opts.modelName||"", detailModel: opts.detailModel||"",
+    customerName: opts.customerName||"", companyName: opts.companyName||"",
+    purchaseMethod: opts.purchaseMethod||"", readOnly: !!opts.readOnly
+  };
+
+  var titleEl = document.getElementById("docModalTitle");
+  var subEl   = document.getElementById("docModalSubtitle");
+  if(_docModal.scope==="CUSTOMER"){
+    titleEl.textContent = "📁 고객 공통서류";
+    subEl.textContent = _docModal.companyName || _docModal.customerName || "";
+  } else {
+    titleEl.textContent = "📂 차량서류";
+    subEl.textContent = [_docModal.modelName,_docModal.detailModel].filter(function(x){return x;}).join(" ")+
+      " · "+(_docModal.companyName||_docModal.customerName||"");
+  }
+
+  var unitWrap = document.getElementById("docModalUnitWrap");
+  var unitSelect = document.getElementById("docModalUnitSelect");
+  if(_docModal.scope==="VEHICLE" && _docModal.quantity>=2){
+    unitWrap.style.display="";
+    var optsHtml="";
+    for(var i=1;i<=_docModal.quantity;i++){
+      optsHtml += '<option value="'+i+'">'+String(i).padStart(2,"0")+'호차</option>';
+    }
+    unitSelect.innerHTML = optsHtml;
+    unitSelect.value = _docModal.unitNo || "1";
+    _docModal.unitNo = unitSelect.value;
+  } else {
+    unitWrap.style.display="none";
+  }
+
+  document.getElementById("docModalUploadSection").style.display = _docModal.readOnly ? "none" : "";
+  buildDocTypeSelectOptions();
+  var linkPanel=document.getElementById("docLinkPanel");
+  if(linkPanel) linkPanel.classList.remove("open");
+  var progBox=document.getElementById("docModalProgress");
+  if(progBox) progBox.style.display="none";
+
+  document.getElementById("docOverlay").classList.add("open");
+  document.body.style.overflow="hidden";
+  refreshDocModalList();
+}
+function closeDocModal(){
+  document.getElementById("docOverlay").classList.remove("open");
+  document.body.style.overflow = document.getElementById("editOverlay").classList.contains("open") ? "hidden" : "";
+}
+function docOverlayClick(e){
+  if(e.target===document.getElementById("docOverlay")) closeDocModal();
+}
+
+function buildDocTypeSelectOptions(){
+  var sel = document.getElementById("docModalTypeSelect");
+  var types = _docModal.scope==="CUSTOMER" ? DOC_TYPES_CUSTOMER : DOC_TYPES_VEHICLE;
+  sel.innerHTML = types.map(function(t){ return '<option value="'+esc(t)+'">'+esc(t)+'</option>'; }).join("");
+  onDocModalTypeSelectChange();
+}
+function onDocModalTypeSelectChange(){
+  var sel = document.getElementById("docModalTypeSelect");
+  var custom = document.getElementById("docModalCustomTypeInput");
+  custom.style.display = (sel.value==="기타") ? "" : "none";
+}
+function onDocModalUnitChange(){
+  var sel = document.getElementById("docModalUnitSelect");
+  _docModal.unitNo = sel.value;
+  refreshDocModalList();
+}
+function toggleDocLinkPanel(){
+  document.getElementById("docLinkPanel").classList.toggle("open");
+}
+
+// ── 목록 조회/렌더링 ─────────────────────────────────────────
+function refreshDocModalList(){
+  var listEl = document.getElementById("docModalList");
+  listEl.innerHTML = '<div class="doc-empty-note">불러오는 중…</div>';
+  var payload = (_docModal.scope==="CUSTOMER")
+    ? { action:"listCustomerDocuments", customerId:_docModal.customerId }
+    : { action:"listVehicleDocuments", customerId:_docModal.customerId, vehicleId:_docModal.vehicleId, unitNo:_docModal.unitNo||"" };
+  docApiFetch(payload).then(function(json){
+    if(!json.success){
+      listEl.innerHTML = '<div class="doc-empty-note">'+esc(json.message||"목록을 불러오지 못했습니다.")+'</div>';
+      return;
+    }
+    renderDocList(listEl, json.documents||[]);
+    updateRequiredProgress(json.documents||[]);
+  }).catch(function(err){
+    listEl.innerHTML = '<div class="doc-empty-note">목록 조회 실패: '+esc(err.message)+'</div>';
+  });
+}
+function renderDocList(container, docs){
+  if(!docs.length){ container.innerHTML = '<div class="doc-empty-note">등록된 서류가 없습니다.</div>'; return; }
+  var html = "";
+  docs.forEach(function(d){
+    html += '<div class="doc-item" data-doc-id="'+esc(d.documentId)+'">'+
+      '<div class="doc-item-top"><div>'+
+        '<div class="doc-item-type">'+esc(d.documentType||"기타")+(d.documentName?' · '+esc(d.documentName):'')+'</div>'+
+        '<div class="doc-item-filename">'+esc(d.originalFileName||"")+'</div>'+
+      '</div></div>'+
+      '<div class="doc-item-meta">등록일 '+esc(d.uploadedAt||"")+'</div>'+
+      (d.memo?'<div class="doc-item-memo">'+esc(d.memo)+'</div>':"")+
+      '<div class="doc-item-actions">'+
+        '<button type="button" class="doc-btn" onclick="window.open(\''+String(d.driveFileUrl||"").replace(/'/g,"%27")+'\',\'_blank\')">보기</button>'+
+        (!_docModal.readOnly ? (
+          '<button type="button" class="doc-btn" onclick="triggerDocReplace(\''+esc(d.documentId)+'\',\''+esc(d.documentType||"기타")+'\')">교체</button>'+
+          '<button type="button" class="doc-btn" onclick="triggerDocDelete(\''+esc(d.documentId)+'\',\''+esc(d.documentType||"기타")+'\')">삭제</button>'
+        ) : "")+
+      '</div>'+
+    '</div>';
+  });
+  container.innerHTML = html;
+}
+function updateRequiredProgress(docs){
+  var el = document.getElementById("docModalRequiredProgress");
+  if(_docModal.scope!=="VEHICLE" || !_docModal.purchaseMethod){
+    el.textContent = "등록된 서류"; el.className = "doc-modal-section-title"; return;
+  }
+  var key = normalizeMethodForChecklist(_docModal.purchaseMethod);
+  var required = DOC_REQUIRED_BY_METHOD[key];
+  if(!required || !required.length){ el.textContent = "등록된 서류"; el.className = "doc-modal-section-title"; return; }
+  var have = {};
+  docs.forEach(function(d){ have[d.documentType]=true; });
+  var done = required.filter(function(t){ return have[t]; }).length;
+  el.textContent = "필수서류 "+done+"/"+required.length+" 완료";
+  el.className = "doc-required-progress "+(done>=required.length ? "ok" : "warn");
+}
+
+// ── 업로드 (여러 파일 순차 업로드) ──────────────────────────────
+function onDocModalFilesChosen(input){
+  var files = Array.prototype.slice.call(input.files||[]);
+  if(!files.length) return;
+  for(var i=0;i<files.length;i++){
+    var err = validateFileClientSide(files[i]);
+    if(err){ showDocProgress(files[i].name+": "+err, "err"); input.value=""; return; }
+  }
+  var typeSel = document.getElementById("docModalTypeSelect");
+  var customType = document.getElementById("docModalCustomTypeInput");
+  var docType = typeSel.value || "기타";
+  var docName = (docType==="기타") ? customType.value.trim() : "";
+  var memo = document.getElementById("docModalMemoInput").value.trim();
+
+  var uploadBtn = document.querySelector('label[for="docModalFileInput"]');
+  if(uploadBtn) uploadBtn.style.pointerEvents = "none";
+  uploadFilesSequentially(files, docType, docName, memo, 0, {success:0, fail:0}, uploadBtn);
+  input.value = "";
+}
+function uploadFilesSequentially(files, docType, docName, memo, index, counts, uploadBtn){
+  if(index>=files.length){
+    if(uploadBtn) uploadBtn.style.pointerEvents = "";
+    var msg = "완료: 성공 "+counts.success+"건"+(counts.fail?" · 실패 "+counts.fail+"건":"");
+    showDocProgress(msg, counts.fail?"err":"ok");
+    refreshDocModalList();
+    refreshEditDocSummary();
+    return;
+  }
+  var file = files[index];
+  showDocProgress("("+(index+1)+"/"+files.length+") 업로드 중… "+file.name, "");
+  var requestToken = "REQ-"+Date.now()+"-"+Math.floor(Math.random()*100000);
+  fileToBase64(file).then(function(base64){
+    return docApiFetch({
+      action:"uploadDocument",
+      documentScope:_docModal.scope,
+      customerId:_docModal.customerId,
+      vehicleId:_docModal.vehicleId||"",
+      unitNo:_docModal.unitNo||"",
+      documentType:docType,
+      documentName:docName,
+      memo:memo,
+      fileName:file.name,
+      mimeType:file.type||"application/octet-stream",
+      fileSize:file.size,
+      base64Data:base64,
+      requestToken:requestToken
+    });
+  }).then(function(json){
+    if(json && json.success){ counts.success++; }
+    else { counts.fail++; console.error("[문서 업로드 실패]", file.name, json&&json.message); }
+    uploadFilesSequentially(files, docType, docName, memo, index+1, counts, uploadBtn);
+  }).catch(function(err){
+    counts.fail++;
+    console.error("[문서 업로드 오류]", file.name, err);
+    uploadFilesSequentially(files, docType, docName, memo, index+1, counts, uploadBtn);
+  });
+}
+function showDocProgress(text, kind){
+  var box = document.getElementById("docModalProgress");
+  if(!box) return;
+  box.style.display = "";
+  box.textContent = text;
+  box.className = "doc-progress-box"+(kind?" "+kind:"");
+}
+
+// ── Drive 링크 직접 등록 (대용량 파일용) ────────────────────────
+function submitDocLinkRegister(){
+  var link = document.getElementById("docLinkUrlInput").value.trim();
+  if(!link){ alert("Google Drive 파일 링크를 입력해주세요."); return; }
+  var docType = document.getElementById("docModalTypeSelect").value || "기타";
+  var docName = document.getElementById("docLinkTypeCustom").value.trim();
+  var memo = document.getElementById("docLinkMemoInput").value.trim();
+  docApiFetch({
+    action:"registerDriveDocumentLink",
+    documentScope:_docModal.scope,
+    customerId:_docModal.customerId,
+    vehicleId:_docModal.vehicleId||"",
+    unitNo:_docModal.unitNo||"",
+    documentType:docType,
+    documentName:docName,
+    memo:memo,
+    driveLink:link
+  }).then(function(json){
+    if(json.success){
+      document.getElementById("docLinkUrlInput").value="";
+      document.getElementById("docLinkTypeCustom").value="";
+      document.getElementById("docLinkMemoInput").value="";
+      showDocProgress("링크로 등록되었습니다.","ok");
+      refreshDocModalList();
+      refreshEditDocSummary();
+    } else {
+      alert(json.message||"링크 등록에 실패했습니다.");
+    }
+  }).catch(function(err){ alert("링크 등록 중 오류가 발생했습니다: "+err.message); });
+}
+
+// ── 교체 / 삭제 ──────────────────────────────────────────────
+function triggerDocReplace(documentId, docType){
+  var inp = document.createElement("input");
+  inp.type = "file";
+  inp.accept = ".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.hwp";
+  inp.onchange = function(){
+    var file = inp.files && inp.files[0];
+    if(!file) return;
+    var err = validateFileClientSide(file);
+    if(err){ showDocProgress(err, "err"); return; }
+    showDocProgress("교체 업로드 중… "+file.name, "");
+    fileToBase64(file).then(function(base64){
+      return docApiFetch({
+        action:"replaceDocument",
+        oldDocumentId:documentId,
+        documentType:docType,
+        fileName:file.name,
+        mimeType:file.type||"application/octet-stream",
+        fileSize:file.size,
+        base64Data:base64
+      });
+    }).then(function(json){
+      if(json.success){ showDocProgress("교체가 완료되었습니다.","ok"); refreshDocModalList(); }
+      else { showDocProgress(json.message||"교체에 실패했습니다.","err"); }
+    }).catch(function(err){ showDocProgress("교체 중 오류가 발생했습니다: "+err.message, "err"); });
+  };
+  inp.click();
+}
+function triggerDocDelete(documentId, docType){
+  if(!confirm(docType+" 파일을 삭제하시겠습니까?\nGoogle Drive 파일도 휴지통으로 이동됩니다.")) return;
+  docApiFetch({ action:"deleteDocument", documentId:documentId })
+    .then(function(json){
+      if(json.success){ refreshDocModalList(); refreshEditDocSummary(); }
+      else { alert(json.message||"삭제에 실패했습니다."); }
+    }).catch(function(err){ alert("삭제 중 오류가 발생했습니다: "+err.message); });
+}
+function docModalOpenDriveFolder(){
+  openDriveFolderDirect(_docModal.scope, _docModal.customerId, _docModal.vehicleId||"", _docModal.unitNo||"");
+}
+
+// ── 고객 수정 화면: 문서 개수 요약 갱신 (모달을 열 때, 업로드/삭제 후) ──
+function refreshEditDocSummary(){
+  var noteEl  = document.getElementById("e-customerDocNote");
+  var btnEl   = document.getElementById("e-customerDocBtn");
+  var countEl = document.getElementById("e-customerDocCount");
+  if(!_editOriginalId){
+    if(noteEl)  noteEl.style.display = "";
+    if(btnEl)   btnEl.disabled = true;
+    if(countEl) countEl.textContent = "-";
+    return;
+  }
+  if(noteEl) noteEl.style.display = "none";
+  if(btnEl)  btnEl.disabled = false;
+  docApiFetch({ action:"documentSummary", customerId:_editOriginalId })
+    .then(function(json){
+      if(!json.success) return;
+      if(countEl) countEl.textContent = "등록된 서류 "+(json.customerDocCount||0)+"개";
+      var listEl = document.getElementById("edit-veh-list");
+      if(listEl){
+        Array.prototype.forEach.call(listEl.querySelectorAll(".veh-card"), function(card){
+          var vid = card.dataset.vehicleId;
+          var countSpan = card.querySelector('[id$="-docCount"]');
+          if(!countSpan) return;
+          if(!vid){ countSpan.textContent = "차량을 먼저 저장한 후 이용 가능합니다."; return; }
+          var n = (json.vehicleDocCounts && json.vehicleDocCounts[vid]) || 0;
+          countSpan.textContent = "문서 "+n+"개 등록됨";
+        });
+      }
+    }).catch(function(err){ console.error("[문서 요약 조회 실패]", err); });
+}
+
+// ── 고객 상세정보(읽기 전용) 화면: 상세정보 보기를 펼칠 때만 개수 조회 ──
+function loadDetailDocSummary(detailBodyEl){
+  if(!detailBodyEl || !detailBodyEl.id) return;
+  var idx = detailBodyEl.id.replace("det-","");
+  var c = (typeof renderedCustomers!=="undefined" && renderedCustomers) ? renderedCustomers[idx] : null;
+  if(!c || !c.customerId) return;
+  docApiFetch({ action:"documentSummary", customerId:c.customerId })
+    .then(function(json){
+      if(!json.success) return;
+      var cEl = document.getElementById("detail-docCount-"+idx);
+      if(cEl) cEl.textContent = (json.customerDocCount||0)+"개";
+      var vehicles = migrateVehicles(c) || [];
+      vehicles.forEach(function(v, vi){
+        var vEl = document.getElementById("detail-vehDocCount-"+idx+"-"+vi);
+        if(!vEl) return;
+        var n = (v.vehicleId && json.vehicleDocCounts) ? (json.vehicleDocCounts[v.vehicleId]||0) : 0;
+        vEl.textContent = n+"개";
+      });
+    }).catch(function(err){ console.error("[상세 문서 요약 조회 실패]", err); });
+}
 
 </script>
 </body>
