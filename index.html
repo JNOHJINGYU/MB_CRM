@@ -10,7 +10,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw01YiiGDBCZN-1wcepndF8mlb0giM8RtbAB53KQuuskLq7ifVIek0SVZNXNGRZKTD1tg/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyYKZXZBmHOza1jGRIoxEoNhCEuSoc2hdhFN2kZCO1LECSp3solWYE9ja_BOl_-gEcETw/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     // PC·모바일이 같은 버전을 보고 있는지 확인하기 위한 버전 표식.
@@ -19,7 +19,7 @@
     //   Google Drive에 업로드·조회·교체·삭제할 수 있는 UI와 통신 함수가
     //   추가되었다. 기존 고객 등록/수정/삭제, 구매차량, 캘린더 연동,
     //   대시보드/분석 로직은 전혀 수정하지 않았다.
-    var APP_VERSION = "2026-07-25-v99-drive-document-management";
+    var APP_VERSION = "2026-07-26-v100-vehicle-document-link-fix";
     console.log("[CRM VERSION]", APP_VERSION);
   </script>
 
@@ -2469,6 +2469,11 @@ function vehRowHtml(listId,v){
   var hasMemo=!!(v&&String(v.memo||"").trim());
   var vid=v?v.vehicleId||"":"";
   var vQty=qty;
+  var vIsNew = !v; // v가 null이면(신규 추가된 카드) 신규 차량, 서버 데이터로 채워졌으면 기존 차량
+  // ★ 차량서류 vehicleId 연결 끊김 방지 및 고아문서 복구 (code103) — 신규/기존 여부를
+  //   data-is-new로도 함께 저장한다. 기존 차량은 절대 vehicleId가 비어서는 안 되므로,
+  //   저장 시 서버가 "isNew:false인데 vehicleId가 비어있다"를 감지해 저장을 중단할 수
+  //   있게 하기 위함이다(readVehiclesFromDom()에서 함께 읽어 payload에 포함시킨다).
   // ★ Google Drive 고객·구매차량 문서관리 추가 — 카드에 vehicleId를 data 속성으로
   //   심어둔다. 기존에는 이 값이 어디에도 저장되지 않아 readVehiclesFromDom()이
   //   항상 vehicleId:"" 를 반환했고(카드에 저장할 값이 없었음), 그 결과 고객을
@@ -2477,7 +2482,7 @@ function vehRowHtml(listId,v){
   //   끊어지지 않으므로, 여기서 data-vehicle-id 속성으로 값을 보존한다.
   //   (차량 저장/수정/삭제/메모/수량/계약·출고 통계 로직 자체는 전혀 건드리지 않음)
   // ★ 구매차량 수정 카드 열기/닫기 추가 — 헤더에 차량명/메모뱃지/열기버튼 표시, 본문은 .veh-card-body로 분리
-  return'<div class="veh-card" id="'+rid+'" data-vehicle-id="'+esc(vid)+'" data-veh-qty="'+vQty+'">'+
+  return'<div class="veh-card" id="'+rid+'" data-vehicle-id="'+esc(vid)+'" data-veh-qty="'+vQty+'" data-is-new="'+(vIsNew?"true":"false")+'">'+
     '<div class="veh-card-header">'+
       '<div class="veh-card-header-info">'+
         '<span class="veh-card-num">차량 #'+(idx+1)+'</span>'+
@@ -2614,6 +2619,7 @@ function readVehiclesFromDom(listId){
     if(!deliveryMonth&&deliveryDate.length>=7)deliveryMonth=deliveryDate.substring(0,7);
     result.push({
       vehicleId:      card.dataset.vehicleId||"",
+      isNew:          card.dataset.isNew==="true", // ★ 차량서류 vehicleId 연결 끊김 방지 및 고아문서 복구 (code103)
       modelName:      val(".veh-modelName"),
       detailModel:    val(".veh-detailModel"),
       purchaseMethod: val(".veh-purchaseMethod"),
@@ -5509,6 +5515,12 @@ function docModalOpenDriveFolder(){
 }
 
 // ── 고객 수정 화면: 문서 개수 요약 갱신 (모달을 열 때, 업로드/삭제 후) ──
+// ★ 차량서류 vehicleId 연결 끊김 방지 및 고아문서 복구 (code103) — 요청 순번을
+//   부여해, 늦게 도착한 예전 응답이 최신 개수를 덮어쓰지 못하게 한다. 또한
+//   응답을 적용하기 전에 "지금도 같은 고객을 보고 있는지", "카드가 아직 DOM에
+//   있는지", "카드의 현재 vehicleId가 응답 당시와 같은지"를 다시 확인한다.
+var _docSummaryRequestSeq = 0;
+
 function refreshEditDocSummary(){
   var noteEl  = document.getElementById("e-customerDocNote");
   var btnEl   = document.getElementById("e-customerDocBtn");
@@ -5521,13 +5533,35 @@ function refreshEditDocSummary(){
   }
   if(noteEl) noteEl.style.display = "none";
   if(btnEl)  btnEl.disabled = false;
-  docApiFetch({ action:"documentSummary", customerId:_editOriginalId })
+
+  var requestedCustomerId = _editOriginalId;
+  var mySeq = ++_docSummaryRequestSeq;
+
+  docApiFetch({ action:"documentSummary", customerId:requestedCustomerId })
     .then(function(json){
-      if(!json.success) return;
-      if(countEl) countEl.textContent = "등록된 서류 "+(json.customerDocCount||0)+"개";
+      // 이 응답이 가장 최근 요청의 응답이 아니면(더 늦게 도착한 예전 요청이면) 무시한다.
+      if(mySeq !== _docSummaryRequestSeq) return;
+      // 그 사이 모달이 닫혔거나 다른 고객으로 바뀌었으면 적용하지 않는다.
+      if(_editOriginalId !== requestedCustomerId) return;
+      var editOverlay = document.getElementById("editOverlay");
+      if(!editOverlay || !editOverlay.classList.contains("open")) return;
+
+      if(!json.success){
+        if(countEl) countEl.textContent = "문서 개수 확인 실패";
+        return;
+      }
+      if(countEl){
+        var warn = (json.orphanVehicleDocCount>0)
+          ? ' <span style="color:var(--danger);font-weight:700;">· ⚠ 연결이 끊긴 차량서류 '+json.orphanVehicleDocCount+'개 (관리자 문의)</span>'
+          : "";
+        countEl.innerHTML = "등록된 서류 "+(json.customerDocCount||0)+"개"+warn;
+      }
       var listEl = document.getElementById("edit-veh-list");
       if(listEl){
         Array.prototype.forEach.call(listEl.querySelectorAll(".veh-card"), function(card){
+          // 응답이 도착하기 전에 카드가 제거됐거나(차량 삭제) vehicleId가 바뀌었으면
+          // (재렌더링) 이 응답을 적용하지 않는다 — 다른 차량에 개수가 잘못 붙는 것을 방지.
+          if(!card.isConnected) return;
           var vid = card.dataset.vehicleId;
           var countSpan = card.querySelector('[id$="-docCount"]');
           if(!countSpan) return;
@@ -5536,29 +5570,56 @@ function refreshEditDocSummary(){
           countSpan.textContent = "문서 "+n+"개 등록됨";
         });
       }
-    }).catch(function(err){ console.error("[문서 요약 조회 실패]", err); });
+    }).catch(function(err){
+      console.error("[문서 요약 조회 실패]", err);
+      if(mySeq === _docSummaryRequestSeq && countEl && countEl.textContent==="-"){
+        countEl.textContent = "문서 개수 확인 실패";
+      }
+      // 실패했다고 기존에 정상 표시되던 개수를 0으로 덮어쓰지 않는다(기존 값 유지).
+    });
 }
 
 // ── 고객 상세정보(읽기 전용) 화면: 상세정보 보기를 펼칠 때만 개수 조회 ──
+var _detailDocSummaryRequestSeq = 0;
+
 function loadDetailDocSummary(detailBodyEl){
   if(!detailBodyEl || !detailBodyEl.id) return;
   var idx = detailBodyEl.id.replace("det-","");
   var c = (typeof renderedCustomers!=="undefined" && renderedCustomers) ? renderedCustomers[idx] : null;
   if(!c || !c.customerId) return;
-  docApiFetch({ action:"documentSummary", customerId:c.customerId })
+
+  var requestedCustomerId = c.customerId;
+  var mySeq = ++_detailDocSummaryRequestSeq;
+
+  docApiFetch({ action:"documentSummary", customerId:requestedCustomerId })
     .then(function(json){
-      if(!json.success) return;
+      if(mySeq !== _detailDocSummaryRequestSeq) return; // 더 늦게 도착한 예전 응답 무시
+      if(!detailBodyEl.isConnected || !detailBodyEl.classList.contains("open")) return; // 이미 닫혔으면 반영 안 함
+      var cNow = renderedCustomers ? renderedCustomers[idx] : null;
+      if(!cNow || cNow.customerId !== requestedCustomerId) return; // 그 사이 목록이 갱신됐으면 반영 안 함
+
       var cEl = document.getElementById("detail-docCount-"+idx);
+      if(!json.success){
+        if(cEl) cEl.textContent = "문서 개수 확인 실패";
+        return;
+      }
       if(cEl) cEl.textContent = (json.customerDocCount||0)+"개";
-      var vehicles = migrateVehicles(c) || [];
+      var vehicles = migrateVehicles(cNow) || [];
       vehicles.forEach(function(v, vi){
         var vEl = document.getElementById("detail-vehDocCount-"+idx+"-"+vi);
         if(!vEl) return;
         var n = (v.vehicleId && json.vehicleDocCounts) ? (json.vehicleDocCounts[v.vehicleId]||0) : 0;
         vEl.textContent = n+"개";
       });
-    }).catch(function(err){ console.error("[상세 문서 요약 조회 실패]", err); });
+    }).catch(function(err){
+      console.error("[상세 문서 요약 조회 실패]", err);
+      if(mySeq === _detailDocSummaryRequestSeq){
+        var cEl2 = document.getElementById("detail-docCount-"+idx);
+        if(cEl2 && cEl2.textContent==="문서 개수 확인 중…") cEl2.textContent = "문서 개수 확인 실패";
+      }
+    });
 }
+
 
 </script>
 </body>
