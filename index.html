@@ -10,7 +10,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyYKZXZBmHOza1jGRIoxEoNhCEuSoc2hdhFN2kZCO1LECSp3solWYE9ja_BOl_-gEcETw/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxul_Rz_o0AEncWt_RERNUPcC4bysAlQS19aQk6xuTnY0qBhOdLDnIxfe5BktqPhyXGWg/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     // PC·모바일이 같은 버전을 보고 있는지 확인하기 위한 버전 표식.
@@ -19,7 +19,7 @@
     //   Google Drive에 업로드·조회·교체·삭제할 수 있는 UI와 통신 함수가
     //   추가되었다. 기존 고객 등록/수정/삭제, 구매차량, 캘린더 연동,
     //   대시보드/분석 로직은 전혀 수정하지 않았다.
-    var APP_VERSION = "2026-07-26-v100-vehicle-document-link-fix";
+    var APP_VERSION = "2026-07-26-v101-upload-error-detail-fix";
     console.log("[CRM VERSION]", APP_VERSION);
   </script>
 
@@ -876,6 +876,7 @@
     .doc-progress-box{
       background:#fff;border:1.5px solid var(--border2);border-radius:10px;
       padding:10px 12px;font-size:12px;color:var(--text-dim);margin-top:10px;
+      white-space:pre-wrap;word-break:break-word;
     }
     .doc-progress-box.err{border-color:#e8a8a0;background:#fdf0ef;color:var(--danger);}
     .doc-progress-box.ok{border-color:#b7e3c9;background:#eaf8f0;color:var(--success);}
@@ -5401,6 +5402,8 @@ function uploadFilesSequentially(files, docType, docName, memo, index, counts, u
   if(index>=files.length){
     if(uploadBtn) uploadBtn.style.pointerEvents = "";
     var msg = "완료: 성공 "+counts.success+"건"+(counts.fail?" · 실패 "+counts.fail+"건":"");
+    // ★ 실패 이유가 있으면 화면에 그대로 보여준다 — 콘솔만 봐야 했던 문제 수정
+    if(counts.fail && counts.lastError){ msg += "\n마지막 오류: "+counts.lastError; }
     showDocProgress(msg, counts.fail?"err":"ok");
     refreshDocModalList();
     refreshEditDocSummary();
@@ -5427,10 +5430,15 @@ function uploadFilesSequentially(files, docType, docName, memo, index, counts, u
     });
   }).then(function(json){
     if(json && json.success){ counts.success++; }
-    else { counts.fail++; console.error("[문서 업로드 실패]", file.name, json&&json.message); }
+    else {
+      counts.fail++;
+      counts.lastError = (json && json.message) ? json.message : "서버가 오류 메시지를 반환하지 않았습니다.";
+      console.error("[문서 업로드 실패]", file.name, json&&json.message);
+    }
     uploadFilesSequentially(files, docType, docName, memo, index+1, counts, uploadBtn);
   }).catch(function(err){
     counts.fail++;
+    counts.lastError = "네트워크/응답 오류: "+(err&&err.message?err.message:String(err));
     console.error("[문서 업로드 오류]", file.name, err);
     uploadFilesSequentially(files, docType, docName, memo, index+1, counts, uploadBtn);
   });
