@@ -10,7 +10,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz03_6rnnN3Xi4qN7ZPNnT33JQd1DsRIX0WpsISOgyIzbT-ErSIYs-1QjgEHwcjS1NdNA/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxK24WNUzxiSHxJ553mfrIdvkHj7KakWPwZHYJFFnggF44yxBkQoyE0LhnaBCK8U2XecQ/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     // PC·모바일이 같은 버전을 보고 있는지 확인하기 위한 버전 표식.
@@ -19,7 +19,7 @@
     //   Google Drive에 업로드·조회·교체·삭제할 수 있는 UI와 통신 함수가
     //   추가되었다. 기존 고객 등록/수정/삭제, 구매차량, 캘린더 연동,
     //   대시보드/분석 로직은 전혀 수정하지 않았다.
-    var APP_VERSION = "2026-07-30-v103-vehicle-contract-delivery-calendar-sync";
+    var APP_VERSION = "2026-07-30-v104-customer-recent-activity-sort";
     console.log("[CRM VERSION]", APP_VERSION);
   </script>
 
@@ -2228,6 +2228,84 @@ function parseD(s){
 
 function dFrom(ds){var d=parseD(ds);if(!d)return null;return Math.round((d-todayD())/86400000);}
 function getNow(){return new Date().toLocaleString("ko-KR",{timeZone:"Asia/Seoul"});}
+
+// ============================================================
+// ★ 신규등록·추가상담 최근 활동순 고객목록 정렬
+//   parseCustomerDateTime(): 기존 _updatedAt/_savedAt에 남아있는 다양한
+//   날짜·시간 문자열 형식(한글 지역화 오전/오후 포함)을 epoch ms로 변환한다.
+//   이 함수는 lastActivityAt이 없는 "기존 데이터"의 호환용으로만 쓰이며,
+//   신규 데이터는 반드시 서버가 내려주는 lastActivityAt 숫자를 사용한다.
+//   파싱에 실패하면 0을 반환한다(호출부에서 다음 우선순위로 넘어감).
+// ============================================================
+function parseCustomerDateTime(v){
+  if(v===null||v===undefined)return 0;
+  if(v instanceof Date){
+    var t=v.getTime();
+    return isNaN(t)?0:t;
+  }
+  if(typeof v==="number"){
+    return isFinite(v)?v:0;
+  }
+  var s=String(v).trim();
+  if(!s)return 0;
+
+  // 순수 숫자 문자열(밀리초 timestamp)
+  if(/^\d{10,}$/.test(s)){
+    var n=Number(s);
+    return isFinite(n)?n:0;
+  }
+
+  // 한글 지역화 문자열: "2026. 7. 30. 오후 3:53:12" / "2026. 7. 30. 오전 9:05:00"
+  var m1=s.match(/^(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.?\s*(오전|오후)?\s*(\d{1,2})?:?(\d{1,2})?:?(\d{1,2})?/);
+  if(m1){
+    var y=+m1[1],mo=+m1[2],d=+m1[3];
+    var ampm=m1[4]||"";
+    var hh=m1[5]!==undefined?+m1[5]:0;
+    var mi=m1[6]!==undefined?+m1[6]:0;
+    var ss=m1[7]!==undefined?+m1[7]:0;
+    if(ampm==="오후"&&hh<12)hh+=12;
+    if(ampm==="오전"&&hh===12)hh=0;
+    var dt1=new Date(y,mo-1,d,hh,mi,ss);
+    if(!isNaN(dt1.getTime()))return dt1.getTime();
+  }
+
+  // ISO 8601 / "YYYY-MM-DD HH:mm[:ss]" / "YYYY-MM-DD"
+  var dt2=new Date(s.replace(" ","T"));
+  if(!isNaN(dt2.getTime()))return dt2.getTime();
+
+  var dt3=new Date(s);
+  if(!isNaN(dt3.getTime()))return dt3.getTime();
+
+  return 0;
+}
+
+// ★ 신규등록·추가상담 최근 활동순 고객목록 정렬 — 고객 하나의 "정렬용"
+//   시간을 우선순위대로 계산한다.
+//   1) 유효한 lastActivityAt(숫자, >0)
+//   2) 파싱 가능한 _updatedAt
+//   3) 파싱 가능한 _savedAt
+//   4) 시트 행번호(_rowNumber) — 그마저 없으면 0
+function getCustomerActivityTimestamp(c){
+  if(!c) return 0;
+
+  var activity=Number(c.lastActivityAt);
+  if(Number.isFinite(activity)&&activity>0){
+    return activity;
+  }
+
+  var updated=parseCustomerDateTime(c._updatedAt);
+  if(updated>0)return updated;
+
+  var saved=parseCustomerDateTime(c._savedAt);
+  if(saved>0)return saved;
+
+  var rowNumber=Number(c._rowNumber);
+  if(Number.isFinite(rowNumber)&&rowNumber>0){
+    return rowNumber;
+  }
+
+  return 0;
+}
 function getTs(){
   var d=new Date(),k=new Date(d.getTime()+9*3600000);
   var y=k.getUTCFullYear(),mo=String(k.getUTCMonth()+1).padStart(2,"0");
@@ -2439,6 +2517,10 @@ function normalizeServerCustomers(customers){
     if(c.vehicles.length>0){
       console.log("[차량 데이터 확인]", c.customerName, c.companyName||"", c.vehicles);
     }
+    // ★ 신규등록·추가상담 최근 활동순 고객목록 정렬 — 서버가 숫자/숫자
+    //   문자열 어느 쪽으로 보내든 항상 숫자로 통일한다. lastActivityAt은
+    //   정렬 전용 값이며 고객 화면에는 절대 그대로 노출하지 않는다.
+    c.lastActivityAt = Number(c.lastActivityAt) || 0;
     return c;
   });
 }
@@ -2914,10 +2996,23 @@ function renderList(){
     return true;
   });
 
+  // ★ 신규등록·추가상담 최근 활동순 고객목록 정렬 — 기존에는 _updatedAt/
+  //   _savedAt 한글 지역화 문자열을 localeCompare()로 비교했는데, 이는
+  //   실제 날짜순이 아니라 문자열순 비교라서 월/일 자릿수·오전오후·기기별
+  //   표시형식 차이로 신규/추가상담 고객이 맨 위로 올라오지 못하는 문제가
+  //   있었다. getCustomerActivityTimestamp()가 반환하는 숫자 timestamp
+  //   기준으로 비교하고, 값이 같거나(혹은 모두 0인 구형 데이터) stable sort가
+  //   보장되지 않는 환경을 고려해 행번호를 보조 정렬 기준으로 사용한다.
+  //   원본 고객 객체는 수정하지 않고 filtered 배열만 정렬한다.
   filtered.sort(function(a,b){
-    var ta=a._updatedAt||a._savedAt||"";
-    var tb=b._updatedAt||b._savedAt||"";
-    return tb.localeCompare(ta);
+    var ta=getCustomerActivityTimestamp(a);
+    var tb=getCustomerActivityTimestamp(b);
+
+    if(tb!==ta)return tb-ta;
+
+    var rowA=Number(a._rowNumber)||0;
+    var rowB=Number(b._rowNumber)||0;
+    return rowB-rowA;
   });
 
   console.log('전체고객', list.length);
@@ -3332,6 +3427,9 @@ function getFormData(){
   return {
     action:              "new",
     _savedAt:            getNow(),
+    // ★ 신규등록·추가상담 최근 활동순 고객목록 정렬 — 화면 즉시 반영용 참고값.
+    //   최종 기준은 항상 Code.gs handleNew()가 서버 시간으로 다시 확정한다.
+    lastActivityAt:      Date.now(),
     customerName:        document.getElementById("customerName").value.trim(),
     companyName:         document.getElementById("companyName").value.trim(),
     phone:               document.getElementById("phone").value.trim(),
@@ -3506,6 +3604,9 @@ function submitUpdate(){
   var entry=getTs()+"\n"+addC;
   var payload={
     action:"update",_updatedAt:now,
+    // ★ 신규등록·추가상담 최근 활동순 고객목록 정렬 — 화면 즉시 반영용 참고값.
+    //   최종 기준은 항상 Code.gs handleUpdate()가 서버 시간으로 다시 확정한다.
+    lastActivityAt:Date.now(),
     customerName:document.getElementById("u-name").value.trim(),
     phone:phone,consultationEntry:entry,
     memo:document.getElementById("u-memo").value.trim(),
@@ -3531,12 +3632,21 @@ function submitUpdate(){
         if(payload.nextContact!==undefined) list[i].nextContact=payload.nextContact;
         if(payload.currentMileageDate)list[i].currentMileageDate=payload.currentMileageDate;
         if(payload.currentMileage)   list[i].currentMileage=payload.currentMileage;
-        list[i]._updatedAt=now;found=true;break;
+        list[i]._updatedAt=now;
+        // ★ 신규등록·추가상담 최근 활동순 고객목록 정렬 — 추가상담 저장이
+        //   성공했을 때만(이 블록에 도달했을 때만) lastActivityAt을 갱신한다.
+        list[i].lastActivityAt=payload.lastActivityAt;
+        found=true;break;
       }
     }
     if(found)save(list);
     updateDash();
     renderAnalyticsIfVisible();
+    // ★ 신규등록·추가상담 최근 활동순 고객목록 정렬 — 고객목록 화면이 현재
+    //   열려있으면 즉시 다시 그려 방금 상담 저장한 고객이 맨 위로 보이게
+    //   한다. 고객목록으로 자동 이동하지는 않는다(요구사항 12).
+    if(found && document.getElementById("listView") &&
+       document.getElementById("listView").classList.contains("active")) renderList();
     showMsg("msg-update","ok","✅ 추가상담이 저장되었습니다.");
     ["u-name","u-phone","u-status","u-next","addConsultation","u-memo","u-mileageDate","u-mileage"]
       .forEach(function(id){document.getElementById(id).value="";});
@@ -3855,6 +3965,9 @@ function submitEdit(){
     customerName:        eName,
     companyName:         document.getElementById("e-companyName").value.trim(),
     newPhone:            ePhone,
+    // ★ 신규등록·추가상담 최근 활동순 고객목록 정렬 — 화면 즉시 반영용 참고값.
+    //   최종 기준은 항상 Code.gs handleEdit()가 서버 시간으로 다시 확정한다.
+    lastActivityAt:      Date.now(),
     region:              document.getElementById("e-region").value.trim(),
     // 호환: 첫 번째 차량 대표 필드
     modelName:           firstEV.modelName||document.getElementById("e-modelName").value||"",
