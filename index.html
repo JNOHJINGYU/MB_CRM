@@ -19,7 +19,7 @@
     //   Google Drive에 업로드·조회·교체·삭제할 수 있는 UI와 통신 함수가
     //   추가되었다. 기존 고객 등록/수정/삭제, 구매차량, 캘린더 연동,
     //   대시보드/분석 로직은 전혀 수정하지 않았다.
-    var APP_VERSION = "2026-07-30-v104-customer-recent-activity-sort";
+    var APP_VERSION = "2026-07-31-v105-next-contact-calendar-repair";
     console.log("[CRM VERSION]", APP_VERSION);
   </script>
 
@@ -1362,7 +1362,7 @@
           </div>
           <div class="field">
             <label>다음연락일</label>
-            <input type="date" id="u-next"/>
+            <input type="date" id="u-next" oninput="window.__uNextTouched=true"/>
           </div>
           <div class="field full">
             <label>추가상담내용 <span class="req">*</span></label>
@@ -3612,6 +3612,10 @@ function submitUpdate(){
     memo:document.getElementById("u-memo").value.trim(),
     status:document.getElementById("u-status").value,
     nextContact:document.getElementById("u-next").value,
+    // ★ 다음연락일 Google Calendar 연동 복구 및 진단 강화 — 사용자가 다음연락일
+    //   입력칸을 실제로 건드렸을 때만 true. 이 값이 false인데 nextContact가
+    //   빈 값이면 서버는 기존 다음연락일을 그대로 유지한다(실수로 지우는 사고 방지).
+    nextContactTouched: !!window.__uNextTouched,
     // 주행거리 업데이트
     currentMileageDate:document.getElementById("u-mileageDate").value,
     currentMileage:    document.getElementById("u-mileage").value
@@ -3629,7 +3633,11 @@ function submitUpdate(){
         list[i].consultation=prev?prev+"\n\n"+entry:entry;
         if(payload.memo)             list[i].memo=payload.memo;
         if(payload.status)           list[i].status=payload.status;
-        if(payload.nextContact!==undefined) list[i].nextContact=payload.nextContact;
+        // ★ 다음연락일 Google Calendar 연동 복구 및 진단 강화 — 서버는
+        //   nextContactTouched가 아니면 빈 값 저장을 건너뛰므로, 로컬
+        //   캐시도 값이 있거나 실제로 지운 경우에만 반영해 서버와 어긋나지 않게 한다.
+        if(payload.nextContact) list[i].nextContact=payload.nextContact;
+        else if(payload.nextContactTouched) list[i].nextContact="";
         if(payload.currentMileageDate)list[i].currentMileageDate=payload.currentMileageDate;
         if(payload.currentMileage)   list[i].currentMileage=payload.currentMileage;
         list[i]._updatedAt=now;
@@ -3650,6 +3658,9 @@ function submitUpdate(){
     showMsg("msg-update","ok","✅ 추가상담이 저장되었습니다.");
     ["u-name","u-phone","u-status","u-next","addConsultation","u-memo","u-mileageDate","u-mileage"]
       .forEach(function(id){document.getElementById(id).value="";});
+    // ★ 다음연락일 Google Calendar 연동 복구 및 진단 강화 — 다음 상담 저장을
+    //   위해 "건드림" 플래그를 초기화한다(다음 고객까지 이어지지 않도록).
+    window.__uNextTouched=false;
     document.getElementById("preview-box").classList.remove("show");
     document.getElementById("nofound").classList.remove("show");
   })
