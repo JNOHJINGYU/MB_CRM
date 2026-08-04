@@ -10,7 +10,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0sA1OqacQ1mrZSbUHNKEH0r9BpUUkdK3b1sSN_6ZUmSBVwevW6YTEV9MihRSvyrVPGA/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYPNHh5smLllO17T5azL3mK1eH-EkMhIXHr0e55uZKrLrvHsqJn0u06bEF-VikBjypUg/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     // PC·모바일이 같은 버전을 보고 있는지 확인하기 위한 버전 표식.
@@ -19,7 +19,7 @@
     //   Google Drive에 업로드·조회·교체·삭제할 수 있는 UI와 통신 함수가
     //   추가되었다. 기존 고객 등록/수정/삭제, 구매차량, 캘린더 연동,
     //   대시보드/분석 로직은 전혀 수정하지 않았다.
-    var APP_VERSION = "2026-07-31-v105-next-contact-calendar-repair";
+    var APP_VERSION = "2026-08-04-v106-legacy-vehicle-document-link";
     console.log("[CRM VERSION]", APP_VERSION);
   </script>
 
@@ -734,6 +734,15 @@
       padding:2px 8px;white-space:nowrap;flex-shrink:0;
     }
     .veh-memo-indicator.show{display:inline-block;}
+    /* ★ 레거시 고객 차량의 구매차량 전환 및 문서관리 연결 복구 — 레거시 임시
+       차량 카드를 시각적으로 구분(테두리/배경) + 안내 뱃지 */
+    .veh-card.legacy{border-color:#e8b4a0;background:#fff8f5;}
+    .veh-card.legacy.open{border-color:#e0947a;background:#fff5f1;}
+    .veh-legacy-badge{
+      display:inline-block;font-size:10px;font-weight:700;color:var(--danger,#c0392b);
+      background:#fdf0ef;border:1px solid #f0b8b2;border-radius:20px;
+      padding:2px 8px;white-space:nowrap;flex-shrink:0;
+    }
     .veh-card-actions{display:flex;gap:6px;flex-shrink:0;}
     .veh-toggle-btn{
       padding:7px 14px;border-radius:20px;min-height:34px;
@@ -2378,6 +2387,11 @@ function normalizeVehicles(vehicles){
 function migrateLegacyVehicle(c){
   var v={
     vehicleId:"",
+    // ★ 레거시 고객 차량의 구매차량 전환 및 문서관리 연결 복구 — 이 임시
+    //   표시차량이 실제 구매차량 시트에는 아직 저장되지 않았다는 사실을
+    //   화면(카드 뱃지)과 서버(수정 저장 시 전환 판단)가 함께 식별할 수
+    //   있도록 명시적으로 표시해둔다.
+    isLegacyVehicle:true,
     modelName:c.modelName||"",detailModel:c.detailModel||"",
     purchaseMethod:c.purchaseMethod||"",
     contractDate:c.contractDate||"",deliveryDate:c.deliveryDate||"",
@@ -2553,6 +2567,10 @@ function vehRowHtml(listId,v){
   var vid=v?v.vehicleId||"":"";
   var vQty=qty;
   var vIsNew = !v; // v가 null이면(신규 추가된 카드) 신규 차량, 서버 데이터로 채워졌으면 기존 차량
+  // ★ 레거시 고객 차량의 구매차량 전환 및 문서관리 연결 복구 — 신규/기존/레거시
+  //   3가지 차량 카드 상태 중 "레거시 임시 차량"(migrateLegacyVehicle()이 만든
+  //   화면 호환용 카드, 구매차량 시트에는 아직 행이 없음)을 명시적으로 구분한다.
+  var vIsLegacy = !!(v&&v.isLegacyVehicle);
   // ★ 차량서류 vehicleId 연결 끊김 방지 및 고아문서 복구 (code103) — 신규/기존 여부를
   //   data-is-new로도 함께 저장한다. 기존 차량은 절대 vehicleId가 비어서는 안 되므로,
   //   저장 시 서버가 "isNew:false인데 vehicleId가 비어있다"를 감지해 저장을 중단할 수
@@ -2565,13 +2583,14 @@ function vehRowHtml(listId,v){
   //   끊어지지 않으므로, 여기서 data-vehicle-id 속성으로 값을 보존한다.
   //   (차량 저장/수정/삭제/메모/수량/계약·출고 통계 로직 자체는 전혀 건드리지 않음)
   // ★ 구매차량 수정 카드 열기/닫기 추가 — 헤더에 차량명/메모뱃지/열기버튼 표시, 본문은 .veh-card-body로 분리
-  return'<div class="veh-card" id="'+rid+'" data-vehicle-id="'+esc(vid)+'" data-veh-qty="'+vQty+'" data-is-new="'+(vIsNew?"true":"false")+'">'+
+  return'<div class="veh-card'+(vIsLegacy?' legacy':'')+'" id="'+rid+'" data-vehicle-id="'+esc(vid)+'" data-veh-qty="'+vQty+'" data-is-new="'+(vIsNew?"true":"false")+'" data-is-legacy="'+(vIsLegacy?"true":"false")+'">'+
     '<div class="veh-card-header">'+
       '<div class="veh-card-header-info">'+
         '<span class="veh-card-num">차량 #'+(idx+1)+'</span>'+
         '<div class="veh-card-title-wrap">'+
           '<span class="veh-card-title">'+esc(titleText)+'</span>'+
           '<span class="veh-memo-indicator'+(hasMemo?' show':'')+'">📝 메모</span>'+
+          (vIsLegacy?'<span class="veh-legacy-badge">⚠ 차량정보 이전 필요</span>':'')+
         '</div>'+
       '</div>'+
       '<div class="veh-card-actions">'+
@@ -2598,7 +2617,11 @@ function vehRowHtml(listId,v){
     // ★ Google Drive 고객·구매차량 문서관리 추가 — 📂 차량서류 섹션
     '<div class="doc-summary-row" style="margin-top:10px;border-top:1px dashed var(--border2);padding-top:10px;">'+
       '<div><div class="doc-summary-label">📂 차량서류</div>'+
-        '<div class="doc-summary-count" id="'+rid+'-docCount">문서 정보를 불러오려면 관리 버튼을 눌러주세요</div></div>'+
+        '<div class="doc-summary-count" id="'+rid+'-docCount">'+
+          (vIsLegacy
+            ? '이 차량은 기존 고객정보에만 저장된 차량입니다.<br>차량서류를 사용하려면 구매차량 데이터로 전환해야 합니다.'
+            : '문서 정보를 불러오려면 관리 버튼을 눌러주세요')+
+        '</div></div>'+
       '<div class="doc-summary-actions">'+
         '<button type="button" class="doc-btn gold" onclick="openVehicleDocModalFromCard(this)">📂 문서관리</button>'+
       '</div>'+
@@ -2703,6 +2726,7 @@ function readVehiclesFromDom(listId){
     result.push({
       vehicleId:      card.dataset.vehicleId||"",
       isNew:          card.dataset.isNew==="true", // ★ 차량서류 vehicleId 연결 끊김 방지 및 고아문서 복구 (code103)
+      isLegacyVehicle:card.dataset.isLegacy==="true", // ★ 레거시 고객 차량의 구매차량 전환 및 문서관리 연결 복구 (code106)
       modelName:      val(".veh-modelName"),
       detailModel:    val(".veh-detailModel"),
       purchaseMethod: val(".veh-purchaseMethod"),
@@ -4147,6 +4171,17 @@ function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn, editPayload){
       //   화면에 임시로 반영하지 않는다. 그 "임시 호환"이 PC/모바일 숫자가
       //   갈라지던 원인 중 하나였다. 필드가 없으면 아래 normalizeServerCustomers()에서
       //   예외가 발생해 명확한 배포 오류로 표시된다.
+
+      // ★ 레거시 고객 차량의 구매차량 전환 및 문서관리 연결 복구 (code106) —
+      //   저장 성공 직후, 지금 열려 있는 수정 모달의 차량 카드에도 서버가
+      //   실제로 발급한 최신 vehicleId를 즉시 반영한다(모달이 곧 자동으로
+      //   닫히더라도, 그 사이 사용자가 문서관리 버튼을 누르는 경우까지 대비).
+      try{
+        if(_editOriginalId && String(found.customerId||"")===String(_editOriginalId)){
+          renderVehiclesToDom("edit-veh-list", migrateVehicles(found));
+          refreshEditDocSummary();
+        }
+      }catch(refreshErr){ console.error("[저장 후 차량카드 즉시 반영 실패]", refreshErr); }
     }
 
     // ── 구글시트 행 기준 필터 ────────────────────────────────
@@ -5330,7 +5365,17 @@ function openVehicleDocModalFromCard(btn){
     return;
   }
   if(!vehicleId){
-    alert("차량을 먼저 저장한 후 차량서류를 등록해주세요.");
+    // ★ 레거시 고객 차량의 구매차량 전환 및 문서관리 연결 복구 (code106) —
+    //   vehicleId가 없는 이유를 카드 상태(레거시/신규/비정상)별로 구분해 안내한다.
+    var isLegacyCard = card.dataset.isLegacy==="true";
+    var isNewCard = card.dataset.isNew==="true";
+    if(isLegacyCard){
+      alert("이 차량은 구형 고객정보에만 저장되어 있습니다.\n먼저 수정 저장하여 구매차량 정보로 전환한 후 문서를 등록해주세요.");
+    } else if(isNewCard){
+      alert("새로 추가한 차량입니다.\n고객정보를 먼저 저장한 후 차량서류를 등록해주세요.");
+    } else {
+      alert("저장된 차량의 차량ID가 누락되었습니다.\n데이터를 다시 불러온 후에도 같은 문제가 있으면 관리자에게 문의해주세요.");
+    }
     return;
   }
   function val(sel){ var el=card.querySelector(sel); return el?String(el.value||"").trim():""; }
@@ -5697,7 +5742,14 @@ function refreshEditDocSummary(){
           var vid = card.dataset.vehicleId;
           var countSpan = card.querySelector('[id$="-docCount"]');
           if(!countSpan) return;
-          if(!vid){ countSpan.textContent = "차량을 먼저 저장한 후 이용 가능합니다."; return; }
+          if(!vid){
+            // ★ 레거시 고객 차량의 구매차량 전환 및 문서관리 연결 복구 (code106) —
+            //   레거시 임시 차량과 새로 추가한(아직 저장 전) 차량을 구분해 안내한다.
+            countSpan.innerHTML = (card.dataset.isLegacy==="true")
+              ? "이 차량은 기존 고객정보에만 저장된 차량입니다.<br>차량서류를 사용하려면 구매차량 데이터로 전환해야 합니다."
+              : "차량을 먼저 저장한 후 이용 가능합니다.";
+            return;
+          }
           var n = (json.vehicleDocCounts && json.vehicleDocCounts[vid]) || 0;
           countSpan.textContent = "문서 "+n+"개 등록됨";
         });
