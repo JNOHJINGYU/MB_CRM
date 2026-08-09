@@ -19,7 +19,7 @@
     //   Google Drive에 업로드·조회·교체·삭제할 수 있는 UI와 통신 함수가
     //   추가되었다. 기존 고객 등록/수정/삭제, 구매차량, 캘린더 연동,
     //   대시보드/분석 로직은 전혀 수정하지 않았다.
-    var APP_VERSION = "2026-08-05-v107-pc-tablet-width-optimization";
+    var APP_VERSION = "2026-08-10-v108-customer-status-filter";
     console.log("[CRM VERSION]", APP_VERSION);
   </script>
 
@@ -464,6 +464,56 @@
     .filter-clear{padding:5px 12px;border-radius:20px;border:1px solid var(--border2);
       background:var(--surface);font-size:12px;font-weight:600;
       color:var(--text-dim);cursor:pointer;font-family:var(--font);}
+
+    /* ★ 고객목록 현재상태별 필터 추가 */
+    .customer-status-filter-wrap{margin:6px 0 2px;}
+    .customer-status-filter{
+      display:flex;flex-wrap:wrap;gap:8px;
+    }
+    .customer-status-btn{
+      flex-shrink:0;
+      display:inline-flex;align-items:center;gap:6px;
+      height:38px;padding:0 16px;
+      border-radius:20px;border:1.5px solid var(--border2);
+      background:#fff;color:var(--text-dim);
+      font-family:var(--font);font-size:12.5px;font-weight:700;
+      cursor:pointer;transition:background .13s,color .13s,border-color .13s;
+      -webkit-tap-highlight-color:transparent;
+      white-space:nowrap;
+    }
+    .customer-status-btn:hover{border-color:var(--gold);color:var(--gold-dk);}
+    .customer-status-btn.active{
+      background:var(--gold);border-color:var(--gold);color:#fff;
+      box-shadow:0 2px 8px rgba(184,150,58,.25);
+    }
+    .customer-status-btn.all.active{
+      background:var(--black);border-color:var(--black);
+      box-shadow:0 2px 8px rgba(0,0,0,.25);
+    }
+    .customer-status-count{
+      font-size:11px;font-weight:800;
+      background:rgba(0,0,0,.06);color:inherit;
+      border-radius:10px;padding:1px 7px;
+      min-width:18px;text-align:center;
+    }
+    .customer-status-btn.active .customer-status-count{background:rgba(255,255,255,.28);}
+
+    @media(min-width:641px) and (max-width:1199px){
+      .customer-status-filter{gap:8px;}
+      .customer-status-btn{height:40px;padding:0 18px;font-size:13px;}
+    }
+
+    @media(max-width:640px){
+      .customer-status-filter{
+        flex-wrap:nowrap;
+        overflow-x:auto;
+        -webkit-overflow-scrolling:touch;
+        scrollbar-width:none;
+        padding-bottom:2px;
+      }
+      .customer-status-filter::-webkit-scrollbar{display:none;}
+      .customer-status-btn{min-height:40px;height:40px;padding:0 14px;font-size:12px;}
+    }
 
     /* 고객 카드 */
     .cust-card{background:var(--surface);border:1px solid var(--border);
@@ -1467,6 +1517,10 @@
     </div>
     <div class="sync-msg" id="sync-msg"></div>
     <div id="crm-last-sync-label" style="font-size:11px;color:var(--text-lt);padding:0 2px 6px;"></div>
+    <!-- ★ 고객목록 현재상태별 필터 추가 -->
+    <div class="customer-status-filter-wrap">
+      <div class="customer-status-filter" id="customerStatusFilter"></div>
+    </div>
     <div class="filter-bar" id="filterBar">
       <div class="filter-label" id="filterLabel">전체 고객</div>
       <button class="filter-clear" onclick="clearFilter()">전체 보기 ✕</button>
@@ -2186,6 +2240,64 @@ var ST_MAP={"신규 문의":"신규문의","상담 진행 중":"상담중","견�
   "계약 진행 중":"계약유력","계약 완료":"계약","출고 완료":"출고",
   "장기 보류":"구매보류","취소 / 이탈":"해약"};
 function mst(s){if(!s)return s;return ST_MAP[s]||s;}
+
+// ============================================================
+// ★ 고객목록 현재상태별 필터 추가
+//   대시보드에서만 쓰던 상태 필터(currentFilter)를 고객목록 화면에서도
+//   버튼으로 바로 사용할 수 있게 한다. 새 필터 엔진을 만들지 않고
+//   기존 currentFilter/renderList() 구조를 그대로 재사용한다.
+// ============================================================
+var CUSTOMER_STATUS_FILTERS=["","신규문의","A급가망","상담중","계약유력",
+  "구매보류","계약","출고","상담종료","해약"];
+var CUSTOMER_STATUS_LABELS={
+  "":"전체","신규문의":"신규문의","A급가망":"A급가망","상담중":"상담중",
+  "계약유력":"계약유력","구매보류":"구매보류","계약":"계약","출고":"출고",
+  "상담종료":"상담종료","해약":"해약"
+};
+
+// 상태별 고객 수 집계 — 검색어/차량관리 필터와 무관하게 load()된 전체
+// 고객 배열 기준으로 계산한다(요청사항 8, 13). mst()로 구형 상태명도
+// 정상 집계한다.
+function getCustomerStatusCounts(list){
+  var counts={
+    "":list.length,"신규문의":0,"A급가망":0,"상담중":0,"계약유력":0,
+    "구매보류":0,"계약":0,"출고":0,"상담종료":0,"해약":0
+  };
+  list.forEach(function(c){
+    var st=mst(c.status)||"";
+    if(Object.prototype.hasOwnProperty.call(counts,st))counts[st]++;
+  });
+  return counts;
+}
+
+// 고객목록 안의 상태 버튼 클릭 — 새 showView() 호출 없이 즉시 필터링.
+// 기존 대시보드용 goFilter()는 그대로 유지한다.
+function setListStatusFilter(status){
+  currentFilter=status||"";
+  currentCareFilter="";
+  currentDeliveryYear="";
+  renderList();
+}
+
+// 상태 필터 버튼 렌더링 (검색어와 무관한 카운트 기준)
+function renderCustomerStatusFilters(list){
+  var wrap=document.getElementById("customerStatusFilter");
+  if(!wrap)return;
+  var counts=getCustomerStatusCounts(list);
+  wrap.innerHTML=CUSTOMER_STATUS_FILTERS.map(function(st){
+    var active=currentFilter===st;
+    return '<button type="button" class="customer-status-btn'+
+      (active?" active":"")+(st===""?" all":"")+
+      '" aria-pressed="'+(active?"true":"false")+
+      '" onclick="setListStatusFilter(\''+st+'\')">'+
+      CUSTOMER_STATUS_LABELS[st]+
+      '<span class="customer-status-count">'+(counts[st]||0)+'</span></button>';
+  }).join("");
+  var activeBtn=wrap.querySelector(".customer-status-btn.active");
+  if(activeBtn){
+    activeBtn.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});
+  }
+}
 function sc(s){
   var v=mst(s);
   if(v==="신규문의")return"s1";if(v==="A급가망")return"s2";
@@ -3002,11 +3114,18 @@ function renderList(){
   q=q.trim().toLowerCase();
   var now=todayD();
 
+  // ★ 고객목록 현재상태별 필터 추가 — 상태 버튼 자체가 선택 상태(active)와
+  // 카운트를 이미 보여주므로, currentFilter만 있을 때는 기존 filterBar를
+  // 숨겨 UI 중복을 피한다(요청사항 11-B). 차량관리 알림 필터(currentCareFilter)는
+  // 기존과 동일하게 filterBar에 그대로 표시한다.
   var fb=document.getElementById("filterBar");
   var fl=document.getElementById("filterLabel");
-  if(currentFilter){fb.style.display="flex";fl.textContent=currentFilter+" 고객";}
-  else if(currentCareFilter){fb.style.display="flex";fl.textContent=CARE_LABELS[currentCareFilter]||currentCareFilter;}
+  if(currentCareFilter){fb.style.display="flex";fl.textContent=CARE_LABELS[currentCareFilter]||currentCareFilter;}
   else{fb.style.display="none";}
+
+  // ★ 고객목록 현재상태별 필터 추가 — 상태 버튼 렌더링(카운트는 검색어와
+  // 무관하게 전체 list 기준)
+  renderCustomerStatusFilters(list);
 
   // ── 출고 연도 필터 바 표시/숨김 ──────────────────────────
   var yfBar=document.getElementById("yearFilterBar");
@@ -3100,8 +3219,20 @@ function renderList(){
   document.getElementById("list-count").textContent=filtered.length+"명";
   var con=document.getElementById("listContainer");
   if(filtered.length===0){
+    // ★ 고객목록 현재상태별 필터 추가 — 가능하면 상태명을 포함해 더
+    // 명확한 빈 결과 문구를 보여준다(요청사항 25).
+    var emptyMsg="아직 등록된 고객이 없습니다";
+    if(currentFilter==="출고"&&currentDeliveryYear){
+      emptyMsg=q?(currentDeliveryYear+"년 출고 고객 중 검색 조건에 맞는 고객이 없습니다."):
+                 (currentDeliveryYear+"년 출고 고객이 없습니다.");
+    } else if(currentFilter){
+      emptyMsg=q?(currentFilter+" 고객 중 검색 조건에 맞는 고객이 없습니다."):
+                 (currentFilter+" 상태의 고객이 없습니다.");
+    } else if(currentCareFilter||q){
+      emptyMsg="조건에 맞는 고객이 없습니다";
+    }
     con.innerHTML='<div class="empty-state"><div class="empty-icon">🔍</div>'+
-      '<p>'+(currentFilter||currentCareFilter||q?"조건에 맞는 고객이 없습니다":"아직 등록된 고객이 없습니다")+'</p></div>';
+      '<p>'+emptyMsg+'</p></div>';
     return;
   }
   con.innerHTML=filtered.map(function(c,i){return buildCard(c,i);}).join("");
