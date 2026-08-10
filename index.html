@@ -19,7 +19,7 @@
     //   Google Drive에 업로드·조회·교체·삭제할 수 있는 UI와 통신 함수가
     //   추가되었다. 기존 고객 등록/수정/삭제, 구매차량, 캘린더 연동,
     //   대시보드/분석 로직은 전혀 수정하지 않았다.
-    var APP_VERSION = "2026-08-10-v109-customer-lead-source-filter";
+    var APP_VERSION = "2026-08-10-v110-filter-count-accuracy-fix";
     console.log("[CRM VERSION]", APP_VERSION);
   </script>
 
@@ -2318,30 +2318,86 @@ var ST_MAP={"신규 문의":"신규문의","상담 진행 중":"상담중","견�
 function mst(s){if(!s)return s;return ST_MAP[s]||s;}
 
 // ============================================================
+// ★ 고객목록 상태/유입경로 카운트 정확도 수정
+//   고객목록 화면(카드 목록·전체 인원수·상태별 숫자·유입경로별 숫자)이
+//   전부 이 함수 하나가 반환하는 동일한 배열을 기준으로 계산되도록
+//   통일한다(요청사항 4). load()가 반환하는 배열은 매 동기화마다 서버가
+//   보낸 행을 그대로 덮어쓰는 구조라 원래 중복이 생기지 않지만(코드 내
+//   "dedupe 없음" 로그 참고), 실제 시트에 동일한 customerId가 중복으로
+//   존재하는 예외적인 경우를 대비해 방어적으로 한 번 더 확인한다.
+//   customerId가 완전히 같은 행만 중복으로 보고 첫 번째만 인정하며,
+//   customerId가 비어있는 legacy 행이나 전화번호만 같은 동명이인은
+//   절대 중복으로 취급하지 않는다(요청사항 5).
+// ============================================================
+function getCustomerListBaseData(){
+  var raw=load();
+  var seen={};
+  var result=[];
+  var dupCount=0;
+  raw.forEach(function(c){
+    var cid=String((c&&c.customerId)||"").trim();
+    if(!cid){ result.push(c); return; } // customerId 없는 legacy 행은 중복판정 대상 아님
+    if(seen[cid]){ dupCount++; console.warn("[고객목록 데이터] customerId 중복 발견 — 첫 번째 행만 인정",cid,c.customerName); return; }
+    seen[cid]=true;
+    result.push(c);
+  });
+  if(dupCount>0){
+    console.warn("[고객목록 데이터] 동일 customerId 중복 "+dupCount+"건을 목록/카운트에서 제외했습니다.");
+  }
+  return result;
+}
+
+// ============================================================
 // ★ 고객목록 현재상태별 필터 추가
 //   대시보드에서만 쓰던 상태 필터(currentFilter)를 고객목록 화면에서도
 //   버튼으로 바로 사용할 수 있게 한다. 새 필터 엔진을 만들지 않고
 //   기존 currentFilter/renderList() 구조를 그대로 재사용한다.
+//
+// ★ 고객목록 상태/유입경로 카운트 정확도 수정 (버그 원인)
+//   기존 getCustomerStatusCounts()는 counts 객체에 "전체" 총합을
+//   counts[""]=list.length로 넣어두고, 동시에 "mst(c.status)가 빈 값이면
+//   st=''"가 되어 같은 counts[""] 키를 다시 증가시켰다. 즉 status가
+//   공란이거나 mst()로 매핑되지 않는 고객이 있을 때마다 "전체" 숫자
+//   자체가 실제 고객 수보다 커졌다(공란 3명 → 209+3=212, 실제 캡처와 일치).
+//   유입경로 쪽은 처음부터 공란을 "__EMPTY__" 버킷으로 분리해뒀기 때문에
+//   이 버그가 없었고, 그래서 두 "전체" 숫자가 달라 보였다.
+//   지금부터는 "전체"(counts[""])는 절대 분류 루프에서 다시 증가시키지
+//   않고, 공란/미매핑 값은 별도의 "미분류" 버킷(__UNCLASSIFIED__)에만
+//   집계한다(요청사항 10). 카운트와 실제 필터링 모두 아래
+//   CUSTOMER_STATUS_KNOWN_SET 하나만 기준으로 판정해 숫자와 클릭 결과가
+//   항상 일치하도록 통일했다(요청사항 11).
 // ============================================================
 var CUSTOMER_STATUS_FILTERS=["","신규문의","A급가망","상담중","계약유력",
-  "구매보류","계약","출고","상담종료","해약"];
+  "구매보류","계약","출고","상담종료","해약","__UNCLASSIFIED__"];
 var CUSTOMER_STATUS_LABELS={
   "":"전체","신규문의":"신규문의","A급가망":"A급가망","상담중":"상담중",
   "계약유력":"계약유력","구매보류":"구매보류","계약":"계약","출고":"출고",
-  "상담종료":"상담종료","해약":"해약"
+  "상담종료":"상담종료","해약":"해약","__UNCLASSIFIED__":"미분류"
+};
+// 정식으로 인정되는 현재상태 값 집합 — mst() 매핑 결과가 이 집합에 없으면
+// (공란 포함) "미분류"로 취급한다.
+var CUSTOMER_STATUS_KNOWN_SET={
+  "신규문의":1,"A급가망":1,"상담중":1,"계약유력":1,"구매보류":1,
+  "계약":1,"출고":1,"상담종료":1,"해약":1
 };
 
-// 상태별 고객 수 집계 — 검색어/차량관리 필터와 무관하게 load()된 전체
-// 고객 배열 기준으로 계산한다(요청사항 8, 13). mst()로 구형 상태명도
-// 정상 집계한다.
+// 상태별 고객 수 집계 — 검색어/차량관리 필터와 무관하게 전체 고객 배열
+// 기준으로 계산한다(요청사항 8, 13). mst()로 구형 상태명도 정상 집계하며,
+// "전체"(counts[""])는 list.length 한 번만 채우고 분류 루프에서는 절대
+// 다시 증가시키지 않는다(버그 수정 핵심).
 function getCustomerStatusCounts(list){
   var counts={
     "":list.length,"신규문의":0,"A급가망":0,"상담중":0,"계약유력":0,
-    "구매보류":0,"계약":0,"출고":0,"상담종료":0,"해약":0
+    "구매보류":0,"계약":0,"출고":0,"상담종료":0,"해약":0,
+    "__UNCLASSIFIED__":0
   };
   list.forEach(function(c){
     var st=mst(c.status)||"";
-    if(Object.prototype.hasOwnProperty.call(counts,st))counts[st]++;
+    if(st!==""&&CUSTOMER_STATUS_KNOWN_SET.hasOwnProperty(st)){
+      counts[st]++;
+    } else {
+      counts["__UNCLASSIFIED__"]++; // 공란 또는 정의되지 않은 상태값
+    }
   });
   return counts;
 }
@@ -2395,22 +2451,50 @@ var CUSTOMER_LEAD_SOURCE_FILTERS=[
   {value:"블로그",label:"블로그"},
   {value:"인스타그램",label:"인스타그램"},
   {value:"기타",label:"기타"},
-  {value:"__EMPTY__",label:"미입력"}
+  {value:"__EMPTY__",label:"미입력"},
+  {value:"__UNCLASSIFIED__",label:"미분류"}
 ];
+// 정식으로 인정되는 유입경로 값 집합(전체/미입력/미분류 제외)
+var CUSTOMER_LEAD_SOURCE_KNOWN_SET={};
+CUSTOMER_LEAD_SOURCE_FILTERS.forEach(function(f){
+  if(f.value!==""&&f.value!=="__EMPTY__"&&f.value!=="__UNCLASSIFIED__"){
+    CUSTOMER_LEAD_SOURCE_KNOWN_SET[f.value]=1;
+  }
+});
 
-// 유입경로별 고객 수 집계 — 검색어/현재상태와 무관하게 load()된 전체 고객
-// 배열 기준으로 계산한다. leadSource가 비어있는 고객은 "전체"에는
-// 포함되지만 "기타"에 자동으로 넣지 않고 "__EMPTY__"(미입력)로 따로 센다
-// (요청사항 8 — "유입경로 미입력"과 "기타"는 다른 의미).
+// ★ 고객목록 상태/유입경로 카운트 정확도 수정 — 카운트 계산과 실제 필터링
+// 비교가 항상 동일한 결과를 내도록 정규화 로직을 이 함수 하나로 통일한다
+// (요청사항 9, 11). 아래 맵은 실제 Google Sheets 데이터에서 표기가 다른
+// 값(예: "겟차"→"GETCHA")이 확인됐을 때만 채워야 하며, 확인되지 않은
+// 값을 임의로 합치지 않는다. 지금은 확인된 변형이 없어 비어 있고,
+// trim()만 적용한다 — 저장된 원본값 자체는 절대 변경하지 않는다.
+var LEAD_SOURCE_NORMALIZE_MAP={
+  // 예: "겟차":"GETCHA", "Getcha":"GETCHA", "getcha":"GETCHA",
+  //     "전시장 방문 및 전화":"전시장방문및전화"
+  // → diagnoseCustomerFilterCounts() 콘솔 로그에서 실제 원본값을 확인한 뒤
+  //   필요한 것만 추가해주세요.
+};
+function normalizeLeadSource(v){
+  var raw=String(v||"").trim();
+  if(raw==="")return "";
+  return LEAD_SOURCE_NORMALIZE_MAP[raw]||raw;
+}
+
+// 유입경로별 고객 수 집계 — 검색어/현재상태와 무관하게 전체 고객 배열
+// 기준으로 계산한다. leadSource가 비어있는 고객은 "전체"에는 포함되지만
+// "기타"에 자동으로 넣지 않고 "__EMPTY__"(미입력)로 따로 센다(요청사항 8).
+// 정의된 목록에 없는 비어있지 않은 값은 "__UNCLASSIFIED__"(미분류)로 센다
+// (요청사항 10) — "전체"(counts[""])는 여기서도 다시 증가시키지 않는다.
 function getLeadSourceCounts(list){
-  var counts={"":list.length,"__EMPTY__":0};
+  var counts={"":list.length,"__EMPTY__":0,"__UNCLASSIFIED__":0};
   CUSTOMER_LEAD_SOURCE_FILTERS.forEach(function(f){
-    if(f.value!==""&&f.value!=="__EMPTY__")counts[f.value]=0;
+    if(f.value!==""&&f.value!=="__EMPTY__"&&f.value!=="__UNCLASSIFIED__")counts[f.value]=0;
   });
   list.forEach(function(c){
-    var source=String(c.leadSource||"").trim();
+    var source=normalizeLeadSource(c.leadSource);
     if(source===""){counts["__EMPTY__"]++;return;}
-    if(Object.prototype.hasOwnProperty.call(counts,source))counts[source]++;
+    if(CUSTOMER_LEAD_SOURCE_KNOWN_SET.hasOwnProperty(source)){counts[source]++;}
+    else{counts["__UNCLASSIFIED__"]++;}
   });
   return counts;
 }
@@ -2447,7 +2531,7 @@ function renderActiveFilterSummary(resultCount){
   var el=document.getElementById("activeFilterSummary");
   if(!el)return;
   var tags=[];
-  if(currentFilter)tags.push(currentFilter);
+  if(currentFilter)tags.push(CUSTOMER_STATUS_LABELS[currentFilter]||currentFilter);
   if(currentLeadSourceFilter){
     var found=null;
     for(var i=0;i<CUSTOMER_LEAD_SOURCE_FILTERS.length;i++){
@@ -2466,6 +2550,142 @@ function renderActiveFilterSummary(resultCount){
   el.innerHTML='<span class="afs-tag">필터: '+tags.join(" · ")+'</span>'+
     '<span class="afs-count">'+resultCount+'명</span>';
 }
+
+// ============================================================
+// ★ 고객목록 상태/유입경로 카운트 정확도 수정 — 진단/검증용 함수
+//   개발자 콘솔에서 직접 실행해 실제 데이터를 확인할 수 있다.
+// ============================================================
+
+// 상태/유입경로 카운트 합계가 전체 고객 수와 정확히 맞아떨어지는지 검증.
+// 콘솔에서: validateCustomerCounts(load())
+function validateCustomerCounts(list){
+  list=list||getCustomerListBaseData();
+  var statusCounts=getCustomerStatusCounts(list);
+  var leadCounts=getLeadSourceCounts(list);
+
+  var statusClassified=0;
+  CUSTOMER_STATUS_FILTERS.forEach(function(st){
+    if(st!==""&&st!=="__UNCLASSIFIED__")statusClassified+=statusCounts[st]||0;
+  });
+  var statusUnclassified=statusCounts["__UNCLASSIFIED__"]||0;
+
+  var leadClassified=0;
+  CUSTOMER_LEAD_SOURCE_FILTERS.forEach(function(f){
+    if(f.value!==""&&f.value!=="__EMPTY__"&&f.value!=="__UNCLASSIFIED__")leadClassified+=leadCounts[f.value]||0;
+  });
+  var leadEmpty=leadCounts["__EMPTY__"]||0;
+  var leadUnclassified=leadCounts["__UNCLASSIFIED__"]||0;
+
+  var result={
+    total:list.length,
+    statusTotal:statusCounts[""],
+    leadTotal:leadCounts[""],
+    statusClassified:statusClassified,
+    statusUnclassified:statusUnclassified,
+    statusSumMatchesTotal:(statusClassified+statusUnclassified)===list.length,
+    leadClassified:leadClassified,
+    leadEmpty:leadEmpty,
+    leadUnclassified:leadUnclassified,
+    leadSumMatchesTotal:(leadClassified+leadEmpty+leadUnclassified)===list.length,
+    statusTotalMatchesTotal:statusCounts[""]===list.length,
+    leadTotalMatchesTotal:leadCounts[""]===list.length,
+    statusTotalEqualsLeadTotal:statusCounts[""]===leadCounts[""]
+  };
+
+  console.log("[고객필터 카운트 검증]",result);
+  return result;
+}
+
+// 현재상태/유입경로 원본값 분포 + 전체 진단을 한 번에 출력.
+// 콘솔에서: diagnoseCustomerFilterCounts()
+function diagnoseCustomerFilterCounts(){
+  var raw=load();
+  var base=getCustomerListBaseData();
+
+  // ── [전체] ────────────────────────────────────────────
+  var withCid=0,withoutCid=0,cidSeen={},cidDup=0;
+  raw.forEach(function(c){
+    var cid=String((c&&c.customerId)||"").trim();
+    if(!cid){withoutCid++;return;}
+    withCid++;
+    if(cidSeen[cid])cidDup++;
+    cidSeen[cid]=true;
+  });
+  console.log("[전체]", {
+    "raw load() 고객 수": raw.length,
+    "customerId 있는 고객 수": withCid,
+    "customerId 없는 고객 수": withoutCid,
+    "customerId 중복 수": cidDup,
+    "중복 제거 후 고객 수": base.length
+  });
+
+  // ── [현재상태] 원본값별 분포 ──────────────────────────────
+  var statusDist={};
+  base.forEach(function(c){
+    var rawSt=(c.status===undefined||c.status===null)?"(공란)":(String(c.status).trim()===""?"(공란)":String(c.status));
+    var mapped=mst(c.status)||"(공란)";
+    var key=rawSt+" → "+mapped;
+    statusDist[key]=(statusDist[key]||0)+1;
+  });
+  var statusRows=Object.keys(statusDist).map(function(k){return{원본_매핑:k,고객수:statusDist[k]};});
+  console.log("[현재상태] 원본값별 분포");
+  if(console.table)console.table(statusRows);else console.log(statusRows);
+
+  // ── [유입경로] 원본값별 분포 ──────────────────────────────
+  var leadDist={};
+  base.forEach(function(c){
+    var rawLs=(c.leadSource===undefined||c.leadSource===null||String(c.leadSource).trim()==="")?"(공란)":String(c.leadSource);
+    var norm=normalizeLeadSource(c.leadSource)||"(공란)";
+    var key=rawLs+" → "+norm;
+    leadDist[key]=(leadDist[key]||0)+1;
+  });
+  var leadRows=Object.keys(leadDist).map(function(k){return{원본_정규화:k,고객수:leadDist[k]};});
+  console.log("[유입경로] 원본값별 분포");
+  if(console.table)console.table(leadRows);else console.log(leadRows);
+
+  // ── [합계 검증] ───────────────────────────────────────
+  var v=validateCustomerCounts(base);
+  console.log("[합계 검증]", v);
+
+  return {raw:raw,base:base,statusDist:statusDist,leadDist:leadDist,validation:v};
+}
+
+// 특정 유입경로에 실제로 어떤 고객이 잡혔는지 확인.
+// 콘솔에서: debugCustomersByLeadSource("GETCHA")
+function debugCustomersByLeadSource(source){
+  var target=source==="__EMPTY__"||source==="__UNCLASSIFIED__"?source:normalizeLeadSource(source);
+  var base=getCustomerListBaseData();
+  var rows=base.filter(function(c){
+    var norm=normalizeLeadSource(c.leadSource);
+    if(target==="__EMPTY__")return norm==="";
+    if(target==="__UNCLASSIFIED__")return norm!==""&&!CUSTOMER_LEAD_SOURCE_KNOWN_SET.hasOwnProperty(norm);
+    return norm===target;
+  }).map(function(c){
+    return{customerId:c.customerId,customerName:c.customerName,rawLeadSource:c.leadSource||"",normalizedLeadSource:normalizeLeadSource(c.leadSource)};
+  });
+  console.log("["+source+"] 대상 고객 목록");
+  if(console.table)console.table(rows);else console.log(rows);
+  console.log(source+" 실제 고객 수: "+rows.length+"명");
+  return rows;
+}
+
+// 특정 현재상태에 실제로 어떤 고객이 잡혔는지 확인.
+// 콘솔에서: debugCustomersByStatus("신규문의")
+function debugCustomersByStatus(status){
+  var base=getCustomerListBaseData();
+  var rows=base.filter(function(c){
+    var v=mst(c.status)||"";
+    if(status==="__UNCLASSIFIED__")return v===""||!CUSTOMER_STATUS_KNOWN_SET.hasOwnProperty(v);
+    return v===status;
+  }).map(function(c){
+    return{customerId:c.customerId,customerName:c.customerName,rawStatus:c.status||"",normalizedStatus:mst(c.status)||""};
+  });
+  console.log("["+status+"] 대상 고객 목록");
+  if(console.table)console.table(rows);else console.log(rows);
+  console.log(status+" 실제 고객 수: "+rows.length+"명");
+  return rows;
+}
+
 function sc(s){
   var v=mst(s);
   if(v==="신규문의")return"s1";if(v==="A급가망")return"s2";
@@ -3277,7 +3497,11 @@ var CARE_LABELS={
 var renderedCustomers = []; // 현재 화면에 렌더링된 고객 배열 (인덱스 기준 수정에 사용)
 
 function renderList(){
-  var list=load();
+  // ★ 고객목록 상태/유입경로 카운트 정확도 수정 — 고객목록·전체숫자·
+  // 상태별숫자·유입경로별숫자가 전부 동일한 기준 배열을 쓰도록 통일
+  // (요청사항 4). getCustomerListBaseData()는 load()에 customerId 완전
+  // 중복만 방어적으로 제거한 배열을 반환한다.
+  var list=getCustomerListBaseData();
   var q=(document.getElementById("searchInput")||{}).value||"";
   q=q.trim().toLowerCase();
   var now=todayD();
@@ -3320,13 +3544,26 @@ function renderList(){
   }
 
   var filtered=list.filter(function(c){
-    if(currentFilter){var v=mst(c.status)||"";if(v!==currentFilter)return false;}
-    // ★ 고객목록 유입경로별 필터 추가 — 저장된 원본 leadSource 값과
-    // 정확히 비교한다("__EMPTY__"는 leadSource가 비어있는 고객 전용).
+    if(currentFilter){
+      // ★ 고객목록 상태/유입경로 카운트 정확도 수정 — 카운트 함수와 정확히
+      // 동일한 CUSTOMER_STATUS_KNOWN_SET 기준으로 "__UNCLASSIFIED__"(미분류)를
+      // 판정한다(요청사항 11).
+      var v=mst(c.status)||"";
+      if(currentFilter==="__UNCLASSIFIED__"){
+        if(v!==""&&CUSTOMER_STATUS_KNOWN_SET.hasOwnProperty(v))return false;
+      } else {
+        if(v!==currentFilter)return false;
+      }
+    }
+    // ★ 고객목록 유입경로별 필터 추가 — normalizeLeadSource()로 카운트와
+    // 완전히 동일하게 정규화한 뒤 비교한다("__EMPTY__"=미입력,
+    // "__UNCLASSIFIED__"=값은 있지만 정의된 목록에 없는 값, 요청사항 10-11).
     if(currentLeadSourceFilter){
-      var src=String(c.leadSource||"").trim();
+      var src=normalizeLeadSource(c.leadSource);
       if(currentLeadSourceFilter==="__EMPTY__"){
         if(src!=="")return false;
+      } else if(currentLeadSourceFilter==="__UNCLASSIFIED__"){
+        if(src===""||CUSTOMER_LEAD_SOURCE_KNOWN_SET.hasOwnProperty(src))return false;
       } else {
         if(src!==currentLeadSourceFilter)return false;
       }
@@ -3413,15 +3650,16 @@ function renderList(){
       leadLabel=lf?lf.label:currentLeadSourceFilter;
     }
     var condParts=[];
-    if(currentFilter)condParts.push(currentFilter);
+    var statusLabel=currentFilter?(CUSTOMER_STATUS_LABELS[currentFilter]||currentFilter):"";
+    if(statusLabel)condParts.push(statusLabel);
     if(leadLabel)condParts.push(leadLabel);
     var emptyMsg="아직 등록된 고객이 없습니다";
     if(currentFilter==="출고"&&currentDeliveryYear&&condParts.length===1){
       emptyMsg=q?(currentDeliveryYear+"년 출고 고객 중 검색 조건에 맞는 고객이 없습니다."):
                  (currentDeliveryYear+"년 출고 고객이 없습니다.");
-    } else if(condParts.length===1&&currentFilter){
-      emptyMsg=q?(currentFilter+" 고객 중 검색 조건에 맞는 고객이 없습니다."):
-                 (currentFilter+" 상태의 고객이 없습니다.");
+    } else if(condParts.length===1&&statusLabel){
+      emptyMsg=q?(statusLabel+" 고객 중 검색 조건에 맞는 고객이 없습니다."):
+                 (statusLabel+" 상태의 고객이 없습니다.");
     } else if(condParts.length===1&&leadLabel){
       emptyMsg=q?(leadLabel+" 고객 중 검색 조건에 맞는 고객이 없습니다."):
                  (leadLabel+" 유입 고객이 없습니다.");
