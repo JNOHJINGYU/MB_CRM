@@ -19,7 +19,7 @@
     //   Google Drive에 업로드·조회·교체·삭제할 수 있는 UI와 통신 함수가
     //   추가되었다. 기존 고객 등록/수정/삭제, 구매차량, 캘린더 연동,
     //   대시보드/분석 로직은 전혀 수정하지 않았다.
-    var APP_VERSION = "2026-08-10-v108-customer-status-filter";
+    var APP_VERSION = "2026-08-10-v109-customer-lead-source-filter";
     console.log("[CRM VERSION]", APP_VERSION);
   </script>
 
@@ -513,6 +513,66 @@
       }
       .customer-status-filter::-webkit-scrollbar{display:none;}
       .customer-status-btn{min-height:40px;height:40px;padding:0 14px;font-size:12px;}
+    }
+
+    /* ★ 고객목록 유입경로별 필터 추가 */
+    .filter-section-label{
+      font-size:11px;font-weight:800;color:var(--text-dim);
+      margin:9px 2px 5px;letter-spacing:.2px;
+    }
+    .customer-lead-filter-wrap{margin:0 0 2px;max-width:100%;min-width:0;}
+    .customer-lead-filter{
+      display:flex;flex-wrap:wrap;gap:8px;max-width:100%;min-width:0;
+    }
+    .customer-lead-btn{
+      flex-shrink:0;
+      display:inline-flex;align-items:center;gap:6px;
+      height:38px;padding:0 15px;
+      border-radius:20px;border:1.5px solid var(--border2);
+      background:#fff;color:var(--text-dim);
+      font-family:var(--font);font-size:12.5px;font-weight:700;
+      cursor:pointer;transition:background .13s,color .13s,border-color .13s;
+      -webkit-tap-highlight-color:transparent;
+      white-space:nowrap;
+    }
+    .customer-lead-btn:hover{border-color:var(--black);color:var(--black);}
+    .customer-lead-btn.active{
+      background:var(--black);border-color:var(--black);color:#fff;
+      box-shadow:0 2px 8px rgba(0,0,0,.22);
+    }
+    .customer-lead-count{
+      font-size:11px;font-weight:800;
+      background:rgba(0,0,0,.06);color:inherit;
+      border-radius:10px;padding:1px 7px;
+      min-width:18px;text-align:center;
+    }
+    .customer-lead-btn.active .customer-lead-count{background:rgba(255,255,255,.28);}
+
+    .active-filter-summary{
+      display:none;align-items:center;gap:8px;flex-wrap:wrap;
+      font-size:12px;font-weight:700;color:var(--text-dim);
+      background:var(--surface2,#fafafa);border:1px solid var(--border);
+      border-radius:10px;padding:8px 12px;margin:4px 0 8px;
+    }
+    .active-filter-summary.show{display:flex;}
+    .active-filter-summary .afs-tag{color:var(--black);}
+    .active-filter-summary .afs-count{color:var(--gold-dk);margin-left:auto;}
+
+    @media(min-width:641px) and (max-width:1199px){
+      .customer-lead-filter{gap:8px;}
+      .customer-lead-btn{height:40px;padding:0 17px;font-size:13px;}
+    }
+
+    @media(max-width:640px){
+      .customer-lead-filter{
+        flex-wrap:nowrap;
+        overflow-x:auto;
+        -webkit-overflow-scrolling:touch;
+        scrollbar-width:none;
+        padding-bottom:2px;
+      }
+      .customer-lead-filter::-webkit-scrollbar{display:none;}
+      .customer-lead-btn{min-height:40px;height:40px;padding:0 13px;font-size:12px;}
     }
 
     /* 고객 카드 */
@@ -1518,9 +1578,16 @@
     <div class="sync-msg" id="sync-msg"></div>
     <div id="crm-last-sync-label" style="font-size:11px;color:var(--text-lt);padding:0 2px 6px;"></div>
     <!-- ★ 고객목록 현재상태별 필터 추가 -->
+    <div class="filter-section-label">현재상태</div>
     <div class="customer-status-filter-wrap">
-      <div class="customer-status-filter" id="customerStatusFilter"></div>
+      <div class="customer-status-filter" id="customerStatusFilter" aria-label="현재상태 필터"></div>
     </div>
+    <!-- ★ 고객목록 유입경로별 필터 추가 -->
+    <div class="filter-section-label">유입경로</div>
+    <div class="customer-lead-filter-wrap">
+      <div class="customer-lead-filter" id="customerLeadFilter" aria-label="유입경로 필터"></div>
+    </div>
+    <div class="active-filter-summary" id="activeFilterSummary"></div>
     <div class="filter-bar" id="filterBar">
       <div class="filter-label" id="filterLabel">전체 고객</div>
       <button class="filter-clear" onclick="clearFilter()">전체 보기 ✕</button>
@@ -1978,6 +2045,7 @@ var LS_KEY = "nj_crm_v12";
 var currentFilter = "";       // 고객현황 상태 필터
 var currentCareFilter = "";   // 차량관리 알림 필터
 var currentDeliveryYear = ""; // 출고 연도 필터 ("2026" | "" = 전체)
+var currentLeadSourceFilter = ""; // ★ 고객목록 유입경로별 필터 추가 — "" = 전체, "__EMPTY__" = 미입력
 
 // ============================================================
 // 세부모델 데이터
@@ -2217,13 +2285,21 @@ function goFilter(st){
   currentFilter=st;
   currentCareFilter="";
   currentDeliveryYear=""; // 상태 전환 시 연도 필터 초기화
+  currentLeadSourceFilter=""; // ★ 고객목록 유입경로별 필터 추가 — 대시보드에서 진입 시 새 탐색으로 간주해 유입경로 초기화
   showView("list");
 }
-function goCareFilter(type){currentFilter="";currentCareFilter=type;currentDeliveryYear="";showView("list");}
+function goCareFilter(type){
+  currentFilter="";
+  currentCareFilter=type;
+  currentDeliveryYear="";
+  currentLeadSourceFilter=""; // ★ 고객목록 유입경로별 필터 추가 — 차량관리 알림 진입 시 상태/유입경로 초기화
+  showView("list");
+}
 function clearFilter(){
   currentFilter="";
   currentCareFilter="";
   currentDeliveryYear="";
+  currentLeadSourceFilter=""; // ★ 고객목록 유입경로별 필터 추가
   document.getElementById("filterBar").style.display="none";
   renderList();
 }
@@ -2297,6 +2373,98 @@ function renderCustomerStatusFilters(list){
   if(activeBtn){
     activeBtn.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});
   }
+}
+
+// ============================================================
+// ★ 고객목록 유입경로별 필터 추가
+//   신규등록 select(#leadSource)의 옵션과 정확히 동일한 값만 사용한다.
+//   Google Sheets/CRM에 저장된 원본 leadSource 값은 절대 변경하지 않고,
+//   버튼에 보여줄 표시명(label)만 짧게 줄인다. 상태 필터(currentFilter)와는
+//   완전히 별개의 전역변수(currentLeadSourceFilter)로 관리해 두 필터를
+//   동시에 사용할 수 있게 한다.
+// ============================================================
+var CUSTOMER_LEAD_SOURCE_FILTERS=[
+  {value:"",label:"전체"},
+  {value:"전시장방문및전화",label:"전시장/전화"},
+  {value:"GETCHA",label:"GETCHA"},
+  {value:"지인소개",label:"지인소개"},
+  {value:"에이전시",label:"에이전시"},
+  {value:"유튜브",label:"유튜브"},
+  {value:"기존고객",label:"기존고객"},
+  {value:"고객소개",label:"고객소개"},
+  {value:"블로그",label:"블로그"},
+  {value:"인스타그램",label:"인스타그램"},
+  {value:"기타",label:"기타"},
+  {value:"__EMPTY__",label:"미입력"}
+];
+
+// 유입경로별 고객 수 집계 — 검색어/현재상태와 무관하게 load()된 전체 고객
+// 배열 기준으로 계산한다. leadSource가 비어있는 고객은 "전체"에는
+// 포함되지만 "기타"에 자동으로 넣지 않고 "__EMPTY__"(미입력)로 따로 센다
+// (요청사항 8 — "유입경로 미입력"과 "기타"는 다른 의미).
+function getLeadSourceCounts(list){
+  var counts={"":list.length,"__EMPTY__":0};
+  CUSTOMER_LEAD_SOURCE_FILTERS.forEach(function(f){
+    if(f.value!==""&&f.value!=="__EMPTY__")counts[f.value]=0;
+  });
+  list.forEach(function(c){
+    var source=String(c.leadSource||"").trim();
+    if(source===""){counts["__EMPTY__"]++;return;}
+    if(Object.prototype.hasOwnProperty.call(counts,source))counts[source]++;
+  });
+  return counts;
+}
+
+// 고객목록 안의 유입경로 버튼 클릭 — 현재상태 필터(currentFilter)는
+// 절대 초기화하지 않는다(요청사항 9). 새 showView() 호출도 하지 않는다.
+function setListLeadSourceFilter(source){
+  currentLeadSourceFilter=source||"";
+  renderList();
+}
+
+// 유입경로 필터 버튼 렌더링 (검색어와 무관한 카운트 기준)
+function renderCustomerLeadFilters(list){
+  var wrap=document.getElementById("customerLeadFilter");
+  if(!wrap)return;
+  var counts=getLeadSourceCounts(list);
+  wrap.innerHTML=CUSTOMER_LEAD_SOURCE_FILTERS.map(function(f){
+    var active=currentLeadSourceFilter===f.value;
+    return '<button type="button" class="customer-lead-btn'+
+      (active?" active":"")+
+      '" aria-pressed="'+(active?"true":"false")+
+      '" onclick="setListLeadSourceFilter(\''+f.value+'\')">'+
+      f.label+
+      '<span class="customer-lead-count">'+(counts[f.value]||0)+'</span></button>';
+  }).join("");
+  var activeLeadBtn=wrap.querySelector(".customer-lead-btn.active");
+  if(activeLeadBtn){
+    activeLeadBtn.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});
+  }
+}
+
+// 선택된 현재상태+유입경로 조건을 한눈에 보여주는 요약 영역(요청사항 15)
+function renderActiveFilterSummary(resultCount){
+  var el=document.getElementById("activeFilterSummary");
+  if(!el)return;
+  var tags=[];
+  if(currentFilter)tags.push(currentFilter);
+  if(currentLeadSourceFilter){
+    var found=null;
+    for(var i=0;i<CUSTOMER_LEAD_SOURCE_FILTERS.length;i++){
+      if(CUSTOMER_LEAD_SOURCE_FILTERS[i].value===currentLeadSourceFilter){found=CUSTOMER_LEAD_SOURCE_FILTERS[i];break;}
+    }
+    tags.push(found?found.label:currentLeadSourceFilter);
+  }
+  if(tags.length<2){
+    // 상태/유입경로 중 하나만(또는 둘 다 미선택) 선택된 경우는 상단 상태
+    // 버튼/필터바만으로 충분히 확인 가능하므로 요약을 굳이 표시하지 않는다.
+    el.classList.remove("show");
+    el.innerHTML="";
+    return;
+  }
+  el.classList.add("show");
+  el.innerHTML='<span class="afs-tag">필터: '+tags.join(" · ")+'</span>'+
+    '<span class="afs-count">'+resultCount+'명</span>';
 }
 function sc(s){
   var v=mst(s);
@@ -3126,6 +3294,9 @@ function renderList(){
   // ★ 고객목록 현재상태별 필터 추가 — 상태 버튼 렌더링(카운트는 검색어와
   // 무관하게 전체 list 기준)
   renderCustomerStatusFilters(list);
+  // ★ 고객목록 유입경로별 필터 추가 — 유입경로 버튼 렌더링(카운트는 검색어와
+  // 무관하게 전체 list 기준)
+  renderCustomerLeadFilters(list);
 
   // ── 출고 연도 필터 바 표시/숨김 ──────────────────────────
   var yfBar=document.getElementById("yearFilterBar");
@@ -3150,6 +3321,16 @@ function renderList(){
 
   var filtered=list.filter(function(c){
     if(currentFilter){var v=mst(c.status)||"";if(v!==currentFilter)return false;}
+    // ★ 고객목록 유입경로별 필터 추가 — 저장된 원본 leadSource 값과
+    // 정확히 비교한다("__EMPTY__"는 leadSource가 비어있는 고객 전용).
+    if(currentLeadSourceFilter){
+      var src=String(c.leadSource||"").trim();
+      if(currentLeadSourceFilter==="__EMPTY__"){
+        if(src!=="")return false;
+      } else {
+        if(src!==currentLeadSourceFilter)return false;
+      }
+    }
     if(currentCareFilter){
       if(currentCareFilter==="birthday7"){
         var bd=bdayDiff(c.birthDate);if(bd===null||bd<0||bd>7)return false;
@@ -3217,17 +3398,37 @@ function renderList(){
   renderedCustomers = filtered;
 
   document.getElementById("list-count").textContent=filtered.length+"명";
+  // ★ 고객목록 유입경로별 필터 추가 — 상태+유입경로 동시 선택 시 요약 표시
+  renderActiveFilterSummary(filtered.length);
   var con=document.getElementById("listContainer");
   if(filtered.length===0){
-    // ★ 고객목록 현재상태별 필터 추가 — 가능하면 상태명을 포함해 더
-    // 명확한 빈 결과 문구를 보여준다(요청사항 25).
+    // ★ 고객목록 현재상태별 필터 추가 / ★ 고객목록 유입경로별 필터 추가 —
+    // 가능하면 상태명·유입경로명을 포함해 더 명확한 빈 결과 문구를 보여준다.
+    var leadLabel="";
+    if(currentLeadSourceFilter){
+      var lf=null;
+      for(var li=0;li<CUSTOMER_LEAD_SOURCE_FILTERS.length;li++){
+        if(CUSTOMER_LEAD_SOURCE_FILTERS[li].value===currentLeadSourceFilter){lf=CUSTOMER_LEAD_SOURCE_FILTERS[li];break;}
+      }
+      leadLabel=lf?lf.label:currentLeadSourceFilter;
+    }
+    var condParts=[];
+    if(currentFilter)condParts.push(currentFilter);
+    if(leadLabel)condParts.push(leadLabel);
     var emptyMsg="아직 등록된 고객이 없습니다";
-    if(currentFilter==="출고"&&currentDeliveryYear){
+    if(currentFilter==="출고"&&currentDeliveryYear&&condParts.length===1){
       emptyMsg=q?(currentDeliveryYear+"년 출고 고객 중 검색 조건에 맞는 고객이 없습니다."):
                  (currentDeliveryYear+"년 출고 고객이 없습니다.");
-    } else if(currentFilter){
+    } else if(condParts.length===1&&currentFilter){
       emptyMsg=q?(currentFilter+" 고객 중 검색 조건에 맞는 고객이 없습니다."):
                  (currentFilter+" 상태의 고객이 없습니다.");
+    } else if(condParts.length===1&&leadLabel){
+      emptyMsg=q?(leadLabel+" 고객 중 검색 조건에 맞는 고객이 없습니다."):
+                 (leadLabel+" 유입 고객이 없습니다.");
+    } else if(condParts.length>1){
+      var condLabel=condParts.join(" · ");
+      emptyMsg=q?(condLabel+" 고객 중 검색 조건에 맞는 고객이 없습니다."):
+                 (condLabel+" 조건에 맞는 고객이 없습니다.");
     } else if(currentCareFilter||q){
       emptyMsg="조건에 맞는 고객이 없습니다";
     }
