@@ -10,7 +10,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYPNHh5smLllO17T5azL3mK1eH-EkMhIXHr0e55uZKrLrvHsqJn0u06bEF-VikBjypUg/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzE8v2eYGGYOjWslNKmINTVrK4gIrMMciXLT8BcaaxQ0WEO-7a_eJ3v4Lzp9seX97ApDA/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     // PC·모바일이 같은 버전을 보고 있는지 확인하기 위한 버전 표식.
@@ -19,7 +19,8 @@
     //   Google Drive에 업로드·조회·교체·삭제할 수 있는 UI와 통신 함수가
     //   추가되었다. 기존 고객 등록/수정/삭제, 구매차량, 캘린더 연동,
     //   대시보드/분석 로직은 전혀 수정하지 않았다.
-    var APP_VERSION = "2026-08-10-v110-filter-count-accuracy-fix";
+    var APP_VERSION = "2026-08-11-v111-save-speed-optimization";
+    // ★ 고객 저장속도 최적화 — 고정대기 제거 / 단건 저장확인 / 부분 localStorage 갱신
     console.log("[CRM VERSION]", APP_VERSION);
   </script>
 
@@ -2904,6 +2905,94 @@ function load(){try{return JSON.parse(localStorage.getItem(LS_KEY))||[];}catch(e
 function save(l){localStorage.setItem(LS_KEY,JSON.stringify(l));}
 function normP(p){return(p||"").replace(/\D/g,"");}
 
+// ============================================================
+// ★ 고객 저장속도 최적화 (v111) — 공통 저장 엔진
+//   신규등록/고객수정/추가상담이 모두 이 세 함수를 공유한다.
+//   PC·아이패드·모바일에서 기기별로 다른 코드를 두지 않는다(요청사항 43).
+// ============================================================
+
+// 저장/동기화 중복 실행 방지 플래그 (요청사항 46, 47)
+var _saveInProgress = false; // 저장 확인(polling)이 끝날 때까지 true — 이 동안 자동동기화를 건너뛴다.
+
+// ── customerId(우선) → requestToken → 전화번호 순으로 기존 고객을 찾아
+//    교체하고, 없으면 맨 앞에 추가한다 (요청사항 8, 33).
+//    customer가 없으면(=서버 확인 실패) 아무것도 하지 않고 false를 반환한다.
+function upsertCustomerLocal(customer){
+  if(!customer) return false;
+  var list = load();
+  var idx = -1;
+
+  if(customer.customerId){
+    idx = list.findIndex(function(c){ return c.customerId && String(c.customerId)===String(customer.customerId); });
+  }
+  if(idx < 0 && customer.requestToken){
+    idx = list.findIndex(function(c){ return c.requestToken && String(c.requestToken)===String(customer.requestToken); });
+  }
+  if(idx < 0 && customer.phone){
+    var np = normP(customer.phone);
+    idx = list.findIndex(function(c){ return normP(c.phone)===np; });
+  }
+
+  // ★ 날짜 필드 정규화 — syncFromSheet()/_fetchSheetAndSave()와 동일한 규칙 적용.
+  DATE_FIELDS_LIST.forEach(function(f){
+    if(customer[f] !== undefined && customer[f] !== null && customer[f] !== "") customer[f] = normalizeDateStr(customer[f]);
+  });
+  if((!customer.deliveryMonth || customer.deliveryMonth==="") && customer.deliveryDate && customer.deliveryDate.length>=7){
+    customer.deliveryMonth = customer.deliveryDate.substring(0,7);
+  }
+
+  if(idx >= 0){
+    // 기존 값 위에 서버가 확인해준 필드만 덮어쓴다(서버가 안 보낸 필드는 기존 값 유지).
+    var merged = Object.assign({}, list[idx], customer);
+    list[idx] = merged;
+  } else {
+    // 신규 고객 — 최근활동 고객이므로 맨 위로 (요청사항 33).
+    list.unshift(customer);
+  }
+  save(list);
+  return true;
+}
+
+// ── 저장확인 GET API를 짧은 간격으로 재시도한다 (요청사항 5, 6).
+//    고정 2.5~3초 대기 대신, 250ms → 350ms → 500ms → 750ms 간격으로
+//    최대 delays.length회까지 짧게 재시도하고, 찾으면 즉시 중단한다.
+//    POST는 절대 재전송하지 않는다 — 오직 이 GET 확인만 재시도한다(요청사항 26).
+function pollSaveConfirmation(url, delays){
+  delays = delays || [250,350,500,750];
+  var attempt = 0;
+  function tryOnce(){
+    attempt++;
+    var t = performance.now();
+    return fetch(url+(url.indexOf("?")>=0?"&":"?")+"_ts="+Date.now(), {method:"GET", cache:"no-store"})
+      .then(function(res){
+        if(!res.ok) throw new Error("HTTP "+res.status);
+        return res.json();
+      })
+      .then(function(json){
+        console.log("[저장확인 시도 "+attempt+"] "+Math.round(performance.now()-t)+"ms", json && json.found);
+        if(json && json.success && json.found){
+          return json;
+        }
+        if(attempt >= delays.length + 1){
+          return json || {success:false, found:false}; // 더 이상 재시도하지 않고 마지막 응답 그대로 반환
+        }
+        return new Promise(function(resolve){
+          setTimeout(function(){ resolve(tryOnce()); }, delays[attempt-1]);
+        });
+      });
+  }
+  return tryOnce();
+}
+
+// ── 저장 완료 이후 실행되는 백그라운드 전체 동기화 (요청사항 10, 31).
+//    사용자는 이 완료를 기다리지 않는다 — 저장 버튼은 이미 정상 상태로 복귀한 상태.
+function scheduleBackgroundSync(delayMs){
+  setTimeout(function(){
+    if(_syncInProgress) return; // 60초 자동동기화 등과 중복 실행 방지 (요청사항 47)
+    syncFromSheet(true);
+  }, delayMs===undefined?1500:delayMs);
+}
+
 // ★ 신규문의 통계 기능 제거에 따른 정리 — 예전 버전이 남겨둔
 //   crm_inquiries 캐시만 정확히 지운다. 고객 데이터(LS_KEY)는 건드리지 않는다.
 try{ localStorage.removeItem("crm_inquiries"); }catch(e){ console.warn("[crm_inquiries 정리 실패]", e); }
@@ -4178,7 +4267,12 @@ function submitNew(){
   }
 
   btn.disabled=true;btn.textContent="저장 중…";
+  _saveInProgress = true;
   console.log("[신규 저장 요청]", data);
+
+  // ── 성능 로그 (요청사항 27) ──────────────────────────────
+  var _t0 = performance.now();
+  showMsg("msg-new","ok","저장 중…");
 
   fetch(SCRIPT_URL,{
     method:"POST",
@@ -4189,50 +4283,64 @@ function submitNew(){
   })
   .then(function(){
     // ★ no-cors 응답은 opaque라 response.ok/status/json()을 절대 읽지 않는다.
-    //   Apps Script가 실제로 시트에 반영할 시간을 확보하기 위해 대기 후 재조회한다.
-    return wait(2500);
-  })
-  .then(function(){
-    return fetch(SCRIPT_URL+"?action=list&_ts="+Date.now(), {method:"GET", cache:"no-store"});
-  })
-  .then(function(response){
-    if(!response.ok){throw new Error("저장 확인 실패: HTTP "+response.status);}
-    return response.json();
+    //   고정 2500ms 대신, requestToken 기준 단건 저장확인 API를 250ms부터
+    //   짧은 간격으로 재시도한다(요청사항 5). POST는 재전송하지 않는다.
+    var _tPost = performance.now();
+    console.log("[신규저장 성능] POST 전송: "+Math.round(_tPost-_t0)+"ms");
+    return pollSaveConfirmation(
+      SCRIPT_URL+"?action=getCustomerByRequestToken&requestToken="+encodeURIComponent(data.requestToken)
+    );
   })
   .then(function(result){
+    var _tConfirm = performance.now();
     console.log("[저장 확인 응답]", result, "[SERVER VERSION]", result && result.serverVersion);
-    if(!result || result.success!==true || !Array.isArray(result.customers)){
-      throw new Error(result && result.message ? result.message : "고객목록 응답 오류");
+
+    if(!result || result.success!==true){
+      throw new Error(result && result.message ? result.message : "저장확인 응답 오류");
+    }
+    if(!result.found || !result.customer){
+      // ★ 아직 못 찾았다고 즉시 "저장 실패"로 단정하지 않는다(요청사항 36).
+      //   no-cors POST 특성상 서버가 아직 처리 중일 수 있다.
+      showMsg("msg-new","ok","저장은 처리 중입니다. 잠시 후 고객목록에서 확인해주세요.");
+      scheduleBackgroundSync(1500);
+      resetNewForm();
+      return null;
     }
 
-    var savedCustomer = result.customers.find(function(c){
-      return String(c.requestToken||"")===String(data.requestToken||"");
-    });
-    if(!savedCustomer){
-      savedCustomer = result.customers.find(function(c){
-        return String(c.customerName||"").trim()===String(data.customerName||"").trim()
-          && normP(c.phone)===normP(data.phone);
-      });
-    }
-    if(!savedCustomer){
-      throw new Error("저장 요청은 전송됐지만 구글시트에서 방금 등록한 고객을 확인하지 못했습니다.");
-    }
+    var savedCustomer = result.customer;
+    savedCustomer.requestToken = data.requestToken;
 
-    // ★ 서버 확인이 끝난 뒤에만 localStorage를 서버 목록으로 갱신한다.
-    save(result.customers);
+    // ★ 해당 고객 1명만 localStorage에 반영 (요청사항 8, 33) — 전체 목록을
+    //   다시 받지 않는다. 신규 고객이므로 맨 위로 추가된다.
+    upsertCustomerLocal(savedCustomer);
+    var _tLocal = performance.now();
     updateDash();
-    renderList();
+    // ★ 신규등록 화면에서는 고객목록 DOM을 즉시 강제로 다시 그리지 않는다
+    //   (요청사항 42) — 고객목록 화면이 실제로 열려있을 때만 갱신한다.
+    if(document.getElementById("listView") && document.getElementById("listView").classList.contains("active")) renderList();
     renderAnalyticsIfVisible();
+    var _tRender = performance.now();
+
+    console.log("[신규저장 성능] 서버확인:"+Math.round(_tConfirm-_t0)+
+      "ms localStorage:"+Math.round(_tLocal-_tConfirm)+"ms 화면렌더:"+Math.round(_tRender-_tLocal)+
+      "ms 총 체감시간:"+Math.round(_tRender-_t0)+"ms");
 
     console.log("[신규저장 완료]", data.customerName, "customerId:", savedCustomer.customerId);
     showMsg("msg-new","ok","✅ 고객정보가 구글시트에 저장되었습니다. (customerId: "+savedCustomer.customerId+")");
     resetNewForm();
+
+    // ★ 전체 동기화는 사용자를 기다리게 하지 않고 뒤에서 실행 (요청사항 10, 31).
+    scheduleBackgroundSync(1500);
+    return null;
   })
   .catch(function(err){
     console.error("[신규 저장 오류]", err);
     showMsg("msg-new","err","❌ 저장 실패: "+(err && err.message ? err.message : "알 수 없는 오류"));
   })
-  .finally(function(){btn.disabled=false;btn.textContent="고객 정보 저장";});
+  .finally(function(){
+    btn.disabled=false;btn.textContent="고객 정보 저장";
+    _saveInProgress = false;
+  });
 }
 
 // ============================================================
@@ -4268,6 +4376,8 @@ function submitUpdate(){
   };
   var btn=document.getElementById("updateBtn");
   btn.disabled=true;btn.textContent="저장 중…";
+  _saveInProgress = true;
+  var _tUpd0 = performance.now();
   fetch(SCRIPT_URL,{method:"POST",mode:"no-cors",
     headers:{"Content-Type":"text/plain"},body:JSON.stringify(payload)})
   .then(function(){
@@ -4309,12 +4419,16 @@ function submitUpdate(){
     window.__uNextTouched=false;
     document.getElementById("preview-box").classList.remove("show");
     document.getElementById("nofound").classList.remove("show");
+    console.log("[추가상담 성능] 총 체감시간:"+Math.round(performance.now()-_tUpd0)+"ms (전체 재조회 없음)");
+    // ★ 추가상담은 이미 no-cors 전송 직후 localStorage를 낙관적으로 갱신하므로
+    //   고정대기/전체 재조회가 없다. 서버와의 최종 일치 확인만 뒤에서 조용히 수행.
+    scheduleBackgroundSync(1500);
   })
   .catch(function(err){
     showMsg("msg-update","err","❌ 저장 실패. 인터넷 연결을 확인해주세요.");
     console.error(err);
   })
-  .finally(function(){btn.disabled=false;btn.textContent="추가상담 저장";});
+  .finally(function(){btn.disabled=false;btn.textContent="추가상담 저장";_saveInProgress=false;});
 }
 
 // ============================================================
@@ -4658,6 +4772,8 @@ function submitEdit(){
 
   console.log("[전송 payload]", payload);
   btn.disabled=true; btn.textContent="저장 중…";
+  _saveInProgress = true;
+  var _tEdit0 = performance.now();
 
   console.log("[수정시작] customerId="+payload.customerId
     +" / 검색phone="+payload.phone
@@ -4674,20 +4790,15 @@ function submitEdit(){
     body:JSON.stringify(payload)
   })
   .then(function(){
-    // no-cors이므로 응답 body 확인 불가 (opaque response — 항상 성공으로 처리됨)
-    // Apps Script 처리 완료 대기 후 시트를 직접 읽어 검증
-    console.log("[구글시트 POST 완료] Apps Script 처리 대기 중…");
+    // no-cors이므로 응답 body 확인 불가 (opaque response — 항상 성공으로 처리됨).
+    // ★ 고정 3000ms 대신, customerId 기준 단건 저장확인 API를 250ms부터
+    //   짧은 간격으로 재시도한다(요청사항 6). POST는 재전송하지 않는다.
+    console.log("[신규저장 성능] POST 전송: "+Math.round(performance.now()-_tEdit0)+"ms");
     if(msgEl){
       msgEl.className="st-msg edit-save-msg";
-      msgEl.textContent="⏳ 구글시트에 저장 중… 잠시 후 자동 갱신됩니다.";
+      msgEl.textContent="⏳ 구글시트에 저장 중…";
     }
-    // Apps Script 실행 시간 고려 — 3초 대기
-    return new Promise(function(resolve){setTimeout(resolve,3000);});
-  })
-  .then(function(){
-    // ── STEP 2: 시트에서 전체 고객 읽기 (syncFromSheet 내부 로직 직접 호출) ──
-    console.log("[동기화 시작] 시트에서 최신 데이터 읽기");
-    return _fetchSheetAndSave(payload.phone, ePhone, msgEl, btn, payload);
+    return _fetchSheetAndSave(payload.phone, ePhone, msgEl, btn, payload, _tEdit0);
   })
   .catch(function(err){
     console.error("[submitEdit 오류]", err);
@@ -4696,169 +4807,99 @@ function submitEdit(){
       msgEl.textContent="❌ 저장 실패: "+err.message;
     }
     btn.disabled=false; btn.textContent="✅ 수정 저장";
+    _saveInProgress = false;
   });
 }
 
-// ── STEP 2 구현: 시트를 읽어 localStorage 갱신 후 화면 업데이트 ────────────
-// submitEdit() 전용 동기화 함수.
-// syncFromSheet()와 동일한 fetch 방식을 사용하되,
-// _syncInProgress 플래그를 공유하지 않아 독립 실행 가능.
-function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn, editPayload){
+// ── STEP 2 구현 (v111 저장속도 최적화) ──────────────────────────────────
+// submitEdit() 전용 저장확인 함수.
+// ★ customerId가 있으면(사실상 항상 있음 — 신규 저장 시 서버가 UUID를
+//   발급하므로) getCustomerById 단건 확인만 사용한다(요청사항 6, 40, 41).
+//   customerId를 전혀 알 수 없는 아주 드문 구형 케이스에서만, 기존과
+//   동일한 "전체 목록 조회 후 검색" 경로로 안전하게 폴백한다 — 데이터
+//   안전성을 위해 이 폴백 경로는 삭제하지 않았다(요청사항 14, 38).
+function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn, editPayload, _t0){
   editPayload = editPayload || {};
-  var searchNorm = normP(searchPhone);
-  var newNorm    = normP(newPhone);
+  _t0 = _t0===undefined ? performance.now() : _t0;
+  var targetCustomerId = editPayload.customerId || _editOriginalId || "";
 
   console.log("[_fetchSheetAndSave 시작]", {
     rowNumber:    editPayload.rowNumber    || "",
-    customerId:   editPayload.customerId   || "",
+    customerId:   targetCustomerId,
     phone:        editPayload.phone        || "",
     vehicleCount: Array.isArray(editPayload.vehicles) ? editPayload.vehicles.length : 0
   });
 
-  return fetch(SCRIPT_URL+"?action=list&_ts="+Date.now(), {method:"GET", cache:"no-store"})
-  .then(function(res){
-    if(!res.ok) throw new Error("HTTP "+res.status+" (시트 읽기 실패)");
-    return res.text();
-  })
-  .then(function(text){
-    var json;
-    try{
-      json=JSON.parse(text);
-    }catch(e){
-      console.error("[시트 읽기] JSON 파싱 실패. 응답 앞부분:", text.substring(0,200));
-      throw new Error("시트 응답이 JSON이 아닙니다. Apps Script 배포 상태를 확인하세요.");
-    }
+  if(!targetCustomerId){
+    console.warn("[_fetchSheetAndSave] customerId를 알 수 없어 전체 목록 조회로 폴백합니다(구형 데이터 경로).");
+    return _fetchSheetAndSaveFullListFallback(newPhone, msgEl, btn, editPayload);
+  }
 
-    console.log("[구글시트 응답] success="+json.success+" / 고객 수="+
-      (json.customers?json.customers.length:"N/A"));
-
+  return pollSaveConfirmation(SCRIPT_URL+"?action=getCustomerById&customerId="+encodeURIComponent(targetCustomerId))
+  .then(function(json){
+    var _tConfirm = performance.now();
     if(json.debug) console.log("[Apps Script 진단 _fetch]", json.debug);
-
-    if(!json.success){
-      throw new Error(json.message||"Apps Script 오류 (success:false)");
+    if(!json || json.success!==true){
+      throw new Error((json && json.message) || "저장확인 응답 오류");
     }
-
-    var incoming = json.customers || [];
-
-    // ★ 0건 안전장치
-    var existingForCheck2 = load();
-    if(incoming.length === 0 && existingForCheck2.length > 0){
-      throw new Error("⚠ 구글시트 응답 0건 — 기존 "+existingForCheck2.length+
-        "건 보호. 시트명·헤더를 확인하세요.");
-    }
-
-    // ── 수정된 고객 찾기: rowNumber → customerId → phone 순 ──
-    var targetRowNumber  = _editOriginalRowNumber || editPayload.rowNumber || "";
-    var targetCustomerId = editPayload.customerId || "";
-
-    var found = null;
-    if(targetRowNumber){
-      found = incoming.find(function(c){
-        return String(c._rowNumber||"") === String(targetRowNumber);
-      });
-    }
-    if(!found && targetCustomerId){
-      found = incoming.find(function(c){
-        return String(c.customerId||"") === String(targetCustomerId);
-      });
-    }
-    if(!found && newNorm){
-      found = incoming.find(function(c){ return normP(c.phone) === newNorm; });
-    }
-
-    if(!found){
-      console.warn("[동기화 경고] 시트에서 해당 고객을 찾지 못함.");
-    } else {
-      console.log("[동기화 확인] rowNumber="+found._rowNumber+" / "+found.customerName);
-
-      // ★ 저장 직후 서버 응답 검증 — 방금 보낸 vehicles 개수와
-      //   서버 GET 응답의 vehicles 개수가 실제로 일치하는지 확인한다.
-      //   불일치하면 프론트에서 임의로 보정하지 않고 콘솔에 그대로 드러낸다.
-      var sentCount   = Array.isArray(editPayload.vehicles) ? editPayload.vehicles.length : -1;
-      var serverHasField = Object.prototype.hasOwnProperty.call(found, "vehicles");
-      var serverCount = (serverHasField && Array.isArray(found.vehicles)) ? found.vehicles.length : -1;
-      console.log("[저장 후 서버 차량 확인]", {
-        customerId: found.customerId,
-        customerName: found.customerName,
-        sentVehicleCount: sentCount,
-        serverHasVehiclesField: serverHasField,
-        serverVehicleCount: serverCount,
-        serverVehicles: found.vehicles
-      });
-      if(serverHasField && sentCount >= 0 && serverCount !== sentCount){
-        console.warn("[⚠ 저장 검증 실패] 보낸 차량 수("+sentCount+")와 서버 저장 차량 수("+
-          serverCount+")가 다릅니다. Apps Script handleEdit()의 구매차량 저장 로직을 확인하세요.");
+    if(!json.found || !json.customer){
+      // ★ 못 찾았다고 즉시 실패로 단정하지 않는다(요청사항 36) — 지연 안내만 표시.
+      if(msgEl){
+        msgEl.className="st-msg edit-save-msg";
+        msgEl.textContent="저장은 처리 중입니다. 잠시 후 고객목록을 새로고침해 확인해주세요.";
       }
-      // ★ 서버 응답에 vehicles 필드가 없다고 해서 방금 보낸 editPayload 값을
-      //   화면에 임시로 반영하지 않는다. 그 "임시 호환"이 PC/모바일 숫자가
-      //   갈라지던 원인 중 하나였다. 필드가 없으면 아래 normalizeServerCustomers()에서
-      //   예외가 발생해 명확한 배포 오류로 표시된다.
-
-      // ★ 레거시 고객 차량의 구매차량 전환 및 문서관리 연결 복구 (code106) —
-      //   저장 성공 직후, 지금 열려 있는 수정 모달의 차량 카드에도 서버가
-      //   실제로 발급한 최신 vehicleId를 즉시 반영한다(모달이 곧 자동으로
-      //   닫히더라도, 그 사이 사용자가 문서관리 버튼을 누르는 경우까지 대비).
-      try{
-        if(_editOriginalId && String(found.customerId||"")===String(_editOriginalId)){
-          renderVehiclesToDom("edit-veh-list", migrateVehicles(found));
-          refreshEditDocSummary();
-        }
-      }catch(refreshErr){ console.error("[저장 후 차량카드 즉시 반영 실패]", refreshErr); }
+      scheduleBackgroundSync(1500);
+      return;
     }
 
-    // ── 구글시트 행 기준 필터 ────────────────────────────────
-    var sheetRows = incoming.filter(function(c){
-      return c && (
-        (c.customerName && String(c.customerName).trim()) ||
-        (c.phone        && String(c.phone).trim())
-      );
+    var found = json.customer;
+    console.log("[동기화 확인] customerId="+found.customerId+" / "+found.customerName);
+
+    // ★ 저장 직후 서버 응답 검증 — 방금 보낸 vehicles 개수와
+    //   서버 확인 응답의 vehicles 개수가 실제로 일치하는지 확인한다.
+    var sentCount   = Array.isArray(editPayload.vehicles) ? editPayload.vehicles.length : -1;
+    var serverHasField = Object.prototype.hasOwnProperty.call(found, "vehicles");
+    var serverCount = (serverHasField && Array.isArray(found.vehicles)) ? found.vehicles.length : -1;
+    console.log("[저장 후 서버 차량 확인]", {
+      customerId: found.customerId, customerName: found.customerName,
+      sentVehicleCount: sentCount, serverHasVehiclesField: serverHasField,
+      serverVehicleCount: serverCount, serverVehicles: found.vehicles
     });
-    // ★ 0건 안전장치
-    if(sheetRows.length === 0 && existingForCheck2 && existingForCheck2.length > 0){
-      throw new Error("⚠ 유효 고객 행 0건 — 기존 "+existingForCheck2.length+"건 보호. 헤더 매핑 확인 필요.");
+    if(serverHasField && sentCount >= 0 && serverCount !== sentCount){
+      console.warn("[⚠ 저장 검증 실패] 보낸 차량 수("+sentCount+")와 서버 저장 차량 수("+
+        serverCount+")가 다릅니다. Apps Script handleEdit()의 구매차량 저장 로직을 확인하세요.");
     }
 
-    // 날짜 정규화
-    sheetRows.forEach(function(c){
-      DATE_FIELDS_LIST.forEach(function(f){
-        if(c[f] !== undefined && c[f] !== null && c[f] !== "") c[f] = normalizeDateStr(c[f]);
-      });
-    });
-
-    // ★ deliveryMonth 자동 보정
-    sheetRows.forEach(function(c){
-      if((!c.deliveryMonth || c.deliveryMonth === "") && c.deliveryDate && c.deliveryDate.length >= 7){
-        c.deliveryMonth = c.deliveryDate.substring(0,7);
+    // ★ 지금 열려 있는 수정 모달의 차량 카드에 서버가 발급한 최신 vehicleId를 즉시 반영.
+    try{
+      if(_editOriginalId && String(found.customerId||"")===String(_editOriginalId) && serverHasField){
+        renderVehiclesToDom("edit-veh-list", migrateVehicles(found));
+        refreshEditDocSummary();
       }
-    });
+    }catch(refreshErr){ console.error("[저장 후 차량카드 즉시 반영 실패]", refreshErr); }
 
-    // ★ vehicles 정규화 — syncFromSheet()와 완전히 동일한 공통 함수 사용.
-    //   서버 응답에 vehicles 필드가 없으면 예외를 던지고, 아래 .catch()에서
-    //   저장 실패로 표시한다. 로컬 vehicles로 임의 복구하지 않는다.
-    sheetRows = normalizeServerCustomers(sheetRows);
+    // ★ 해당 고객 1명만 localStorage에 반영 (요청사항 9, 34) — 전체 고객
+    //   목록을 다시 받아 덮어쓰지 않는다.
+    upsertCustomerLocal(found);
+    var _tLocal = performance.now();
 
-    // rowNumber / customerId 보완
-    sheetRows.forEach(function(c, i){
-      if(!c._rowNumber) c._rowNumber = i + 2;
-      if(!c.customerId) c.customerId = "ROW-" + c._rowNumber;
-    });
-
-    // ★ 시트 기준 완전 덮어쓰기
-    save(sheetRows);
-    console.log("[동기화 완료] localStorage에 " + sheetRows.length + "건 저장 (행 기준, dedupe 없음)");
-
-    // 화면 전체 갱신
     updateDash();
     renderHomeContacts();
+    // 상태/유입경로 필터가 걸려있으면 목록에서 사라지거나 위치가 바뀔 수
+    // 있으므로, 목록 화면이 열려 있을 때만 다시 그린다(요청사항 34, 42).
     if(document.getElementById("listView")&&
        document.getElementById("listView").classList.contains("active")) renderList();
     renderAnalyticsIfVisible();
+    var _tRender = performance.now();
+
+    console.log("[수정저장 성능] 서버확인:"+Math.round(_tConfirm-_t0)+
+      "ms localStorage:"+Math.round(_tLocal-_tConfirm)+"ms 화면렌더:"+Math.round(_tRender-_tLocal)+
+      "ms 총 체감시간:"+Math.round(_tRender-_t0)+"ms");
 
     if(msgEl){
       msgEl.className="st-msg edit-save-msg ok";
       msgEl.textContent="✅ 수정이 저장되었습니다.";
     }
-    // 성공 후 0.5초 뒤 모달 닫기 + 전체 갱신
     setTimeout(function(){
       closeEdit();
       updateDash();
@@ -4867,6 +4908,9 @@ function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn, editPayload){
          document.getElementById("listView").classList.contains("active")) renderList();
       renderAnalyticsIfVisible();
     }, 500);
+
+    // ★ 전체 동기화는 사용자를 기다리게 하지 않고 뒤에서 실행 (요청사항 10, 31).
+    scheduleBackgroundSync(1500);
   })
   .catch(function(err){
     console.error("[_fetchSheetAndSave 오류]", err);
@@ -4878,6 +4922,67 @@ function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn, editPayload){
   })
   .finally(function(){
     if(btn){ btn.disabled=false; btn.textContent="✅ 수정 저장"; }
+    _saveInProgress = false;
+  });
+}
+
+// ── customerId를 전혀 알 수 없는 아주 드문 구형 케이스 전용 폴백.
+//   기존(v110 이전) 전체 목록 조회 로직을 그대로 유지한다 — 안전성 우선.
+function _fetchSheetAndSaveFullListFallback(newPhone, msgEl, btn, editPayload){
+  var newNorm = normP(newPhone);
+  return fetch(SCRIPT_URL+"?action=list&_ts="+Date.now(), {method:"GET", cache:"no-store"})
+  .then(function(res){
+    if(!res.ok) throw new Error("HTTP "+res.status+" (시트 읽기 실패)");
+    return res.json();
+  })
+  .then(function(json){
+    if(!json.success) throw new Error(json.message||"Apps Script 오류 (success:false)");
+    var incoming = json.customers || [];
+    var existingForCheck2 = load();
+    if(incoming.length === 0 && existingForCheck2.length > 0){
+      throw new Error("⚠ 구글시트 응답 0건 — 기존 "+existingForCheck2.length+"건 보호. 시트명·헤더를 확인하세요.");
+    }
+    var found = null;
+    if(_editOriginalRowNumber){
+      found = incoming.find(function(c){ return String(c._rowNumber||"")===String(_editOriginalRowNumber); });
+    }
+    if(!found && newNorm){
+      found = incoming.find(function(c){ return normP(c.phone)===newNorm; });
+    }
+
+    var sheetRows = incoming.filter(function(c){
+      return c && ((c.customerName && String(c.customerName).trim()) || (c.phone && String(c.phone).trim()));
+    });
+    if(sheetRows.length === 0 && existingForCheck2.length > 0){
+      throw new Error("⚠ 유효 고객 행 0건 — 기존 "+existingForCheck2.length+"건 보호. 헤더 매핑 확인 필요.");
+    }
+    sheetRows.forEach(function(c){
+      DATE_FIELDS_LIST.forEach(function(f){
+        if(c[f] !== undefined && c[f] !== null && c[f] !== "") c[f] = normalizeDateStr(c[f]);
+      });
+      if((!c.deliveryMonth || c.deliveryMonth==="") && c.deliveryDate && c.deliveryDate.length>=7){
+        c.deliveryMonth = c.deliveryDate.substring(0,7);
+      }
+    });
+    sheetRows = normalizeServerCustomers(sheetRows);
+    sheetRows.forEach(function(c, i){
+      if(!c._rowNumber) c._rowNumber = i + 2;
+      if(!c.customerId) c.customerId = "ROW-" + c._rowNumber;
+    });
+    save(sheetRows);
+    updateDash(); renderHomeContacts();
+    if(document.getElementById("listView")&&document.getElementById("listView").classList.contains("active")) renderList();
+    renderAnalyticsIfVisible();
+    if(msgEl){ msgEl.className="st-msg edit-save-msg ok"; msgEl.textContent="✅ 수정이 저장되었습니다."; }
+    setTimeout(function(){ closeEdit(); }, 500);
+  })
+  .catch(function(err){
+    console.error("[_fetchSheetAndSaveFullListFallback 오류]", err);
+    if(msgEl){ msgEl.className="st-msg edit-save-msg err"; msgEl.textContent="❌ "+err.message; }
+  })
+  .finally(function(){
+    if(btn){ btn.disabled=false; btn.textContent="✅ 수정 저장"; }
+    _saveInProgress = false;
   });
 }
 
@@ -5851,6 +5956,7 @@ var _autoSyncTimer = null;
 var AUTO_SYNC_INTERVAL = 60000;
 
 function canAutoSync(){
+  if(_saveInProgress) return false; // ★ 저장/저장확인 진행 중에는 자동동기화를 건너뛴다 (요청사항 46)
   var editOverlay = document.getElementById("editOverlay");
   if(editOverlay && editOverlay.classList.contains("open")) return false;
   var newView = document.getElementById("newView");
