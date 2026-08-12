@@ -19,8 +19,8 @@
     //   Google Drive에 업로드·조회·교체·삭제할 수 있는 UI와 통신 함수가
     //   추가되었다. 기존 고객 등록/수정/삭제, 구매차량, 캘린더 연동,
     //   대시보드/분석 로직은 전혀 수정하지 않았다.
-    var APP_VERSION = "2026-08-11-v111-save-speed-optimization";
-    // ★ 고객 저장속도 최적화 — 고정대기 제거 / 단건 저장확인 / 부분 localStorage 갱신
+    var APP_VERSION = "2026-08-12-v112-save-confirmation-404-fix";
+    // ★ 실제 저장 성공 후 저장확인 API HTTP 404 오판정 수정
     console.log("[CRM VERSION]", APP_VERSION);
   </script>
 
@@ -420,6 +420,7 @@
       text-align:center;animation:vIn .2s ease;}
     .st-msg.ok{display:block;background:#edfaf3;border:1px solid #a8dfc0;color:var(--success);}
     .st-msg.err{display:block;background:#fdf0ef;border:1px solid #f0b8b2;color:var(--danger);}
+    .st-msg.warn{display:block;background:#fff8e6;border:1px solid #f0d68a;color:#8a6d1a;}
 
     /* 상태 뱃지 */
     .badge{display:inline-block;font-size:11px;font-weight:700;
@@ -2956,7 +2957,15 @@ function upsertCustomerLocal(customer){
 // ── 저장확인 GET API를 짧은 간격으로 재시도한다 (요청사항 5, 6).
 //    고정 2.5~3초 대기 대신, 250ms → 350ms → 500ms → 750ms 간격으로
 //    최대 delays.length회까지 짧게 재시도하고, 찾으면 즉시 중단한다.
-//    POST는 절대 재전송하지 않는다 — 오직 이 GET 확인만 재시도한다(요청사항 26).
+//    ★ 저장확인 실패는 POST 저장 실패를 의미하지 않는다.
+//      저장확인 오류 발생 시 POST를 절대 자동 재전송하지 않는다(요청사항 5, 26).
+//    ★ 요청사항 8: HTTP 상태를 보존해 던진다(err.httpStatus) — 호출부(submitNew)가
+//      404(엔드포인트 문제)/403(권한)/5xx(서버 오류)/네트워크 오류를 구분해
+//      서로 다른 안내와 폴백을 적용할 수 있게 한다.
+//    ★ 이전 버전 버그: HTTP 오류를 그냥 throw만 하면 재시도 루프를 타지 않고
+//      즉시 reject되어, 실제로는 저장에 성공한 경우에도 "저장 실패"로
+//      잘못 표시되는 문제가 있었다(2026-08-12 신고 사례). 아래는 HTTP 오류도
+//      .catch에서 받아 재시도 여부를 판단하도록 고쳤다.
 function pollSaveConfirmation(url, delays){
   delays = delays || [250,350,500,750];
   var attempt = 0;
@@ -2965,7 +2974,11 @@ function pollSaveConfirmation(url, delays){
     var t = performance.now();
     return fetch(url+(url.indexOf("?")>=0?"&":"?")+"_ts="+Date.now(), {method:"GET", cache:"no-store"})
       .then(function(res){
-        if(!res.ok) throw new Error("HTTP "+res.status);
+        if(!res.ok){
+          var err = new Error("HTTP "+res.status);
+          err.httpStatus = res.status;
+          throw err;
+        }
         return res.json();
       })
       .then(function(json){
@@ -2979,9 +2992,48 @@ function pollSaveConfirmation(url, delays){
         return new Promise(function(resolve){
           setTimeout(function(){ resolve(tryOnce()); }, delays[attempt-1]);
         });
+      })
+      .catch(function(err){
+        console.warn("[저장확인 시도 "+attempt+" 오류] "+
+          (err && err.httpStatus ? "HTTP "+err.httpStatus : (err && err.message)||"알 수 없는 오류"));
+        // ★ 404/403/5xx처럼 명확한 HTTP 오류는 같은 URL을 반복 호출해도
+        //   결과가 바뀔 가능성이 낮으므로, 재시도로 시간을 낭비하지 않고
+        //   즉시 호출부로 넘겨 적절한 폴백(예: action=list 1회 조회)을 태운다.
+        //   httpStatus가 없는 순수 네트워크/타임아웃 오류만 남은 횟수만큼 재시도한다.
+        if((err && err.httpStatus) || attempt >= delays.length + 1){
+          throw err;
+        }
+        return new Promise(function(resolve){
+          setTimeout(function(){ resolve(tryOnce()); }, delays[attempt-1]);
+        });
       });
   }
   return tryOnce();
+}
+
+// ── HTTP 404 비상 폴백 전용 (요청사항 4) ────────────────────────
+//   getCustomerByRequestToken/getCustomerById가 404일 때만 사용한다.
+//   평상시 저장 흐름에서는 절대 호출되지 않는다 — action=list 전체조회는
+//   무겁기 때문에 "단건 확인 API 자체에 접근할 수 없는" 비상 상황에서만 쓴다.
+//   POST는 여기서도 재전송하지 않는다.
+function fallbackConfirmViaList(matcher){
+  console.log("[저장확인 폴백] action=list 1회 조회로 전환 (단건 확인 API 404)");
+  return fetch(SCRIPT_URL+"?action=list&_ts="+Date.now(), {method:"GET", cache:"no-store"})
+    .then(function(res){
+      if(!res.ok) throw new Error("HTTP "+res.status+" (폴백 조회도 실패)");
+      return res.json();
+    })
+    .then(function(json){
+      if(!json || json.success!==true || !Array.isArray(json.customers)){
+        return {success:true, found:false};
+      }
+      var found = json.customers.find(matcher);
+      if(found){
+        console.log("[저장확인] 단건 API 404 → 전체목록 폴백 성공");
+        return {success:true, found:true, customer:found};
+      }
+      return {success:true, found:false};
+    });
 }
 
 // ── 저장 완료 이후 실행되는 백그라운드 전체 동기화 (요청사항 10, 31).
@@ -4291,13 +4343,64 @@ function submitNew(){
       SCRIPT_URL+"?action=getCustomerByRequestToken&requestToken="+encodeURIComponent(data.requestToken)
     );
   })
+  .catch(function(err){
+    // ★★★ 저장확인 실패는 POST 저장 실패를 의미하지 않는다. ★★★
+    //   저장확인 오류 발생 시 POST를 절대 자동 재전송하지 않는다(요청사항 5, 8, 26).
+    //   여기서 HTTP 상태별로 분기해 각각 다른 처리를 한다 — 어느 경우에도
+    //   POST 재전송은 하지 않는다.
+    var status = err && err.httpStatus;
+
+    if(status === 404){
+      // ★ 요청사항 4: 단건 저장확인 API 자체가 404일 때만 action=list로
+      //   1회 폴백한다. requestToken이 정확히 일치하는 고객을 찾는다.
+      console.warn("[저장확인] HTTP 404 — action=list 1회 폴백 시도");
+      return fallbackConfirmViaList(function(c){
+        return String(c.requestToken||"")===String(data.requestToken||"");
+      }).then(function(fbResult){
+        fbResult._via404Fallback = true;
+        return fbResult;
+      }).catch(function(fbErr){
+        console.error("[저장확인 404 폴백도 실패]", fbErr);
+        return { success:false, _confirmBlocked:true, _reason:"404-fallback-failed" };
+      });
+    }
+    if(status === 403){
+      console.error("[저장확인] HTTP 403 — 권한 문제");
+      return { success:false, _confirmBlocked:true, _reason:"403" };
+    }
+    if(status >= 500){
+      console.error("[저장확인] HTTP "+status+" — 서버 오류");
+      return { success:false, _confirmBlocked:true, _reason:"5xx", httpStatus: status };
+    }
+    // httpStatus가 없는 경우 = 순수 네트워크/타임아웃 오류
+    console.error("[저장확인] 네트워크 오류", err);
+    return { success:false, _confirmBlocked:true, _reason:"network" };
+  })
   .then(function(result){
     var _tConfirm = performance.now();
     console.log("[저장 확인 응답]", result, "[SERVER VERSION]", result && result.serverVersion);
 
+    // ★ 저장확인 자체가 막힌 경우(404 폴백도 실패/403/5xx/네트워크) —
+    //   실패 박스(빨강)가 아니라 경고 박스(주황)로 표시한다. 이번 사례처럼
+    //   실제로는 시트에 정상 저장되어 있을 수 있으므로 "저장 실패"라고
+    //   단정하지 않는다. 폼도 자동으로 초기화하지 않아 입력내용을 보존한다.
+    if(result && result._confirmBlocked){
+      var reasonMsg = {
+        "403": "⚠ 고객정보가 서버로 전송되었지만, 저장확인 API 접근 권한 문제로 저장 여부를 확인하지 못했습니다.\n같은 고객을 다시 저장하지 마세요. 고객목록의 [불러오기]를 눌러 먼저 확인해주세요.",
+        "5xx": "⚠ 고객정보가 서버로 전송되었지만, 서버 오류로 저장 여부를 확인하지 못했습니다.\n같은 고객을 다시 저장하지 마세요. 고객목록의 [불러오기]를 눌러 먼저 확인해주세요.",
+        "network": "⚠ 고객정보가 서버로 전송되었지만 저장 여부를 확인하지 못했습니다.\n같은 고객을 다시 저장하지 마세요. 고객목록의 [불러오기]를 눌러 먼저 확인해주세요.",
+        "404-fallback-failed": "⚠ 고객정보가 서버로 전송되었지만 저장확인 API에 연결하지 못했습니다(HTTP 404, 전체목록 확인도 실패).\n같은 고객을 다시 저장하지 마세요. 고객목록의 [불러오기]를 눌러 먼저 확인해주세요.\nCRM 관리자에게 Apps Script 재배포 상태 확인을 요청하세요."
+      };
+      showMsg("msg-new","warn", reasonMsg[result._reason] || "⚠ 저장 여부를 확인하지 못했습니다. 같은 고객을 다시 저장하지 마세요.");
+      // ★ 폼을 초기화하지 않는다 — 입력내용 보존(요청사항 10).
+      scheduleBackgroundSync(1500);
+      return null;
+    }
+
     if(!result || result.success!==true){
       throw new Error(result && result.message ? result.message : "저장확인 응답 오류");
     }
+
     if(!result.found || !result.customer){
       // ★ 아직 못 찾았다고 즉시 "저장 실패"로 단정하지 않는다(요청사항 36).
       //   no-cors POST 특성상 서버가 아직 처리 중일 수 있다.
@@ -4323,10 +4426,11 @@ function submitNew(){
 
     console.log("[신규저장 성능] 서버확인:"+Math.round(_tConfirm-_t0)+
       "ms localStorage:"+Math.round(_tLocal-_tConfirm)+"ms 화면렌더:"+Math.round(_tRender-_tLocal)+
-      "ms 총 체감시간:"+Math.round(_tRender-_t0)+"ms");
+      "ms 총 체감시간:"+Math.round(_tRender-_t0)+"ms",
+      result._via404Fallback ? "(단건 API 404 → 전체목록 폴백 성공)" : "");
 
     console.log("[신규저장 완료]", data.customerName, "customerId:", savedCustomer.customerId);
-    showMsg("msg-new","ok","✅ 고객정보가 구글시트에 저장되었습니다. (customerId: "+savedCustomer.customerId+")");
+    showMsg("msg-new","ok","✅ 고객정보가 저장되었습니다. (customerId: "+savedCustomer.customerId+")");
     resetNewForm();
 
     // ★ 전체 동기화는 사용자를 기다리게 하지 않고 뒤에서 실행 (요청사항 10, 31).
@@ -4334,6 +4438,8 @@ function submitNew(){
     return null;
   })
   .catch(function(err){
+    // 여기 도달하는 경우는 POST 자체(no-cors라 사실상 항상 통과) 이전 단계의
+    // 순수 코드 오류이거나, result.success!==true(진짜 서버측 오류 응답)뿐이다.
     console.error("[신규 저장 오류]", err);
     showMsg("msg-new","err","❌ 저장 실패: "+(err && err.message ? err.message : "알 수 없는 오류"));
   })
@@ -4836,9 +4942,35 @@ function _fetchSheetAndSave(searchPhone, newPhone, msgEl, btn, editPayload, _t0)
   }
 
   return pollSaveConfirmation(SCRIPT_URL+"?action=getCustomerById&customerId="+encodeURIComponent(targetCustomerId))
+  .catch(function(err){
+    // ★ 저장확인 실패는 POST 저장 실패를 의미하지 않는다.
+    //   저장확인 오류 발생 시 POST를 절대 자동 재전송하지 않는다.
+    var status = err && err.httpStatus;
+    if(status === 404){
+      console.warn("[수정 저장확인] HTTP 404 — action=list 1회 폴백 시도");
+      return fallbackConfirmViaList(function(c){
+        return String(c.customerId||"")===String(targetCustomerId);
+      }).then(function(fbResult){ fbResult._via404Fallback = true; return fbResult; })
+        .catch(function(){ return { success:false, _confirmBlocked:true, _reason:"404-fallback-failed" }; });
+    }
+    if(status === 403) return { success:false, _confirmBlocked:true, _reason:"403" };
+    if(status >= 500)  return { success:false, _confirmBlocked:true, _reason:"5xx", httpStatus: status };
+    return { success:false, _confirmBlocked:true, _reason:"network" };
+  })
   .then(function(json){
     var _tConfirm = performance.now();
     if(json.debug) console.log("[Apps Script 진단 _fetch]", json.debug);
+
+    if(json && json._confirmBlocked){
+      // ★ 실패(빨강) 대신 경고(주황) — 실제로는 저장됐을 수 있으므로 단정하지 않는다.
+      if(msgEl){
+        msgEl.className="st-msg edit-save-msg warn";
+        msgEl.textContent="⚠ 수정 내용이 서버로 전송되었지만 저장 여부를 확인하지 못했습니다.\n"+
+          "고객목록의 [불러오기]를 눌러 먼저 확인해주세요. 같은 수정을 다시 저장하지 마세요.";
+      }
+      scheduleBackgroundSync(1500);
+      return;
+    }
     if(!json || json.success!==true){
       throw new Error((json && json.message) || "저장확인 응답 오류");
     }
@@ -5988,6 +6120,48 @@ function startAutoSync(){
 // 페이지 로드 시 자동 불러오기 + 60초마다 자동 동기화
 syncFromSheet(true);
 startAutoSync();
+checkServerInfo(); // ★ 저장 전에 서버 API 상태 확인 (요청사항 7)
+
+// ============================================================
+// ★ serverInfo 확인 — 현재 배포가 저장확인 API(getCustomerByRequestToken/
+//   getCustomerById)를 지원하는지 페이지 로딩 후 1회 확인한다(요청사항 6, 7).
+//   실패해도 CRM 사용을 막지 않는다 — 정보 표시 및 콘솔 경고만 한다.
+//   404(엔드포인트 자체가 없음)와 네트워크 오류/타임아웃을 구분한다.
+// ============================================================
+var _serverInfo = { checked:false, ok:null, httpStatus:null };
+function checkServerInfo(){
+  fetch(SCRIPT_URL+"?action=serverInfo&_ts="+Date.now(), {method:"GET", cache:"no-store"})
+    .then(function(res){
+      if(!res.ok){
+        var err = new Error("HTTP "+res.status);
+        err.httpStatus = res.status;
+        throw err;
+      }
+      return res.json();
+    })
+    .then(function(json){
+      _serverInfo.checked = true;
+      _serverInfo.ok = !!(json && json.success);
+      _serverInfo.features = json && json.features;
+      console.log("[serverInfo]", json);
+      if(json && json.features && json.features.getCustomerByRequestToken === false){
+        console.warn("[serverInfo] 현재 배포가 저장확인 API를 지원하지 않습니다. Code.gs 재배포가 필요할 수 있습니다.");
+      }
+    })
+    .catch(function(err){
+      _serverInfo.checked = true;
+      _serverInfo.ok = false;
+      _serverInfo.httpStatus = err && err.httpStatus;
+      if(err && err.httpStatus === 404){
+        // ★ 404는 명확한 배포 문제 신호 — 저장 기능 자체를 막지는 않지만 콘솔에 강하게 경고.
+        console.error("[serverInfo] HTTP 404 — SCRIPT_URL의 현재 배포가 최신 Code.gs가 아니거나 " +
+          "잘못된 배포 URL일 수 있습니다. Apps Script > 배포 > 배포 관리에서 확인해주세요.");
+      } else {
+        // 네트워크 오류/타임아웃은 일시적일 수 있으므로 낮은 수준의 경고만 남긴다.
+        console.warn("[serverInfo] 확인 실패(네트워크 오류일 수 있음):", err && err.message);
+      }
+    });
+}
 
 // ============================================================
 // ★ Google Drive 고객·구매차량 문서관리 추가 — 프론트엔드 로직
