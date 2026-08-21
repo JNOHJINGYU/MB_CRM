@@ -10,7 +10,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyPgg64m9RJB0I-KUEVaKpfifcq5Vy_WIbsICCtjU-q9TcU0BpCKQnvFl-JAcYZ39Bvdg/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhf-UEOLkREWj7MPX_Sp4eWANAmVdxhN1259gHC95qZHZBFmhW6edqa0ythU7aUHTg/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     // PC·모바일이 같은 버전을 보고 있는지 확인하기 위한 버전 표식.
@@ -19,7 +19,7 @@
     //   Google Drive에 업로드·조회·교체·삭제할 수 있는 UI와 통신 함수가
     //   추가되었다. 기존 고객 등록/수정/삭제, 구매차량, 캘린더 연동,
     //   대시보드/분석 로직은 전혀 수정하지 않았다.
-    var APP_VERSION = "2026-08-14-v114-autosave-stability-fix";
+    var APP_VERSION = "2026-08-21-v115-doc-upload-perf-optimization";
     // ★ 자동저장 안정화 — 최종저장 Lock 경쟁 제거 / found:false 시 Draft·폼 보존
     // ★ 실제 저장 성공 후 저장확인 API HTTP 404 오판정 수정
     console.log("[CRM VERSION]", APP_VERSION);
@@ -7064,11 +7064,26 @@ function onDocModalFilesChosen(input){
 
   var uploadBtn = document.querySelector('label[for="docModalFileInput"]');
   if(uploadBtn) uploadBtn.style.pointerEvents = "none";
-  uploadFilesSequentially(files, docType, docName, memo, 0, {success:0, fail:0}, uploadBtn);
+  uploadFilesWithLimitedConcurrency(files, docType, docName, memo, uploadBtn);
   input.value = "";
 }
-function uploadFilesSequentially(files, docType, docName, memo, index, counts, uploadBtn){
-  if(index>=files.length){
+
+// ── (성능 최적화) 최대 2개까지 동시 업로드 ──────────────────────
+// 기존에는 파일 하나가 완전히 끝난 뒤에만 다음 파일을 시작했다(순차).
+// Apps Script/Drive/Spreadsheet 동시 요청 충돌 가능성 때문에 무제한
+// 병렬은 쓰지 않되, 서버에 requestToken 기반 중복방지가 확실히 있으므로
+// 최대 2개까지의 제한적 동시 업로드는 안전하다고 판단해 적용했다
+// (요청사항 13). 3개 이상 동시에 진행되는 일은 없다.
+var DOC_UPLOAD_MAX_CONCURRENCY = 2;
+
+function uploadFilesWithLimitedConcurrency(files, docType, docName, memo, uploadBtn){
+  var total = files.length;
+  var counts = {success:0, fail:0};
+  var nextIndex = 0;
+  var completedCount = 0;
+  var concurrency = Math.min(DOC_UPLOAD_MAX_CONCURRENCY, total);
+
+  function finishAll(){
     if(uploadBtn) uploadBtn.style.pointerEvents = "";
     var msg = "완료: 성공 "+counts.success+"건"+(counts.fail?" · 실패 "+counts.fail+"건":"");
     // ★ 실패 이유가 있으면 화면에 그대로 보여준다 — 콘솔만 봐야 했던 문제 수정
@@ -7076,12 +7091,38 @@ function uploadFilesSequentially(files, docType, docName, memo, index, counts, u
     showDocProgress(msg, counts.fail?"err":"ok");
     refreshDocModalList();
     refreshEditDocSummary();
-    return;
   }
-  var file = files[index];
-  showDocProgress("("+(index+1)+"/"+files.length+") 업로드 중… "+file.name, "");
+
+  function startNext(){
+    if(nextIndex >= total) return;
+    var index = nextIndex++;
+    var file = files[index];
+    showDocProgress("("+(completedCount+1)+"/"+total+") 업로드 중… "+file.name, "");
+    uploadSingleFile(file, docType, docName, memo).then(function(result){
+      if(result.success){ counts.success++; }
+      else { counts.fail++; counts.lastError = result.message; }
+    }).catch(function(err){
+      counts.fail++;
+      counts.lastError = "네트워크/응답 오류: "+(err&&err.message?err.message:String(err));
+      console.error("[문서 업로드 오류]", file.name, err);
+    }).then(function(){
+      completedCount++;
+      if(completedCount>=total){ finishAll(); }
+      else { startNext(); }
+    });
+  }
+
+  for(var i=0;i<concurrency;i++){ startNext(); }
+}
+
+// ── 파일 1개 업로드 (Base64 변환 시간 / 네트워크+서버 시간을 콘솔에만 기록) ──
+// 요청사항 11: 사용자 화면에는 표시하지 않고 console.log로만 성능을 남긴다.
+function uploadSingleFile(file, docType, docName, memo){
   var requestToken = "REQ-"+Date.now()+"-"+Math.floor(Math.random()*100000);
-  fileToBase64(file).then(function(base64){
+  var tBase64Start = performance.now();
+  return fileToBase64(file).then(function(base64){
+    var tBase64End = performance.now();
+    var tNetStart = performance.now();
     return docApiFetch({
       action:"uploadDocument",
       documentScope:_docModal.scope,
@@ -7096,20 +7137,18 @@ function uploadFilesSequentially(files, docType, docName, memo, index, counts, u
       fileSize:file.size,
       base64Data:base64,
       requestToken:requestToken
-    });
-  }).then(function(json){
-    if(json && json.success){ counts.success++; }
-    else {
-      counts.fail++;
-      counts.lastError = (json && json.message) ? json.message : "서버가 오류 메시지를 반환하지 않았습니다.";
+    }).then(function(json){
+      var tNetEnd = performance.now();
+      var base64Ms = Math.round(tBase64End - tBase64Start);
+      var netMs = Math.round(tNetEnd - tNetStart);
+      var totalMs = Math.round(tNetEnd - tBase64Start);
+      console.log("[문서업로드 성능] "+file.name+"\nBase64 변환: "+base64Ms+"ms\n네트워크 + 서버: "+netMs+"ms\n총 소요: "+totalMs+"ms");
+      if(json && json.success){
+        return {success:true};
+      }
       console.error("[문서 업로드 실패]", file.name, json&&json.message);
-    }
-    uploadFilesSequentially(files, docType, docName, memo, index+1, counts, uploadBtn);
-  }).catch(function(err){
-    counts.fail++;
-    counts.lastError = "네트워크/응답 오류: "+(err&&err.message?err.message:String(err));
-    console.error("[문서 업로드 오류]", file.name, err);
-    uploadFilesSequentially(files, docType, docName, memo, index+1, counts, uploadBtn);
+      return {success:false, message: (json && json.message) ? json.message : "서버가 오류 메시지를 반환하지 않았습니다."};
+    });
   });
 }
 function showDocProgress(text, kind){
