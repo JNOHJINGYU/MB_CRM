@@ -4006,7 +4006,94 @@ var CARE_LABELS={
 // ============================================================
 var renderedCustomers = []; // 현재 화면에 렌더링된 고객 배열 (인덱스 기준 수정에 사용)
 
+// ============================================================
+// ★ 상세정보 open 상태 보존 (자동동기화/필터변경 등으로 renderList()가
+//   재실행되어도 사용자가 열어놓은 고객 상세정보가 자동으로 닫히지
+//   않도록 한다). renderList() 시작 시 현재 DOM의 open 상태를
+//   customerId(우선)/전화번호(대체) 기준으로 캡처했다가, 새 목록을
+//   그린 뒤 같은 고객이 여전히 화면에 있으면 그대로 복원한다.
+//   사용자가 직접 [상세정보 닫기]를 누른 경우는 DOM에서 open 클래스가
+//   이미 사라져 있으므로 캡처 대상에서 자연히 제외된다(별도 처리 불필요).
+// ============================================================
+function getCustomerDetailStateKey(c){
+  if(!c) return null;
+  if(c.customerId) return "id:"+c.customerId;
+  var p=normP(c.phone);
+  if(p) return "phone:"+p;
+  return null;
+}
+
+function captureOpenDetailState(){
+  var state=[];
+  var prevList=renderedCustomers||[];
+  var openBodies=document.querySelectorAll(".detail-body.open");
+  for(var i=0;i<openBodies.length;i++){
+    var body=openBodies[i];
+    var m=/^det-(\d+)$/.exec(body.id);
+    if(!m) continue;
+    var c=prevList[parseInt(m[1],10)];
+    var key=getCustomerDetailStateKey(c);
+    if(!key) continue; // customerId/전화번호가 모두 없으면 안전하게 식별 불가 → 복원 대상에서 제외
+    var openVehicleIdx=[];
+    var vehDetails=body.querySelectorAll(".customer-vehicle-detail.open");
+    for(var j=0;j<vehDetails.length;j++){
+      var vm=/^vehicle-detail-\d+-(\d+)$/.exec(vehDetails[j].id);
+      if(vm) openVehicleIdx.push(parseInt(vm[1],10));
+    }
+    state.push({key:key, openVehicleIdx:openVehicleIdx});
+  }
+  return state;
+}
+
+function restoreOpenDetailState(state, newList){
+  if(!state || !state.length) return;
+  for(var idx=0; idx<newList.length; idx++){
+    var c=newList[idx];
+    var key=getCustomerDetailStateKey(c);
+    if(!key) continue;
+    var saved=null;
+    for(var s=0;s<state.length;s++){ if(state[s].key===key){ saved=state[s]; break; } }
+    if(!saved) continue; // 검색/필터 변경으로 화면에서 빠졌던 고객이면 여기서 자연히 스킵됨
+
+    var body=document.getElementById("det-"+idx);
+    if(!body) continue;
+    body.classList.add("open");
+    var btn=body.previousElementSibling;
+    if(btn && btn.classList && btn.classList.contains("tog-btn")){
+      btn.classList.add("open");
+      var arr=btn.querySelector(".tog-arr");
+      if(arr) arr.textContent="▲";
+      if(btn.childNodes[0]) btn.childNodes[0].textContent="상세정보 닫기 ";
+      btn.setAttribute("aria-expanded","true");
+    }
+
+    // ★ 구매차량 아코디언 상태도 가능하면 함께 복원
+    if(saved.openVehicleIdx && saved.openVehicleIdx.length){
+      for(var v=0; v<saved.openVehicleIdx.length; v++){
+        var detailId="vehicle-detail-"+idx+"-"+saved.openVehicleIdx[v];
+        var vd=document.getElementById(detailId);
+        if(!vd) continue;
+        vd.classList.add("open");
+        var vbtn=document.querySelector('.customer-vehicle-toggle[aria-controls="'+detailId+'"]');
+        if(vbtn){
+          vbtn.classList.add("open");
+          vbtn.textContent="−";
+          vbtn.setAttribute("aria-expanded","true");
+        }
+      }
+    }
+
+    // togDet()으로 직접 열었을 때와 동일하게 문서 개수도 갱신한다.
+    if(typeof loadDetailDocSummary==="function") loadDetailDocSummary(body);
+  }
+}
+
 function renderList(){
+  // ★ 고객 상세정보 open 상태 보존 — 새로 렌더링하기 전에 현재 열려 있는
+  // 상세정보(및 그 안의 구매차량 아코디언)와 스크롤 위치를 기록해둔다.
+  var __prevScrollY=window.scrollY;
+  var __openDetailState=captureOpenDetailState();
+
   // ★ 고객목록 상태/유입경로 카운트 정확도 수정 — 고객목록·전체숫자·
   // 상태별숫자·유입경로별숫자가 전부 동일한 기준 배열을 쓰도록 통일
   // (요청사항 4). getCustomerListBaseData()는 load()에 customerId 완전
@@ -4185,6 +4272,15 @@ function renderList(){
     return;
   }
   con.innerHTML=filtered.map(function(c,i){return buildCard(c,i);}).join("");
+
+  // ★ 고객 상세정보 open 상태 복원 — 방금 새로 그린 DOM에서 이전에 열려
+  // 있던 고객의 상세정보(및 구매차량 아코디언)를 다시 연다. 이어서
+  // renderList() 이전의 스크롤 위치도 그대로 복원한다(강제 스크롤 이동 없이,
+  // 재렌더링으로 인해 브라우저가 스크롤 위치를 임의로 바꾸는 것만 되돌림).
+  restoreOpenDetailState(__openDetailState, filtered);
+  if(__openDetailState && __openDetailState.length){
+    window.scrollTo(window.scrollX, __prevScrollY);
+  }
 }
 
 // ============================================================
