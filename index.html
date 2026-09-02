@@ -601,6 +601,56 @@
       .customer-lead-btn{min-height:40px;height:40px;padding:0 13px;font-size:12px;}
     }
 
+    /* ★ 고객 최초 등록일 표시 + 등록월 필터 추가 — 유입경로 필터 스타일을 그대로 재사용 */
+    .customer-created-month-filter-wrap{margin:0 0 2px;max-width:100%;min-width:0;}
+    .customer-created-month-filter{
+      display:flex;flex-wrap:wrap;gap:8px;max-width:100%;min-width:0;
+    }
+    .customer-created-month-btn{
+      flex-shrink:0;
+      display:inline-flex;align-items:center;gap:6px;
+      height:38px;padding:0 15px;
+      border-radius:20px;border:1.5px solid var(--border2);
+      background:#fff;color:var(--text-dim);
+      font-family:var(--font);font-size:12.5px;font-weight:700;
+      cursor:pointer;transition:background .13s,color .13s,border-color .13s;
+      -webkit-tap-highlight-color:transparent;
+      white-space:nowrap;
+    }
+    .customer-created-month-btn:hover{border-color:var(--gold);color:var(--gold-dk);}
+    .customer-created-month-btn.active{
+      background:var(--gold);border-color:var(--gold);color:#fff;
+      box-shadow:0 2px 8px rgba(184,150,58,.25);
+    }
+    .customer-created-month-btn.all.active{
+      background:var(--black);border-color:var(--black);
+      box-shadow:0 2px 8px rgba(0,0,0,.25);
+    }
+    .customer-created-month-count{
+      font-size:11px;font-weight:800;
+      background:rgba(0,0,0,.06);color:inherit;
+      border-radius:10px;padding:1px 7px;
+      min-width:18px;text-align:center;
+    }
+    .customer-created-month-btn.active .customer-created-month-count{background:rgba(255,255,255,.28);}
+
+    @media(min-width:641px) and (max-width:1199px){
+      .customer-created-month-filter{gap:8px;}
+      .customer-created-month-btn{height:40px;padding:0 17px;font-size:13px;}
+    }
+
+    @media(max-width:640px){
+      .customer-created-month-filter{
+        flex-wrap:nowrap;
+        overflow-x:auto;
+        -webkit-overflow-scrolling:touch;
+        scrollbar-width:none;
+        padding-bottom:2px;
+      }
+      .customer-created-month-filter::-webkit-scrollbar{display:none;}
+      .customer-created-month-btn{min-height:40px;height:40px;padding:0 13px;font-size:12px;}
+    }
+
     /* 고객 카드 */
     .cust-card{background:var(--surface);border:1px solid var(--border);
       border-radius:var(--radius);padding:16px;margin-bottom:12px;
@@ -1624,6 +1674,11 @@
     <div class="customer-lead-filter-wrap">
       <div class="customer-lead-filter" id="customerLeadFilter" aria-label="유입경로 필터"></div>
     </div>
+    <!-- ★ 고객 최초 등록일 표시 + 등록월 필터 추가 -->
+    <div class="filter-section-label">등록월</div>
+    <div class="customer-created-month-filter-wrap">
+      <div class="customer-created-month-filter" id="customerCreatedMonthFilter" aria-label="등록월 필터"></div>
+    </div>
     <div class="active-filter-summary" id="activeFilterSummary"></div>
     <div class="filter-bar" id="filterBar">
       <div class="filter-label" id="filterLabel">전체 고객</div>
@@ -2093,6 +2148,7 @@ var currentFilter = "";       // 고객현황 상태 필터
 var currentCareFilter = "";   // 차량관리 알림 필터
 var currentDeliveryYear = ""; // 출고 연도 필터 ("2026" | "" = 전체)
 var currentLeadSourceFilter = ""; // ★ 고객목록 유입경로별 필터 추가 — "" = 전체, "__EMPTY__" = 미입력
+var currentCreatedMonthFilter = ""; // ★ 고객 최초 등록일 표시 + 등록월 필터 추가 — "" = 전체, "YYYY-MM", "__UNKNOWN__" = 등록일 미확인
 
 // ============================================================
 // 세부모델 데이터
@@ -2333,6 +2389,7 @@ function goFilter(st){
   currentCareFilter="";
   currentDeliveryYear=""; // 상태 전환 시 연도 필터 초기화
   currentLeadSourceFilter=""; // ★ 고객목록 유입경로별 필터 추가 — 대시보드에서 진입 시 새 탐색으로 간주해 유입경로 초기화
+  currentCreatedMonthFilter=""; // ★ 등록월 필터 추가 — 대시보드에서 진입 시 새 탐색으로 간주해 등록월 필터도 초기화
   showView("list");
 }
 function goCareFilter(type){
@@ -2340,6 +2397,7 @@ function goCareFilter(type){
   currentCareFilter=type;
   currentDeliveryYear="";
   currentLeadSourceFilter=""; // ★ 고객목록 유입경로별 필터 추가 — 차량관리 알림 진입 시 상태/유입경로 초기화
+  currentCreatedMonthFilter=""; // ★ 등록월 필터 추가 — 차량관리 알림 진입 시 등록월 필터도 초기화
   showView("list");
 }
 function clearFilter(){
@@ -2347,6 +2405,7 @@ function clearFilter(){
   currentCareFilter="";
   currentDeliveryYear="";
   currentLeadSourceFilter=""; // ★ 고객목록 유입경로별 필터 추가
+  currentCreatedMonthFilter=""; // ★ 등록월 필터 추가
   document.getElementById("filterBar").style.display="none";
   renderList();
 }
@@ -2527,17 +2586,54 @@ function normalizeLeadSource(v){
   return LEAD_SOURCE_NORMALIZE_MAP[raw]||raw;
 }
 
-// 유입경로별 고객 수 집계 — 검색어/현재상태와 무관하게 전체 고객 배열
-// 기준으로 계산한다. leadSource가 비어있는 고객은 "전체"에는 포함되지만
+// ============================================================
+// ★ 고객 최초 등록일 표시 + 등록월 필터 추가 — 교차 카운트용 판정 함수.
+//   메인 목록 필터링(renderList()의 filtered=list.filter(...))에 있는
+//   상태/유입경로 조건과 정확히 동일한 로직을 그대로 함수로 옮겨,
+//   등록월↔유입경로 교차 카운트 계산에서도 재사용한다(기존 메인 필터
+//   블록 자체는 이미 검증된 코드이므로 손대지 않고 그대로 둔다).
+// ============================================================
+function matchesStatusFilter(c){
+  if(!currentFilter)return true;
+  var v=mst(c.status)||"";
+  if(currentFilter==="__UNCLASSIFIED__"){
+    return !(v!==""&&CUSTOMER_STATUS_KNOWN_SET.hasOwnProperty(v));
+  }
+  return v===currentFilter;
+}
+function matchesLeadSourceFilter(c){
+  if(!currentLeadSourceFilter)return true;
+  var src=normalizeLeadSource(c.leadSource);
+  if(currentLeadSourceFilter==="__EMPTY__")return src==="";
+  if(currentLeadSourceFilter==="__UNCLASSIFIED__"){
+    return !(src===""||CUSTOMER_LEAD_SOURCE_KNOWN_SET.hasOwnProperty(src));
+  }
+  return src===currentLeadSourceFilter;
+}
+function matchesCreatedMonthFilter(c){
+  if(!currentCreatedMonthFilter)return true;
+  var ymd=getCustomerCreatedYMD(c);
+  if(currentCreatedMonthFilter==="__UNKNOWN__")return ymd===null;
+  return !!ymd && ymd.substring(0,7)===currentCreatedMonthFilter;
+}
+
+// 유입경로별 고객 수 집계 — "전체" 배열이 아니라, 현재 선택된 현재상태·
+// 등록월 필터를 먼저 적용한 결과를 기준으로 센다(요청사항 11-12: 등록월을
+// 바꾸면 유입경로 버튼 숫자도 그 달 기준으로 바뀌어야 한다). 유입경로
+// 자기 자신의 선택(currentLeadSourceFilter)만 제외하고 나머지 조건은
+// 그대로 반영한다. leadSource가 비어있는 고객은 "전체"에는 포함되지만
 // "기타"에 자동으로 넣지 않고 "__EMPTY__"(미입력)로 따로 센다(요청사항 8).
 // 정의된 목록에 없는 비어있지 않은 값은 "__UNCLASSIFIED__"(미분류)로 센다
 // (요청사항 10) — "전체"(counts[""])는 여기서도 다시 증가시키지 않는다.
 function getLeadSourceCounts(list){
-  var counts={"":list.length,"__EMPTY__":0,"__UNCLASSIFIED__":0};
+  var base=list.filter(function(c){
+    return matchesStatusFilter(c) && matchesCreatedMonthFilter(c);
+  });
+  var counts={"":base.length,"__EMPTY__":0,"__UNCLASSIFIED__":0};
   CUSTOMER_LEAD_SOURCE_FILTERS.forEach(function(f){
     if(f.value!==""&&f.value!=="__EMPTY__"&&f.value!=="__UNCLASSIFIED__")counts[f.value]=0;
   });
-  list.forEach(function(c){
+  base.forEach(function(c){
     var source=normalizeLeadSource(c.leadSource);
     if(source===""){counts["__EMPTY__"]++;return;}
     if(CUSTOMER_LEAD_SOURCE_KNOWN_SET.hasOwnProperty(source)){counts[source]++;}
@@ -2547,13 +2643,14 @@ function getLeadSourceCounts(list){
 }
 
 // 고객목록 안의 유입경로 버튼 클릭 — 현재상태 필터(currentFilter)는
-// 절대 초기화하지 않는다(요청사항 9). 새 showView() 호출도 하지 않는다.
+// 절대 초기화하지 않는다(요청사항 9). 등록월 필터도 마찬가지로 초기화하지
+// 않아 서로 조합해서 쓸 수 있게 한다. 새 showView() 호출도 하지 않는다.
 function setListLeadSourceFilter(source){
   currentLeadSourceFilter=source||"";
   renderList();
 }
 
-// 유입경로 필터 버튼 렌더링 (검색어와 무관한 카운트 기준)
+// 유입경로 필터 버튼 렌더링 (검색어와 무관, 현재상태·등록월 교차 카운트 기준)
 function renderCustomerLeadFilters(list){
   var wrap=document.getElementById("customerLeadFilter");
   if(!wrap)return;
@@ -2573,12 +2670,88 @@ function renderCustomerLeadFilters(list){
   }
 }
 
-// 선택된 현재상태+유입경로 조건을 한눈에 보여주는 요약 영역(요청사항 15)
+// ============================================================
+// ★ 고객 최초 등록일 표시 + 등록월 필터 추가
+//   등록월 버튼 목록 자체는(현재상태/유입경로 선택과 무관하게) 실제로
+//   등록 고객이 존재하는 월 전체를 기준으로 만든다(요청사항 8) — 버튼
+//   구성은 고정하고 숫자만 교차 카운트로 바뀌는, 기존 상태/유입경로
+//   필터와 동일한 방식이다. 최신 월부터 과거 순으로 정렬한다.
+// ============================================================
+function getAllCreatedMonthKeys(list){
+  var set={};
+  list.forEach(function(c){
+    var ymd=getCustomerCreatedYMD(c);
+    if(ymd)set[ymd.substring(0,7)]=true;
+  });
+  var keys=Object.keys(set);
+  keys.sort(function(a,b){return b.localeCompare(a);}); // "YYYY-MM" 문자열 그대로 비교해도 최신순 정렬됨
+  return keys;
+}
+
+// 등록월별 고객 수 집계 — 현재 선택된 현재상태·유입경로 필터를 먼저
+// 적용한 결과를 기준으로 센다(요청사항 12: 유입경로를 바꾸면 등록월
+// 버튼 숫자도 그 유입경로 기준으로 바뀌어야 한다). 등록월 자기 자신의
+// 선택(currentCreatedMonthFilter)만 제외한다. 등록일을 알 수 없는
+// 고객은 "__UNKNOWN__"(미확인)으로 따로 센다 — 임의 날짜로 대체하지 않는다.
+function getCreatedMonthCounts(list){
+  var base=list.filter(function(c){
+    return matchesStatusFilter(c) && matchesLeadSourceFilter(c);
+  });
+  var counts={"":base.length,"__UNKNOWN__":0};
+  base.forEach(function(c){
+    var ymd=getCustomerCreatedYMD(c);
+    if(!ymd){counts["__UNKNOWN__"]++;return;}
+    var ym=ymd.substring(0,7);
+    counts[ym]=(counts[ym]||0)+1;
+  });
+  return counts;
+}
+
+// 고객목록 안의 등록월 버튼 클릭 — 현재상태·유입경로 필터는 초기화하지
+// 않아 서로 조합해서 쓸 수 있게 한다(요청사항 9-10).
+function setListCreatedMonthFilter(month){
+  currentCreatedMonthFilter=month||"";
+  renderList();
+}
+
+// 등록월 필터 버튼 렌더링 (검색어와 무관, 현재상태·유입경로 교차 카운트 기준).
+// 실제로 등록 고객이 존재하는 월만 버튼을 만든다(요청사항 8). 등록일을
+// 알 수 없는 고객이 하나라도 있을 때만 맨 끝에 "미확인" 버튼을 추가한다
+// (요청사항 15).
+function renderCustomerCreatedMonthFilters(list){
+  var wrap=document.getElementById("customerCreatedMonthFilter");
+  if(!wrap)return;
+  var monthKeys=getAllCreatedMonthKeys(list);
+  var counts=getCreatedMonthCounts(list);
+  var hasUnknown=list.some(function(c){return !getCustomerCreatedYMD(c);});
+  var items=[{value:"",label:"전체"}].concat(monthKeys.map(function(k){return{value:k,label:k};}));
+  if(hasUnknown)items.push({value:"__UNKNOWN__",label:"미확인"});
+  wrap.innerHTML=items.map(function(it){
+    var active=currentCreatedMonthFilter===it.value;
+    var cnt=counts[it.value]||0;
+    return '<button type="button" class="customer-created-month-btn'+
+      (active?" active":"")+(it.value===""?" all":"")+
+      '" aria-pressed="'+(active?"true":"false")+
+      '" onclick="setListCreatedMonthFilter(\''+it.value+'\')">'+
+      it.label+
+      '<span class="customer-created-month-count">'+cnt+'</span></button>';
+  }).join("");
+  var activeMonthBtn=wrap.querySelector(".customer-created-month-btn.active");
+  if(activeMonthBtn){
+    activeMonthBtn.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});
+  }
+}
+
+// 선택된 등록월+유입경로+현재상태 조건을 한눈에 보여주는 요약 영역
+// (요청사항 15, 18) — "필터: 2026-08 · GETCHA" / "필터: 2026-09 · GETCHA · 상담중"
+// 형태로, 등록월 → 유입경로 → 현재상태 순서로 표시한다.
 function renderActiveFilterSummary(resultCount){
   var el=document.getElementById("activeFilterSummary");
   if(!el)return;
   var tags=[];
-  if(currentFilter)tags.push(CUSTOMER_STATUS_LABELS[currentFilter]||currentFilter);
+  if(currentCreatedMonthFilter){
+    tags.push(currentCreatedMonthFilter==="__UNKNOWN__"?"등록일 미확인":currentCreatedMonthFilter);
+  }
   if(currentLeadSourceFilter){
     var found=null;
     for(var i=0;i<CUSTOMER_LEAD_SOURCE_FILTERS.length;i++){
@@ -2586,9 +2759,10 @@ function renderActiveFilterSummary(resultCount){
     }
     tags.push(found?found.label:currentLeadSourceFilter);
   }
+  if(currentFilter)tags.push(CUSTOMER_STATUS_LABELS[currentFilter]||currentFilter);
   if(tags.length<2){
-    // 상태/유입경로 중 하나만(또는 둘 다 미선택) 선택된 경우는 상단 상태
-    // 버튼/필터바만으로 충분히 확인 가능하므로 요약을 굳이 표시하지 않는다.
+    // 등록월/유입경로/현재상태 중 하나만(또는 아무것도 선택되지 않은) 경우는
+    // 상단 필터 버튼들만으로 충분히 확인 가능하므로 요약을 굳이 표시하지 않는다.
     el.classList.remove("show");
     el.innerHTML="";
     return;
@@ -2885,6 +3059,70 @@ function parseCustomerDateTime(v){
   if(!isNaN(dt3.getTime()))return dt3.getTime();
 
   return 0;
+}
+
+// ============================================================
+// ★ 고객 최초 등록일 표시 + 등록월 필터 추가
+//   parseCustomerDateToYMD(): _savedAt(및 향후 서버가 내려줄 수 있는
+//   createdAt)에 들어있는 다양한 형식에서 "YYYY-MM-DD"만 안전하게
+//   추출한다. 브라우저 locale 문자열을 문자열 비교하지 않고, 날짜
+//   구성요소(연/월/일)만 정규식으로 직접 뽑아내 타임존 재해석으로 인한
+//   날짜 밀림을 피한다. 진짜 epoch timestamp(숫자)인 경우에만 KST
+//   기준으로 변환한다. 파싱 실패 시 null(=등록일 미확인)을 반환한다.
+// ============================================================
+function parseCustomerDateToYMD(v){
+  if(v===null||v===undefined)return null;
+
+  function ymdFromEpoch(ms){
+    if(!isFinite(ms))return null;
+    var k=new Date(ms+9*3600000); // KST로 명시적 변환 후 UTC getter로 날짜만 추출
+    return k.getUTCFullYear()+"-"+String(k.getUTCMonth()+1).padStart(2,"0")+"-"+String(k.getUTCDate()).padStart(2,"0");
+  }
+
+  if(v instanceof Date){
+    var t=v.getTime();
+    return isNaN(t)?null:ymdFromEpoch(t);
+  }
+  if(typeof v==="number"){
+    return ymdFromEpoch(v);
+  }
+  var s=String(v).trim();
+  if(!s)return null;
+
+  // 순수 숫자 문자열(밀리초 timestamp)
+  if(/^\d{10,}$/.test(s)){
+    var n=Number(s);
+    return isFinite(n)?ymdFromEpoch(n):null;
+  }
+
+  // "YYYY-MM-DD..." 또는 ISO 8601 (예: "2026-08-25", "2026-08-25 14:30", "2026-08-25T14:30:00Z")
+  var mIso=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(mIso){
+    return mIso[1]+"-"+String(+mIso[2]).padStart(2,"0")+"-"+String(+mIso[3]).padStart(2,"0");
+  }
+
+  // 한글 지역화 문자열: "2026. 7. 30. 오후 3:53:12" / "2026. 7. 30. PM 3:53:12"
+  var mKr=s.match(/^(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\./);
+  if(mKr){
+    return mKr[1]+"-"+String(+mKr[2]).padStart(2,"0")+"-"+String(+mKr[3]).padStart(2,"0");
+  }
+
+  // 마지막 수단: 기존 parseCustomerDateTime()으로 epoch를 얻어 KST 기준으로 변환
+  var ms2=parseCustomerDateTime(s);
+  return ms2>0?ymdFromEpoch(ms2):null;
+}
+
+// 고객의 "최초 등록일"(YYYY-MM-DD)을 반환한다. 계약일/출고일/최근상담일/
+// 최종수정일/최근활동일과는 완전히 다른 개념이며, 정렬용 lastActivityAt과도
+// 역할을 섞지 않는다. createdAt 필드가 서버에서 내려오면 그것을 우선
+// 사용하고(향후 서버가 전용 필드를 추가하는 경우를 대비한 안전망일 뿐,
+// 지금은 프론트에서 별도로 만들어 보내지 않는다), 없으면 신규등록 시
+// 단 한 번만 기록되고 이후 수정/추가상담에도 절대 갱신되지 않는 _savedAt을
+// 사용한다. 정확한 날짜를 알 수 없는 legacy 고객은 null(=등록일 미확인)을
+// 반환하며, 오늘 날짜나 동기화 날짜로 임의 대체하지 않는다.
+function getCustomerCreatedYMD(c){
+  if(!c)return null;
+  return parseCustomerDateToYMD(c.createdAt) || parseCustomerDateToYMD(c._savedAt) || null;
 }
 
 // ★ 신규등록·추가상담 최근 활동순 고객목록 정렬 — 고객 하나의 "정렬용"
@@ -4115,9 +4353,12 @@ function renderList(){
   // ★ 고객목록 현재상태별 필터 추가 — 상태 버튼 렌더링(카운트는 검색어와
   // 무관하게 전체 list 기준)
   renderCustomerStatusFilters(list);
-  // ★ 고객목록 유입경로별 필터 추가 — 유입경로 버튼 렌더링(카운트는 검색어와
-  // 무관하게 전체 list 기준)
+  // ★ 고객목록 유입경로별 필터 추가 — 유입경로 버튼 렌더링(카운트는 현재상태·
+  // 등록월 교차 카운트 기준)
   renderCustomerLeadFilters(list);
+  // ★ 고객 최초 등록일 표시 + 등록월 필터 추가 — 등록월 버튼 렌더링(카운트는
+  // 현재상태·유입경로 교차 카운트 기준)
+  renderCustomerCreatedMonthFilters(list);
 
   // ── 출고 연도 필터 바 표시/숨김 ──────────────────────────
   var yfBar=document.getElementById("yearFilterBar");
@@ -4165,6 +4406,10 @@ function renderList(){
         if(src!==currentLeadSourceFilter)return false;
       }
     }
+    // ★ 고객 최초 등록일 표시 + 등록월 필터 추가 — matchesCreatedMonthFilter()와
+    // 동일한 기준(getCustomerCreatedYMD() 우선순위: createdAt → _savedAt → 미확인)
+    // 으로 판정한다.
+    if(!matchesCreatedMonthFilter(c))return false;
     if(currentCareFilter){
       if(currentCareFilter==="birthday7"){
         var bd=bdayDiff(c.birthDate);if(bd===null||bd<0||bd>7)return false;
@@ -4292,6 +4537,8 @@ function buildCard(c,idx){
   var isUpd=!!c._updatedAt;
   var did="det-"+idx;
   var cid="care-"+idx;
+  // ★ 고객 최초 등록일 표시 + 등록월 필터 추가
+  var createdYMD=getCustomerCreatedYMD(c);
   var hasCare=c.birthDate||c.insuranceStartDate||c.insuranceExpireDate||
     c.inspectionDueDate||c.financeStartDate||c.financeEndDate||
     c.contractDate||c.deliveryDate||c.deliveryMonth||
@@ -4316,6 +4563,10 @@ function buildCard(c,idx){
   if(c.region)     html+='<span class="chip">📍'+esc(c.region)+'</span>';
   if(c.nextContact)html+='<span class="chip">📅 '+esc(c.nextContact)+'</span>';
   if(c.leadSource) html+='<span class="chip">'+esc(c.leadSource)+'</span>';
+  // ★ 고객 최초 등록일 표시 + 등록월 필터 추가 — 계약일/출고일 등 다른 날짜와
+  // 혼동되지 않도록 "🗓 등록" 접두어를 붙인 작은 chip으로 표시한다.
+  // 등록일을 알 수 없는 legacy 고객은 카드에 굳이 표시하지 않는다(상세정보에서는 "미확인"으로 표시).
+  if(createdYMD) html+='<span class="chip">🗓 등록 '+esc(createdYMD)+'</span>';
 
   // 필터별 강조 chip
   if(currentCareFilter==="birthday7"&&c.birthDate){
@@ -4356,6 +4607,10 @@ function buildCard(c,idx){
   html+='<button class="tog-btn" onclick="togDet(this,\''+did+'\')" aria-expanded="false">'+
     '상세정보 보기 <span class="tog-arr">▼</span></button>';
   html+='<div class="detail-body" id="'+did+'">';
+  // ★ 고객 최초 등록일 표시 + 등록월 필터 추가 — 계약일/출고일/최근상담일/
+  // 최종수정일/최근활동일과 다른, "CRM 최초 등록 시점" 전용 표시.
+  html+='<div class="d-sec">기본정보</div>';
+  html+=dr("등록일",createdYMD||"등록일 미확인");
   html+='<div class="d-sec">구매 정보</div>';
   if(c.purchaseMethod) html+=dr("구매방식",c.purchaseMethod);
   if(c.budget)         html+=dr("구매예산",c.budget);
