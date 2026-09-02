@@ -10,7 +10,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhf-UEOLkREWj7MPX_Sp4eWANAmVdxhN1259gHC95qZHZBFmhW6edqa0ythU7aUHTg/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbFJi6Xzx1wU49oTCIH0LyWD57pC_9lxwVogcI9n0k3ZuVwBY6bqW8pt0AuvnKkxHPLg/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     // PC·모바일이 같은 버전을 보고 있는지 확인하기 위한 버전 표식.
@@ -4549,7 +4549,7 @@ function buildCard(c,idx){
     '<div>'+
       '<div class="cust-name">'+esc(c.customerName)+'</div>'+
       (c.companyName?'<div class="cust-sub">'+esc(c.companyName)+'</div>':'')+
-      '<div class="cust-sub">'+(isUpd?"수정: "+esc(c._updatedAt):"등록: "+esc(c._savedAt||""))+'</div>'+
+      (isUpd?'<div class="cust-sub">수정: '+esc(c._updatedAt)+'</div>':'')+
     '</div>'+
     '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px;">'+
       '<span class="badge '+sc(c.status)+'">'+esc(sd)+'</span>'+
@@ -4564,9 +4564,11 @@ function buildCard(c,idx){
   if(c.nextContact)html+='<span class="chip">📅 '+esc(c.nextContact)+'</span>';
   if(c.leadSource) html+='<span class="chip">'+esc(c.leadSource)+'</span>';
   // ★ 고객 최초 등록일 표시 + 등록월 필터 추가 — 계약일/출고일 등 다른 날짜와
-  // 혼동되지 않도록 "🗓 등록" 접두어를 붙인 작은 chip으로 표시한다.
-  // 등록일을 알 수 없는 legacy 고객은 카드에 굳이 표시하지 않는다(상세정보에서는 "미확인"으로 표시).
-  if(createdYMD) html+='<span class="chip">🗓 등록 '+esc(createdYMD)+'</span>';
+  // 혼동되지 않도록 "🗓 등록" 접두어를 붙인 작은 chip으로 년-월만 표시한다.
+  // 등록일을 알 수 없는 고객도 숨기지 않고 "🗓 등록 미확인"으로 항상 표시한다.
+  var createdYM=createdYMD?createdYMD.substring(0,7):"";
+  html+='<span class="chip">🗓 등록 '+(createdYM?esc(createdYM):"미확인")+'</span>';
+
 
   // 필터별 강조 chip
   if(currentCareFilter==="birthday7"&&c.birthDate){
