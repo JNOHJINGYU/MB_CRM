@@ -10,7 +10,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzDlvaT0Jssp2Lwm6FKCJaEhh_5mlAobs-AfzKKmnnZrtpKVaQkiuU0VHkTdu174c6bJA/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbznXfVXaZfDGOdu-03VKd8EGz6FiQdR4ywBO4xyxRMq4i6b50bNH3wg6z_aP2RIbhRugw/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     // PC·모바일이 같은 버전을 보고 있는지 확인하기 위한 버전 표식.
@@ -19,7 +19,7 @@
     //   Google Drive에 업로드·조회·교체·삭제할 수 있는 UI와 통신 함수가
     //   추가되었다. 기존 고객 등록/수정/삭제, 구매차량, 캘린더 연동,
     //   대시보드/분석 로직은 전혀 수정하지 않았다.
-    var APP_VERSION = "2026-08-21-v115-doc-upload-perf-optimization";
+    var APP_VERSION = "2026-09-07-v116-manual-created-date";
     // ★ 자동저장 안정화 — 최종저장 Lock 경쟁 제거 / found:false 시 Draft·폼 보존
     // ★ 실제 저장 성공 후 저장확인 API HTTP 404 오판정 수정
     console.log("[CRM VERSION]", APP_VERSION);
@@ -1050,6 +1050,14 @@
     .doc-btn.gold{border-color:var(--gold);color:var(--gold-dk);}
     .doc-btn.gold:hover{background:var(--gold);color:#fff;}
     .doc-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+    /* ★ 등록일 미확인 고객 수동 입력 기능 추가 */
+    .cdate-input{
+      min-height:42px;padding:8px 10px;border-radius:10px;
+      border:1.5px solid var(--border2);font-family:var(--font);
+      font-size:14px;color:var(--text);background:#fff;
+      -webkit-appearance:none;
+    }
+    .cdate-msg{font-size:12px;color:var(--text-dim);margin-left:2px;}
     .doc-disabled-note{font-size:12px;color:var(--text-lt);padding:6px 0;}
     .doc-required-progress{font-size:11px;font-weight:700;padding:2px 0;}
     .doc-required-progress.ok{color:var(--success);}
@@ -3123,9 +3131,23 @@ function parseCustomerDateToYMD(v){
 //   기록되고, 이후 handleEdit()/handleUpdate()는 절대 갱신하지 않는다.
 //   정확한 날짜를 알 수 없는 legacy 고객은 null(=등록일 미확인)을
 //   반환하며, 오늘 날짜나 동기화 날짜로 임의 대체하지 않는다.
+// ★ 등록일 미확인 고객 수동 입력 기능 추가 — 1순위로 사용자가 직접
+//   입력해 저장한 c.manualCreatedDate를 확인하고, 없으면 기존과 동일하게
+//   _savedAt으로 폴백한다. matchesCreatedMonthFilter()/getCreatedMonthCounts()/
+//   카드 뱃지 등은 전부 이 함수 하나만 거치므로, 여기 한 곳만 고치면
+//   등록월 필터·카운트·뱃지가 전부 자동으로 manualCreatedDate를 반영한다.
 function getCustomerCreatedYMD(c){
   if(!c)return null;
+  var manual = parseCustomerDateToYMD(c.manualCreatedDate);
+  if(manual) return manual;
   return parseCustomerDateToYMD(c._savedAt) || null;
+}
+
+// ★ 등록일 미확인 고객 수동 입력 기능 추가 — 현재 표시 중인 등록일이
+//   "사용자가 직접 입력한" 값인지 여부. true면 [수정] 버튼을, false(자동
+//   확인된 등록일)면 버튼 없이 날짜만 표시한다.
+function isManualCreatedDate(c){
+  return !!(c && parseCustomerDateToYMD(c.manualCreatedDate));
 }
 
 // ★ 신규등록·추가상담 최근 활동순 고객목록 정렬 — 고객 하나의 "정렬용"
@@ -4614,7 +4636,7 @@ function buildCard(c,idx){
   // ★ 고객 최초 등록일 표시 + 등록월 필터 추가 — 계약일/출고일/최근상담일/
   // 최종수정일/최근활동일과 다른, "CRM 최초 등록 시점" 전용 표시.
   html+='<div class="d-sec">기본정보</div>';
-  html+=dr("등록일",createdYMD||"등록일 미확인");
+  html+=buildCreatedDateRow(c);
   html+='<div class="d-sec">구매 정보</div>';
   if(c.purchaseMethod) html+=dr("구매방식",c.purchaseMethod);
   if(c.budget)         html+=dr("구매예산",c.budget);
@@ -4709,6 +4731,134 @@ function buildCard(c,idx){
 
 function dr(k,v){if(!v)return"";
   return'<div class="d-row"><span class="d-key">'+k+'</span><span class="d-val">'+esc(v)+'</span></div>';}
+
+// ============================================================
+// ★ 등록일 미확인 고객 수동 입력 기능 추가
+//   상세정보 보기 → 기본정보 → 등록일 자리에 인라인으로 삽입되는 행.
+//   - 자동으로 확인된 등록일: 날짜만 표시(버튼 없음, 기존과 동일)
+//   - 사용자가 직접 입력한 등록일: 날짜 + [수정] 버튼
+//   - 등록일 미확인: "등록일 미확인" + [등록일 입력] 버튼
+//   customerId(없으면 phone)를 직접 onclick에 심어두므로, renderList()로
+//   목록이 다시 그려져 순서가 바뀌어도 저장 대상을 잘못 찾지 않는다.
+//   DOM id에는 customerId를 그대로 못 쓸 수 있어(특수문자 없긴 하지만
+//   안전하게) 매 렌더링마다 바뀌는 카운터를 붙여 고유성만 보장한다.
+// ============================================================
+var __cdateRowCounter = 0;
+function buildCreatedDateRow(c){
+  var createdYMD = getCustomerCreatedYMD(c);
+  var isManual = isManualCreatedDate(c);
+  var rid = "cdate-"+(__cdateRowCounter++);
+  var cidArg = esc(c.customerId||"");
+  var phoneArg = esc(c.phone||"");
+
+  var html = '<div class="d-row" id="'+rid+'-row">';
+  html += '<span class="d-key">등록일</span>';
+  html += '<span class="d-val" id="'+rid+'-display">';
+  if(createdYMD){
+    html += esc(createdYMD);
+    if(isManual){
+      html += ' <button type="button" class="doc-btn" style="min-height:30px;padding:4px 10px;font-size:11px;" onclick="openCreatedDateEditor(\''+rid+'\')">수정</button>';
+    }
+  } else {
+    html += '등록일 미확인 <button type="button" class="doc-btn" style="min-height:30px;padding:4px 10px;font-size:11px;" onclick="openCreatedDateEditor(\''+rid+'\')">등록일 입력</button>';
+  }
+  html += '</span></div>';
+
+  html += '<div class="d-row" id="'+rid+'-editor" style="display:none;">';
+  html += '<span class="d-key">최초등록일</span>';
+  html += '<span class="d-val">';
+  html += '<input type="date" id="'+rid+'-input" class="cdate-input" value="'+(isManual&&createdYMD?esc(createdYMD):'')+'"> ';
+  html += '<button type="button" class="doc-btn gold" onclick="saveCreatedDateInput(\''+rid+'\',\''+cidArg+'\',\''+phoneArg+'\')">저장</button> ';
+  html += '<button type="button" class="doc-btn" onclick="closeCreatedDateEditor(\''+rid+'\')">취소</button>';
+  html += '<div class="cdate-msg" id="'+rid+'-msg"></div>';
+  html += '</span></div>';
+
+  return html;
+}
+
+function openCreatedDateEditor(rid){
+  var disp = document.getElementById(rid+"-row");
+  var editor = document.getElementById(rid+"-editor");
+  if(disp) disp.style.display = "none";
+  if(editor) editor.style.display = "flex";
+}
+function closeCreatedDateEditor(rid){
+  var disp = document.getElementById(rid+"-row");
+  var editor = document.getElementById(rid+"-editor");
+  if(editor) editor.style.display = "none";
+  if(disp) disp.style.display = "";
+  var msgEl = document.getElementById(rid+"-msg");
+  if(msgEl) msgEl.textContent = "";
+}
+
+// ── 등록일 저장 — 기존 자동저장/신규저장/수정저장과 동일한 패턴
+//   (POST no-cors → 단건 저장확인 GET 폴링)을 그대로 재사용한다.
+//   서버는 오직 "manualCreatedDate" 한 칸만 수정하며(action:"setManualCreatedDate"),
+//   다른 고객 필드는 절대 건드리지 않는다(서버 Code.gs 참고).
+function saveCreatedDateInput(rid, customerId, phone){
+  var input = document.getElementById(rid+"-input");
+  var msgEl = document.getElementById(rid+"-msg");
+  var val = input ? input.value : "";
+  if(!val){
+    if(msgEl){msgEl.style.color="var(--danger,#d33)";msgEl.textContent="⚠ 날짜를 선택해주세요.";}
+    return;
+  }
+  var editor = document.getElementById(rid+"-editor");
+  var saveBtn = editor ? editor.querySelector(".doc-btn.gold") : null;
+  if(saveBtn && saveBtn.disabled) return; // 중복 클릭 방지
+  if(saveBtn){saveBtn.disabled=true;saveBtn.textContent="저장 중…";}
+  if(msgEl){msgEl.style.color="";msgEl.textContent="⏳ 저장 중…";}
+
+  fetch(SCRIPT_URL,{
+    method:"POST", mode:"no-cors", headers:{"Content-Type":"text/plain"},
+    body: JSON.stringify({ action:"setManualCreatedDate", customerId: customerId, phone: phone, manualCreatedDate: val })
+  }).then(function(){
+    if(!customerId){
+      // customerId가 없는 초구형 데이터 — 단건 확인 API가 phone만으로는
+      // 동작하지 않으므로, 낙관적으로 로컬에 반영한다(다음 전체 동기화 시
+      // 서버 값으로 다시 확정된다).
+      applyCreatedDateLocally(customerId, phone, val);
+      return;
+    }
+    pollSaveConfirmation(SCRIPT_URL+"?action=getCustomerById&customerId="+encodeURIComponent(customerId))
+      .then(function(data){
+        if(data && data.found && data.customer && data.customer.manualCreatedDate === val){
+          applyCreatedDateLocally(customerId, phone, val);
+        } else {
+          if(msgEl){msgEl.style.color="var(--danger,#d33)";msgEl.textContent="⚠ 저장 확인에 실패했습니다. 새로고침 후 다시 확인해주세요.";}
+          if(saveBtn){saveBtn.disabled=false;saveBtn.textContent="저장";}
+        }
+      })
+      .catch(function(){
+        // ★ 기존 원칙과 동일 — 저장확인 실패는 POST 저장 실패를 의미하지
+        //   않으므로, 낙관적으로 로컬에 반영해둔다.
+        applyCreatedDateLocally(customerId, phone, val);
+      });
+  }).catch(function(err){
+    if(msgEl){msgEl.style.color="var(--danger,#d33)";msgEl.textContent="❌ 저장 실패: "+err.message;}
+    if(saveBtn){saveBtn.disabled=false;saveBtn.textContent="저장";}
+  });
+}
+
+// ── 저장 확인 후: localStorage 갱신 + 화면 즉시 재반영(요청사항 5, 6) ──
+//   페이지 전체 새로고침 없이 renderList()만 다시 호출한다. renderList()는
+//   이미 열려있던 상세정보/스크롤 위치를 captureOpenDetailState()로 보존
+//   하므로, 방금 입력한 고객의 상세정보가 저장 후에도 계속 펼쳐진 채로
+//   등록일·뱃지·등록월 필터 숫자가 함께 갱신된다.
+function applyCreatedDateLocally(customerId, phone, val){
+  var list = load();
+  var idx = -1;
+  if(customerId) idx = list.findIndex(function(c){ return c.customerId && String(c.customerId)===String(customerId); });
+  if(idx<0 && phone){
+    var np = normP(phone);
+    idx = list.findIndex(function(c){ return normP(c.phone)===np; });
+  }
+  if(idx>=0){
+    list[idx].manualCreatedDate = val;
+    save(list);
+  }
+  renderList();
+}
 
 // ============================================================
 // ★ 고객 상세정보 구매차량 아코디언 추가
