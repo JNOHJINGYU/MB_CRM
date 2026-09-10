@@ -1115,6 +1115,9 @@
       border:1.5px dashed var(--border2);border-radius:12px;
       padding:14px;text-align:center;background:#fff;
     }
+    .doc-upload-drop.is-dragover{border-color:var(--gold);background:#fff8e5;box-shadow:0 0 0 3px rgba(180,145,70,.15);}
+    .doc-upload-prompt{font-size:13px;color:var(--text-dim);margin-bottom:10px;}
+    .doc-upload-files{font-size:12px;color:var(--text-dim);margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere;}
     .doc-upload-drop input[type=file]{display:none;}
     .doc-upload-label{
       display:inline-flex;align-items:center;gap:6px;
@@ -2102,9 +2105,11 @@
           <input type="text" id="docModalCustomTypeInput" placeholder="문서명 직접입력 (문서 종류를 '기타'로 선택 시)" style="display:none;"/>
         </div>
         <input type="text" id="docModalMemoInput" placeholder="메모 (선택)" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border2);font-family:var(--font);font-size:13px;margin-bottom:10px;"/>
-        <div class="doc-upload-drop">
+        <div class="doc-upload-drop" id="docUploadDrop">
+          <div class="doc-upload-prompt">파일을 선택하거나 여기로 끌어다 놓으세요</div>
           <label class="doc-upload-label" for="docModalFileInput">📎 파일 선택 (여러 개 가능)</label>
           <input type="file" id="docModalFileInput" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.hwp" onchange="onDocModalFilesChosen(this)"/>
+          <div class="doc-upload-files" id="docUploadFileNames" role="status" aria-live="polite"></div>
           <div class="doc-upload-hint">PDF·JPG·PNG·WEBP·DOC·DOCX·XLS·XLSX·HWP, 파일당 최대 8MB</div>
         </div>
         <button type="button" class="doc-link-toggle" onclick="toggleDocLinkPanel()">대용량 파일은 Google Drive 링크로 직접 등록 →</button>
@@ -7425,6 +7430,7 @@ function openDriveFolderDirect(scope, customerId, vehicleId, unitNo){
 
 // ── 문서 모달 공통 열기/닫기 ─────────────────────────────────
 function openDocModal(opts){
+  resetDocUploadDrop();
   _docModal = {
     scope: opts.scope, customerId: opts.customerId||"", vehicleId: opts.vehicleId||"",
     unitNo: opts.unitNo||"", quantity: Math.max(1, parseInt(opts.quantity,10)||1),
@@ -7471,6 +7477,7 @@ function openDocModal(opts){
   refreshDocModalList();
 }
 function closeDocModal(){
+  resetDocUploadDrop();
   document.getElementById("docOverlay").classList.remove("open");
   document.body.style.overflow = document.getElementById("editOverlay").classList.contains("open") ? "hidden" : "";
 }
@@ -7848,6 +7855,68 @@ function loadDetailDocSummary(detailBodyEl){
     });
 }
 
+
+// 파일 선택과 드롭은 기존 검증·업로드 진입점을 공유한다.
+function showDocUploadFileNames(files){
+  document.getElementById("docUploadFileNames").textContent = Array.prototype.map.call(files || [], function(file){ return file.name; }).join("\n");
+}
+function resetDocUploadDrop(){
+  var zone = document.getElementById("docUploadDrop");
+  zone.classList.remove("is-dragover");
+  zone.dataset.dragDepth = "0";
+  showDocUploadFileNames([]);
+}
+function initDocUploadDrop(){
+  var zone = document.getElementById("docUploadDrop");
+  var input = document.getElementById("docModalFileInput");
+  if(!zone || !input || zone.dataset.dropBound) return;
+  zone.dataset.dropBound = "true";
+  function hasFiles(e){
+    return !!(e.dataTransfer && (Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") >= 0 || (e.dataTransfer.files && e.dataTransfer.files.length)));
+  }
+  function canDrop(){
+    var button = document.querySelector('label[for="docModalFileInput"]');
+    return document.getElementById("docOverlay").classList.contains("open") && !_docModal.readOnly && (!button || button.style.pointerEvents !== "none");
+  }
+  // capture에서 읽어 기존 onchange가 input.value를 비우기 전에 파일명을 표시한다.
+  input.addEventListener("change", function(){ showDocUploadFileNames(input.files); }, true);
+  ["dragenter", "dragover", "dragleave", "drop"].forEach(function(type){
+    document.addEventListener(type, function(e){
+      if(hasFiles(e)){
+        e.preventDefault();
+        if(type === "dragover") e.dataTransfer.dropEffect = "none";
+      }
+    });
+    zone.addEventListener(type, function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      if(type === "dragleave"){
+        zone.dataset.dragDepth = String(Math.max(0, Number(zone.dataset.dragDepth || 0) - 1));
+        if(zone.dataset.dragDepth === "0") zone.classList.remove("is-dragover");
+        return;
+      }
+      if(type === "drop"){
+        zone.classList.remove("is-dragover");
+        zone.dataset.dragDepth = "0";
+        if(!hasFiles(e) || !canDrop()) return;
+        var files = Array.prototype.slice.call(e.dataTransfer.files || []);
+        if(!input.multiple) files = files.slice(0, 1);
+        if(!files.length) return;
+        showDocUploadFileNames(files);
+        onDocModalFilesChosen({files:files, value:""});
+        return;
+      }
+      if(!hasFiles(e) || !canDrop()){
+        if(e.dataTransfer) e.dataTransfer.dropEffect = "none";
+        return;
+      }
+      if(type === "dragenter") zone.dataset.dragDepth = String(Number(zone.dataset.dragDepth || 0) + 1);
+      zone.classList.add("is-dragover");
+      e.dataTransfer.dropEffect = "copy";
+    });
+  });
+}
+initDocUploadDrop();
 
 </script>
 </body>
