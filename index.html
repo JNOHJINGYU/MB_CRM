@@ -10,7 +10,7 @@
 
   <script>
     // ▼▼▼ Apps Script 웹앱 URL — 절대 변경하지 마세요 ▼▼▼
-    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzDlvaT0Jssp2Lwm6FKCJaEhh_5mlAobs-AfzKKmnnZrtpKVaQkiuU0VHkTdu174c6bJA/exec";
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-hS0zKS7zySM1nbq-HfkUBSWNRDYmwQgxmVTkJ665yQ79gece_F5mzXlMJUrcinLG/exec";
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     // PC·모바일이 같은 버전을 보고 있는지 확인하기 위한 버전 표식.
@@ -19,7 +19,7 @@
     //   Google Drive에 업로드·조회·교체·삭제할 수 있는 UI와 통신 함수가
     //   추가되었다. 기존 고객 등록/수정/삭제, 구매차량, 캘린더 연동,
     //   대시보드/분석 로직은 전혀 수정하지 않았다.
-    var APP_VERSION = "2026-09-07-v116-manual-created-date";
+    var APP_VERSION = "2026-09-28-v117-new-customer-duplicate-check";
     // ★ 자동저장 안정화 — 최종저장 Lock 경쟁 제거 / found:false 시 Draft·폼 보존
     // ★ 실제 저장 성공 후 저장확인 API HTTP 404 오판정 수정
     console.log("[CRM VERSION]", APP_VERSION);
@@ -3296,6 +3296,7 @@ function pollSaveConfirmation(url, delays){
       })
       .then(function(json){
         console.log("[저장확인 시도 "+attempt+"] "+Math.round(performance.now()-t)+"ms", json && json.found);
+        if(json && json.rejected === true) return json; // 서버의 최종 거절이면 재조회 중단
         if(json && json.success && json.found){
           return json;
         }
@@ -5167,7 +5168,53 @@ function wait(ms){
   return new Promise(function(resolve){ setTimeout(resolve, ms); });
 }
 
-function submitNew(){
+// 신규등록 중복 검사: 화면 필터/로컬 캐시 대신 서버 전체목록을 사용한다.
+function crmDuplicatePhoneKey(value){
+  var key = String(value == null ? "" : value).replace(/[^0-9]/g, "");
+  if(key.indexOf("0082") === 0) key = key.slice(4);
+  else if(key.indexOf("82") === 0) key = key.slice(2);
+  if(/^[1-9]/.test(key) && (/^1[016789][0-9]{7,8}$/.test(key))) key = "0" + key;
+  return key;
+}
+function crmDuplicateNameKey(value){
+  return String(value || "").replace(/\s+/g, "").toLowerCase();
+}
+function crmFindPhoneDuplicate(customers, phone){
+  var key = crmDuplicatePhoneKey(phone);
+  return key ? customers.find(function(c){ return c && crmDuplicatePhoneKey(c.phone) === key; }) : null;
+}
+function crmDuplicateMessage(c){
+  return "이미 등록된 고객입니다. " + (c.customerName || "이름 미등록") +
+    " / " + (c.phone || "") + " / " + (c.status || "상태 미등록") +
+    "\n상담종료 고객도 신규등록할 수 없습니다. 고객목록에서 기존 고객을 찾아 추가상담 또는 고객정보 수정을 이용해주세요.";
+}
+async function crmReadCustomersForDuplicateCheck(){
+  var controller = new AbortController();
+  var timer = setTimeout(function(){ controller.abort(); }, 20000);
+  try {
+    var response = await fetch(SCRIPT_URL + "?action=list&_ts=" + Date.now(), {
+      method:"GET", cache:"no-store", signal:controller.signal
+    });
+    if(!response.ok) throw new Error("HTTP " + response.status);
+    var result = await response.json();
+    if(!result || result.success !== true || !Array.isArray(result.customers)) throw new Error("고객목록 응답 오류");
+    return result.customers;
+  } finally { clearTimeout(timer); }
+}
+async function crmCheckNewCustomer(data){
+  var customers;
+  try { customers = await crmReadCustomersForDuplicateCheck(); }
+  catch(e){ throw new Error("기존 고객을 확인하지 못해 신규등록을 중단했습니다. 연결 상태를 확인한 뒤 다시 시도해주세요. 입력내용은 유지됩니다."); }
+  var duplicate = crmFindPhoneDuplicate(customers, data.phone);
+  if(duplicate) throw new Error(crmDuplicateMessage(duplicate));
+  var name = crmDuplicateNameKey(data.customerName);
+  var sameName = customers.some(function(c){ return c && name && crmDuplicateNameKey(c.customerName) === name; });
+  if(sameName && !window.confirm("같은 이름의 기존 고객이 있습니다. 전화번호가 변경된 고객인지 먼저 확인해주세요.\n동명이인이며 별개의 신규고객이 맞으면 [확인]을 누르세요.")) {
+    throw new Error("신규등록을 취소했습니다. 입력내용은 유지됩니다.");
+  }
+}
+
+async function submitNew(){
   hideMsg("msg-new");
 
   var btn=document.getElementById("submitBtn");
@@ -5178,6 +5225,24 @@ function submitNew(){
   var data=getFormData();
   if(!data.customerName){showMsg("msg-new","err","⚠ 고객명을 입력해주세요.");return;}
   if(!data.phone){showMsg("msg-new","err","⚠ 연락처를 입력해주세요.");return;}
+  if(!/^[0-9]{8,15}$/.test(crmDuplicatePhoneKey(data.phone))){
+    showMsg("msg-new","err","⚠ 연락처에 올바른 전화번호를 입력해주세요.");return;
+  }
+  // 확인 중에는 버튼을 잠그되 Draft 최종저장 상태는 아직 변경하지 않는다.
+  btn.disabled=true;btn.textContent="중복 고객 확인 중…";
+  try {
+    await crmCheckNewCustomer(data);
+    // 검사 중 사용자가 폼을 변경했다면 이전 입력값을 저장하지 않는다.
+    if(JSON.stringify(getFormData(), function(k,v){ return k==="_savedAt" || k==="lastActivityAt" ? undefined : v; }) !==
+       JSON.stringify(data, function(k,v){ return k==="_savedAt" || k==="lastActivityAt" ? undefined : v; })) {
+      throw new Error("확인 중 입력내용이 변경되었습니다. 저장 버튼을 다시 눌러주세요.");
+    }
+  } catch(e){
+    showMsg("msg-new","err",e.message || "중복 확인에 실패했습니다.");
+    btn.disabled=false;btn.textContent="고객 정보 저장";
+    return;
+  }
+
 
   // ★ v114: 필수값 검증을 통과한 뒤에만 finalizing 상태로 전환한다 — 검증
   //   실패로 여기서 return하면 draft가 영영 finalizing에 갇혀 이후 autosave가
@@ -5220,7 +5285,7 @@ function submitNew(){
   var _t0 = performance.now();
   showMsg("msg-new","ok","저장 중…");
 
-  fetch(SCRIPT_URL,{
+  return fetch(SCRIPT_URL,{
     method:"POST",
     mode:"no-cors",
     headers:{"Content-Type":"text/plain;charset=utf-8"},
@@ -5270,6 +5335,19 @@ function submitNew(){
     console.error("[저장확인] 네트워크 오류", err);
     return { success:false, _confirmBlocked:true, _reason:"network" };
   })
+  .then(async function(result){
+    if(result && result.rejected === true) return result; // 서버가 확정한 오류를 그대로 안내
+    // POST 응답을 읽을 수 없으므로 미확인 때만 최신목록으로 경합/중복 여부를 확인한다.
+    if(!result || result.success !== true || !result.found || !result.customer){
+      var latest;
+      try { latest = await crmReadCustomersForDuplicateCheck(); } catch(ignore) { return result; }
+      var own = latest.find(function(c){ return c && c.requestToken === data.requestToken; });
+      if(own) return {success:true, found:true, customer:own};
+      var duplicate = crmFindPhoneDuplicate(latest, data.phone);
+      if(duplicate) return {success:false, message:crmDuplicateMessage(duplicate)};
+    }
+    return result;
+  })
   .then(function(result){
     var _tConfirm = performance.now();
     console.log("[저장 확인 응답]", result, "[SERVER VERSION]", result && result.serverVersion);
@@ -5303,7 +5381,7 @@ function submitNew(){
       //   저장이 실제로는 실패했거나 아직 처리 중인데 Draft/입력값이 함께
       //   사라지면 사용자가 입력한 내용을 복구할 방법이 없어진다. 이제 Draft와
       //   폼 입력값을 그대로 보존하고, 안내 문구만 표시한다.
-      showMsg("msg-new","ok","저장은 처리 중입니다. 잠시 후 고객목록에서 확인해주세요. (입력하신 내용은 그대로 남아있습니다)");
+      showMsg("msg-new","warn","저장 여부를 확인하지 못했습니다. 고객목록을 불러와 확인한 뒤 다시 시도해주세요. 입력내용은 유지됩니다.");
       scheduleBackgroundSync(1500);
       // ★ 저장이 아직 확정되지 않았으므로 자동저장을 다시 활성화한다 —
       //   사용자가 폼을 계속 붙들고 있을 수 있으므로 안전망을 꺼두면 안 된다.
