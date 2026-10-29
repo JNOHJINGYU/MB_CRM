@@ -1,5 +1,17 @@
 // ============================================================
 // Mercedes-Benz 영업 CRM — Google Apps Script (Code.gs)
+// code115 변경점 (타브랜드 구매차량 이력):
+//   1. SERVER_VERSION 갱신 (code115-other-brand-vehicle)
+//   2. 구매차량 시트에 "차량구분"(벤츠/타브랜드), "브랜드명" 컬럼을 메모와
+//      동일하게 헤더 이름으로 찾아 없으면 마지막 열 오른쪽에 추가한다.
+//      기존 1~14열(위치 고정)과 메모 열은 이동/덮어쓰기하지 않는다.
+//   3. saveVehiclesToSheet()/getVehiclesByCustomerId()/readAllVehicles()/
+//      handleList()에서 vehicleType·brandName을 함께 저장·조회한다.
+//      값이 비어 있는 기존 행은 "벤츠"로 취급한다(일괄 수정/마이그레이션 없음).
+//   4. 타브랜드는 차종을 기존 모델명 열, 세부모델을 기존 세부모델 열에 저장한다.
+//   5. diagnoseSalesData2026() 판매실적 진단에서 타브랜드 차량을 제외한다.
+//   6. 계약/출고 캘린더 일정 설명에 차량구분·브랜드명을 표시한다(기존 동기화 유지).
+// ------------------------------------------------------------
 // v38 대비 변경점 (v38 — 고객ID 중복 방지 및 연결 무결성 강화):
 //   1. SERVER_VERSION 갱신 (code101-customerid-dedup)
 //   2. genCustomerId()를 행번호 기반("CUST-"+행번호)에서 UUID 기반으로
@@ -580,7 +592,7 @@ function cleanupCompletedAutosaveDrafts(options) {
 
 var VEH_SHEET_NAME = "구매차량";
 var SS = SpreadsheetApp.getActiveSpreadsheet();
-var SERVER_VERSION = "2026-09-28-code114-new-customer-duplicate-guard";
+var SERVER_VERSION = "2026-10-29-code115-other-brand-vehicle";
 
 // ── 한글/영문 헤더 매핑 ────────────────────────────────────
 var HEADER_MAP = {
@@ -733,6 +745,57 @@ function ensureColumn(sheet, headerName) {
 // 새로 마지막 열에 추가한다. 기존 14개 컬럼의 위치는 절대 바꾸지 않는다.
 function ensureVehicleMemoColumn(vs) {
   return ensureColumn(vs, "메모");
+}
+
+// ── ★ code115 타브랜드 구매차량 — 구매차량 시트 추가 컬럼 확인/추가 ──
+// 메모 → 차량구분 → 브랜드명 순서로, 없는 컬럼만 마지막 열 오른쪽에 추가한다.
+// 헤더는 한 번만 읽는다. 기존 컬럼은 이동/덮어쓰기하지 않는다.
+// 반환값은 1-based 컬럼 번호 { memo, vehicleType, brandName }.
+var VEH_TYPE_HEADER  = "차량구분";
+var VEH_BRAND_HEADER = "브랜드명";
+var VEH_TYPE_BENZ    = "벤츠";
+var VEH_TYPE_OTHER   = "타브랜드";
+
+function ensureVehicleExtraColumns(vs) {
+  var lastCol = vs.getLastColumn();
+  var headers = lastCol > 0 ? vs.getRange(1, 1, 1, lastCol).getDisplayValues()[0] : [];
+  function find(name) {
+    for (var i = 0; i < headers.length; i++) {
+      if (String(headers[i] || "").trim() === name) return i + 1;
+    }
+    return -1;
+  }
+  var result = {};
+  [["memo", "메모"], ["vehicleType", VEH_TYPE_HEADER], ["brandName", VEH_BRAND_HEADER]].forEach(function (pair) {
+    var col = find(pair[1]);
+    if (col < 0) {
+      col = headers.length + 1;
+      vs.getRange(1, col).setValue(pair[1]);
+      headers.push(pair[1]);
+    }
+    result[pair[0]] = col;
+  });
+  return result;
+}
+
+// 차량구분 정규화 — "타브랜드"(또는 OTHER)만 타브랜드, 그 외/빈 값은 모두 벤츠.
+function normalizeVehicleType(value) {
+  var s = String(value === null || value === undefined ? "" : value).trim();
+  if (s === VEH_TYPE_OTHER || s.toUpperCase() === "OTHER") return VEH_TYPE_OTHER;
+  return VEH_TYPE_BENZ;
+}
+
+function isOtherBrandVehicle(v) {
+  return !!v && normalizeVehicleType(v.vehicleType) === VEH_TYPE_OTHER;
+}
+
+// 시트 행 → vehicleType/brandName (벤츠 차량은 brandName을 비워서 돌려준다)
+function readVehicleTypeFields(row, cols) {
+  var type = normalizeVehicleType(row[cols.vehicleType - 1]);
+  return {
+    vehicleType: type,
+    brandName: type === VEH_TYPE_OTHER ? String(row[cols.brandName - 1] || "").trim() : ""
+  };
 }
 
 // ── 고객ID 생성 ───────────────────────────────────────────
@@ -1220,6 +1283,11 @@ function buildVehicleCalendarDescription(vehicle, eventType) {
   lines.push("법인명: " + s(vehicle.companyName));
   lines.push("연락처: " + s(vehicle.phone));
   lines.push("구분: " + (eventType === "CONTRACT" ? "계약" : "출고"));
+  // ★ code115: 타브랜드 차량은 차량구분·브랜드명을 함께 표시한다.
+  if (isOtherBrandVehicle(vehicle)) {
+    lines.push("차량구분: " + VEH_TYPE_OTHER);
+    lines.push("브랜드명: " + s(vehicle.brandName));
+  }
   lines.push("모델명: " + s(vehicle.modelName));
   lines.push("세부모델: " + s(vehicle.detailModel));
   lines.push("구매방식: " + s(vehicle.purchaseMethod));
@@ -1412,7 +1480,9 @@ function enrichVehicleForCalendar(v, customerId, custInfo) {
     contractDate:   v.contractDate,
     deliveryDate:   v.deliveryDate,
     quantity:       v.quantity,
-    memo:           v.memo
+    memo:           v.memo,
+    vehicleType:    v.vehicleType, // ★ code115
+    brandName:      v.brandName    // ★ code115
   };
 }
 
@@ -1833,12 +1903,14 @@ function readCustomersForDiagnosis(cs) {
 }
 
 function readAllVehicles(vs) {
-  var memoCol = ensureVehicleMemoColumn(vs); // ★ v37: 메모 컬럼 위치(1-based)
+  var extraCols = ensureVehicleExtraColumns(vs); // ★ code115: 메모/차량구분/브랜드명 컬럼(1-based)
+  var memoCol = extraCols.memo; // ★ v37: 메모 컬럼 위치(1-based)
   var data = vs.getDataRange().getValues();
   var result = [];
   for (var i = 1; i < data.length; i++) {
     var row = data[i];
     if (!row[0] && !row[1]) continue;
+    var typeFields = readVehicleTypeFields(row, extraCols); // ★ code115
     result.push({
       vehicleId:      String(row[0]||"").trim(),
       customerId:     String(row[1]||"").trim(),
@@ -1853,6 +1925,8 @@ function readAllVehicles(vs) {
       deliveryMonth:  String(row[10]||"").trim(),
       quantity:       Math.max(1, parseInt(row[11],10)||1),
       memo:           String(row[memoCol-1]||"").trim(), // ★ v37
+      vehicleType:    typeFields.vehicleType, // ★ code115
+      brandName:      typeFields.brandName,   // ★ code115
       _rowNumber:     i + 1
     });
   }
@@ -1903,6 +1977,7 @@ function diagnoseSalesData2026() {
   });
 
   vehicles.forEach(function(v){
+    if (isOtherBrandVehicle(v)) return; // ★ code115: 타브랜드 차량은 판매실적에서 제외
     var qty = Math.max(1, parseInt(v.quantity,10)||1);
     if (v.contractDate && v.contractDate.substring(0,4) === "2026") vehicleContractQty += qty;
     if (v.deliveryDate && v.deliveryDate.substring(0,4) === "2026") vehicleDeliveryQty += qty;
@@ -2494,7 +2569,8 @@ function handleList() {
     var vs = getVehicleSheet();
     var cData  = cs.getDataRange().getValues();
     var vData  = vs.getDataRange().getValues();
-    var vMemoCol = ensureVehicleMemoColumn(vs); // ★ v37: 메모 컬럼(1-based)
+    var vExtraCols = ensureVehicleExtraColumns(vs); // ★ code115: 메모/차량구분/브랜드명
+    var vMemoCol = vExtraCols.memo; // ★ v37: 메모 컬럼(1-based)
 
     console.log("[CUSTOMER SHEET]", cs.getSheetId(), cs.getName(), cs.getLastRow(), cs.getLastColumn());
 
@@ -2547,7 +2623,9 @@ function handleList() {
           deliveryDate:   dd,
           deliveryMonth:  dm,
           quantity:       Math.max(1, parseInt(vr[11],10)||1),
-          memo:           String(vr[vMemoCol-1]||"").trim() // ★ v37: 위치 기반 14개 컬럼과 별도로 조회
+          memo:           String(vr[vMemoCol-1]||"").trim(), // ★ v37: 위치 기반 14개 컬럼과 별도로 조회
+          vehicleType:    readVehicleTypeFields(vr, vExtraCols).vehicleType, // ★ code115
+          brandName:      readVehicleTypeFields(vr, vExtraCols).brandName    // ★ code115
         });
       }
     }
@@ -3897,7 +3975,8 @@ function findCustomerRow(cs, p) {
 // → 기존 저장 로직/행 구조를 전혀 건드리지 않으면서 memo만 추가.
 function saveVehiclesToSheet(vs, customerId, customerName, phone, vehicles, nowStr) {
   if (!Array.isArray(vehicles) || !vehicles.length) return;
-  var memoCol = ensureVehicleMemoColumn(vs); // ★ v37
+  var extraCols = ensureVehicleExtraColumns(vs); // ★ code115: 메모/차량구분/브랜드명
+  var memoCol = extraCols.memo; // ★ v37
   var rows = vehicles.map(function(v){
     var qty = Math.max(1, parseInt(v.quantity,10)||1);
     var dd  = fmtDate(v.deliveryDate||"");
@@ -3914,6 +3993,15 @@ function saveVehiclesToSheet(vs, customerId, customerName, phone, vehicles, nowS
   // ★ v37: memo는 기존 14개 컬럼과 별도로, 같은 행 범위에 이어서 저장한다.
   var memoRows = vehicles.map(function(v){ return [String(v.memo||"")]; });
   vs.getRange(startRow, memoCol, memoRows.length, 1).setValues(memoRows);
+
+  // ★ code115: 차량구분/브랜드명도 같은 행 범위에 컬럼 이름 기준으로 저장한다.
+  //   벤츠 차량은 브랜드명을 비워 둔다(숨겨진 입력값이 잘못 저장되지 않도록).
+  var typeRows = vehicles.map(function(v){ return [normalizeVehicleType(v.vehicleType)]; });
+  var brandRows = vehicles.map(function(v){
+    return [normalizeVehicleType(v.vehicleType) === VEH_TYPE_OTHER ? String(v.brandName||"").trim() : ""];
+  });
+  vs.getRange(startRow, extraCols.vehicleType, typeRows.length, 1).setValues(typeRows);
+  vs.getRange(startRow, extraCols.brandName, brandRows.length, 1).setValues(brandRows);
 }
 
 // ── 구매차량 삭제 (해당 고객ID만, 아래에서 위로 삭제) ────────
@@ -3926,7 +4014,8 @@ function deleteVehiclesByCustomerId(vs, customerId) {
 
 // ── 구매차량 조회 (해당 고객ID만) — 저장 검증용 (v37: memo 포함) ──
 function getVehiclesByCustomerId(vs, customerId) {
-  var memoCol = ensureVehicleMemoColumn(vs); // ★ v37
+  var extraCols = ensureVehicleExtraColumns(vs); // ★ code115
+  var memoCol = extraCols.memo; // ★ v37
   var data = vs.getDataRange().getValues();
   var result = [];
   var cid = String(customerId||"").trim();
@@ -3946,7 +4035,10 @@ function getVehiclesByCustomerId(vs, customerId) {
       deliveryDate:   dd,
       deliveryMonth:  dm,
       quantity:       Math.max(1, parseInt(row[11],10)||1),
-      memo:           String(row[memoCol-1]||"").trim() // ★ v37
+      memo:           String(row[memoCol-1]||"").trim(), // ★ v37
+      vehicleType:    normalizeVehicleType(row[extraCols.vehicleType-1]), // ★ code115
+      brandName:      normalizeVehicleType(row[extraCols.vehicleType-1]) === VEH_TYPE_OTHER
+                        ? String(row[extraCols.brandName-1]||"").trim() : ""  // ★ code115
     });
   }
   return result;
@@ -6688,4 +6780,4 @@ function runRegistrationDateRepair() {
     "실제 고객관리 시트 최초 등록 시각과 100% 동일하다고 보장할 수 없어 " +
     "실수로 등록일을 다시 복구하는 작업을 막았습니다."
   );
-}
+}

@@ -19,7 +19,7 @@
     //   Google Drive에 업로드·조회·교체·삭제할 수 있는 UI와 통신 함수가
     //   추가되었다. 기존 고객 등록/수정/삭제, 구매차량, 캘린더 연동,
     //   대시보드/분석 로직은 전혀 수정하지 않았다.
-    var APP_VERSION = "2026-09-28-v117-new-customer-duplicate-check";
+    var APP_VERSION = "2026-10-29-v118-other-brand-vehicle";
     // ★ 자동저장 안정화 — 최종저장 Lock 경쟁 제거 / found:false 시 Draft·폼 보존
     // ★ 실제 저장 성공 후 저장확인 API HTTP 404 오판정 수정
     console.log("[CRM VERSION]", APP_VERSION);
@@ -1004,6 +1004,19 @@
     .veh-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
     .veh-field{display:flex;flex-direction:column;gap:4px;}
     .veh-field.veh-field-full{grid-column:1/-1;}
+    /* ★ v118 타브랜드 구매차량 — 차량구분(벤츠/타브랜드)에 따라 입력칸 전환.
+       숨겨진 쪽 입력값은 DOM에 그대로 남겨 두고(되돌리면 복원), 저장 시에는
+       선택된 구분의 입력값만 읽는다(readCardVehicleIdentity). */
+    .veh-card.is-other-brand .veh-benz-only{display:none;}
+    .veh-card:not(.is-other-brand) .veh-other-only{display:none;}
+    .veh-type-hint{display:none;font-size:11px;color:var(--text-dim);line-height:1.5;
+      background:#fff8e6;border:1px dashed #e6c66e;border-radius:8px;padding:6px 10px;}
+    .veh-type-hint.show{display:block;}
+    .veh-other-badge{
+      display:inline-block;font-size:10px;font-weight:700;color:#5b4a8a;
+      background:#f1edfa;border:1px solid #d6cdee;border-radius:20px;
+      padding:2px 8px;white-space:nowrap;flex-shrink:0;
+    }
     .veh-field label{font-size:11px;font-weight:600;color:var(--text-dim);}
     .veh-field input,.veh-field select,.veh-field textarea{
       width:100%;background:#fff;border:1px solid var(--border2);
@@ -3706,9 +3719,91 @@ function normalizeVehicles(vehicles){
       deliveryDate:  deliveryDate,
       deliveryMonth: String(v.deliveryMonth || (deliveryDate.length>=7?deliveryDate.substring(0,7):"")).trim(),
       quantity:      Math.max(1,parseInt(v.quantity,10)||1),
-      memo:          String(v.memo||"")
+      memo:          String(v.memo||""),
+      // ★ v118 타브랜드 구매차량 — 구분값이 없는 기존 데이터는 "벤츠"로 취급
+      vehicleType:   normalizeVehicleType(v.vehicleType),
+      brandName:     isOtherBrandVehicle(v) ? String(v.brandName||"").trim() : ""
     };
   });
+}
+
+// ============================================================
+// ★ v118 타브랜드 구매차량 — 차량구분 공통 헬퍼
+//   차량구분은 고객 단위가 아니라 구매차량 단위다. "타브랜드"만 타브랜드이고
+//   빈 값/그 외 값은 모두 "벤츠"로 본다(기존 데이터 호환, 일괄 수정 없음).
+// ============================================================
+var VEHICLE_TYPE_BENZ  = "벤츠";
+var VEHICLE_TYPE_OTHER = "타브랜드";
+function normalizeVehicleType(t){
+  var s=String(t===null||t===undefined?"":t).trim();
+  if(s===VEHICLE_TYPE_OTHER||s.toUpperCase()==="OTHER") return VEHICLE_TYPE_OTHER;
+  return VEHICLE_TYPE_BENZ;
+}
+function isOtherBrandVehicle(v){ return !!v && normalizeVehicleType(v.vehicleType)===VEHICLE_TYPE_OTHER; }
+function isBenzVehicle(v){ return !!v && !isOtherBrandVehicle(v); }
+// 차량 표시명 — 벤츠: "E-Class · E 300", 타브랜드: "타브랜드 · 아우디 A6 · 45 TFSI"
+//   (반환값은 원문 문자열이다. HTML에 넣을 때는 반드시 esc()로 감싼다.)
+function vehicleDisplayName(v){
+  if(!v) return "";
+  var mn=String(v.modelName||"").trim(), dm=String(v.detailModel||"").trim();
+  if(isOtherBrandVehicle(v)){
+    var bn=String(v.brandName||"").trim();
+    var main=[bn,mn].filter(function(x){return x;}).join(" ");
+    var label=VEHICLE_TYPE_OTHER+(main?" · "+main:"");
+    return dm ? label+" · "+dm : label;
+  }
+  if(mn&&dm) return mn+" · "+dm;
+  return mn||dm;
+}
+// 문서 폴더/모달에 넘기는 모델명 — 타브랜드는 "아우디 A6"
+function vehicleDocModelName(v){
+  if(!v) return "";
+  if(isOtherBrandVehicle(v)) return [String(v.brandName||"").trim(),String(v.modelName||"").trim()].filter(function(x){return x;}).join(" ");
+  return String(v.modelName||"");
+}
+// 고객 시트 대표차량 필드(모델명/계약일/출고일 등)에 쓸 차량 — 첫 번째 벤츠 차량.
+//   타브랜드 날짜가 고객 단위 필드로 들어가 레거시 호환 집계에서 벤츠 실적으로
+//   다시 잡히거나 벤츠 관리(출고 1년/3년 등)에 섞이지 않도록 한다.
+function pickRepresentativeVehicle(vehicles){
+  if(!Array.isArray(vehicles)) return null;
+  for(var i=0;i<vehicles.length;i++){ if(isBenzVehicle(vehicles[i])) return vehicles[i]; }
+  return null;
+}
+// 고객 목록/연락 목록에 보여줄 대표차량 문구.
+//   타브랜드 차량이 없는 고객은 기존과 완전히 동일하게 고객 대표 필드를 쓴다.
+function customerModelLabel(c){
+  var legacy=(c.modelName||"")+(c.detailModel?" · "+c.detailModel:"");
+  var vehs=getCustomerVehiclesAll(c);
+  if(!vehs.some(isOtherBrandVehicle)) return legacy;
+  var rep=pickRepresentativeVehicle(vehs)||vehs[0];
+  return vehicleDisplayName(rep)||legacy;
+}
+// ★ v118 — 서버(Apps Script)가 차량구분/브랜드명을 저장할 수 있는 버전(code115 이상)인지.
+//   구버전 서버는 이 두 값을 버리므로, 그 상태에서 타브랜드 차량을 저장하면
+//   벤츠 차량으로 저장되어 실적에 섞인다. 확인되기 전에는 타브랜드 저장을 막는다.
+var _lastServerVersion = "";
+function serverSupportsOtherBrand(){
+  var m=/code(\d+)/.exec(_lastServerVersion||"");
+  return !!m && parseInt(m[1],10)>=115;
+}
+// 저장 전 검증 — 타브랜드는 브랜드명과 차종/모델명이 필요하다.
+function validateVehiclesForSave(vehicles){
+  if(!Array.isArray(vehicles)) return "";
+  if(vehicles.some(isOtherBrandVehicle) && !serverSupportsOtherBrand()){
+    return "⚠ 타브랜드 차량을 저장하려면 Apps Script(Code.gs)를 새 버전(code115 이상)으로 배포해야 합니다."+
+      (_lastServerVersion?" 현재 서버: "+_lastServerVersion:" 서버 버전을 아직 확인하지 못했습니다. [불러오기] 후 다시 시도해주세요.");
+  }
+  for(var i=0;i<vehicles.length;i++){
+    var v=vehicles[i];
+    if(!isOtherBrandVehicle(v)) continue;
+    if(!String(v.brandName||"").trim()) return "⚠ 차량 #"+(i+1)+": 타브랜드 차량의 브랜드명을 입력해주세요.";
+    if(!String(v.modelName||"").trim()) return "⚠ 차량 #"+(i+1)+": 타브랜드 차량의 차종/모델명을 입력해주세요.";
+  }
+  return "";
+}
+// onclick='...' 안의 JS 문자열 인자로 넣을 값 — 따옴표/역슬래시/줄바꿈을 이스케이프
+function escJsArg(s){
+  return esc(String(s===null||s===undefined?"":s).replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/\r?\n/g," "));
 }
 
 // ★ 과거(구형) 고객 — vehicles 필드 자체가 없던 시절에 만들어진 단일차량
@@ -3756,7 +3851,9 @@ function migrateLegacyVehicle(c){
 //      전체 검증이 끝나면, 아래 함수를
 //      "return Array.isArray(customer.vehicles)?customer.vehicles:[];" 로
 //      단순화해야 한다. 마이그레이션 전에 미리 바꾸면 기존 실적이 다시 사라진다.
-function getCustomerVehiclesForStats(customer){
+// ★ v118 타브랜드 구매차량 — 위 A/B/C 규칙으로 고객의 "전체" 차량(벤츠+타브랜드)을
+//   결정한다. 고객 상세/수정/차량 이력 표시에 사용한다(migrateVehicles).
+function getCustomerVehiclesAll(customer){
   if(Array.isArray(customer.vehicles)&&customer.vehicles.length>0){
     return customer.vehicles;
   }
@@ -3765,6 +3862,13 @@ function getCustomerVehiclesForStats(customer){
     return migrateLegacyVehicle(customer);
   }
   return [];
+}
+// ★ v118 타브랜드 구매차량 — 판매실적 집계 전용 진입점: 벤츠 차량만 반환한다.
+//   계약/출고 대수, 월별·연도별, 차종별, 유입경로별, 대시보드·차트 등 모든
+//   실적 계산은 이 함수(또는 이를 쓰는 sumContractQty/sumDeliveryQty 등)만 쓴다.
+//   레거시 대표차량(B 규칙)은 차량구분이 없으므로 벤츠로 취급된다.
+function getCustomerVehiclesForStats(customer){
+  return getCustomerVehiclesAll(customer).filter(isBenzVehicle);
 }
 
 function sumContractQty(c,filterYM,filterY){
@@ -3813,7 +3917,8 @@ function getDeliveredVehicles(list,filterY,filterYM){
 
 // 하위 호환용 별칭 — 기존 코드에서 migrateVehicles(c)를 호출하는 부분이
 // 남아있어도 동일하게 동작하도록 유지한다 (내부적으로는 getCustomerVehiclesForStats 사용).
-function migrateVehicles(c){ return getCustomerVehiclesForStats(c); }
+// ★ v118: 표시용이므로 타브랜드 포함 전체 차량을 반환한다(실적 계산에는 쓰지 않는다).
+function migrateVehicles(c){ return getCustomerVehiclesAll(c); }
 
 // ============================================================
 // ★ 서버 응답 정규화 — syncFromSheet()와 _fetchSheetAndSave()가
@@ -3873,6 +3978,7 @@ function normalizeServerCustomers(customers){
 var _vehIdx=0;
 // ★ 구매차량 수정 카드 열기/닫기 추가 — 차량명 표시 텍스트 계산(모델명·세부모델 조합)
 function vehCardTitleText(v){
+  if(v&&isOtherBrandVehicle(v)) return vehicleDisplayName(v); // ★ v118 "타브랜드 · 아우디 A6"
   var mn=v?String(v.modelName||"").trim():"";
   var dm=v?String(v.detailModel||"").trim():"";
   if(mn&&dm) return mn+" · "+dm;
@@ -3886,7 +3992,16 @@ function vehRowHtml(listId,v){
   var models=["","A-Class","CLA","GLA / GLB","C-Class","E-Class","S-Class",
     "CLE","GLC","GLE","GLS","G-Class","AMG GT · SL","EQ","Mercedes-Maybach"];
   function opt(val,sel){return'<option value="'+esc(val)+'"'+(sel?' selected':'')+'>'+esc(val||"— 선택 —")+'</option>';}
-  var modelOpts=models.map(function(m){return opt(m,v&&v.modelName===m);}).join("");
+  // ★ v118 타브랜드 구매차량 — 벤츠/타브랜드 입력칸을 분리해 두고, 숨겨진
+  //   쪽 값은 저장하지 않는다. 기존 차량(구분값 없음)은 벤츠로 표시된다.
+  var vType=normalizeVehicleType(v&&v.vehicleType);
+  var vIsOther=vType===VEHICLE_TYPE_OTHER;
+  var modelOpts=models.map(function(m){return opt(m,v&&!vIsOther&&v.modelName===m);}).join("");
+  var typeOpts=[VEHICLE_TYPE_BENZ,VEHICLE_TYPE_OTHER].map(function(t){return'<option value="'+esc(t)+'"'+(vType===t?' selected':'')+'>'+esc(t)+'</option>';}).join("");
+  var benzDetail=v&&!vIsOther?v.detailModel||"":"";
+  var otherBrand=v&&vIsOther?v.brandName||"":"";
+  var otherModel=v&&vIsOther?v.modelName||"":"";
+  var otherDetail=v&&vIsOther?v.detailModel||"":"";
   var statusOpts=["","상담중","계약","출고","해약"].map(function(s){return opt(s,v&&v.vehicleStatus===s);}).join("");
   var methodOpts=["","일시불","할부","리스","장기렌트","법인할부","법인리스","미정"].map(function(m){return opt(m,v&&v.purchaseMethod===m);}).join("");
   var dd=v?v.deliveryDate||"":"";
@@ -3914,12 +4029,13 @@ function vehRowHtml(listId,v){
   //   끊어지지 않으므로, 여기서 data-vehicle-id 속성으로 값을 보존한다.
   //   (차량 저장/수정/삭제/메모/수량/계약·출고 통계 로직 자체는 전혀 건드리지 않음)
   // ★ 구매차량 수정 카드 열기/닫기 추가 — 헤더에 차량명/메모뱃지/열기버튼 표시, 본문은 .veh-card-body로 분리
-  return'<div class="veh-card'+(vIsLegacy?' legacy':'')+'" id="'+rid+'" data-vehicle-id="'+esc(vid)+'" data-veh-qty="'+vQty+'" data-is-new="'+(vIsNew?"true":"false")+'" data-is-legacy="'+(vIsLegacy?"true":"false")+'">'+
+  return'<div class="veh-card'+(vIsLegacy?' legacy':'')+(vIsOther?' is-other-brand':'')+'" id="'+rid+'" data-vehicle-id="'+esc(vid)+'" data-veh-qty="'+vQty+'" data-is-new="'+(vIsNew?"true":"false")+'" data-is-legacy="'+(vIsLegacy?"true":"false")+'">'+
     '<div class="veh-card-header">'+
       '<div class="veh-card-header-info">'+
         '<span class="veh-card-num">차량 #'+(idx+1)+'</span>'+
         '<div class="veh-card-title-wrap">'+
           '<span class="veh-card-title">'+esc(titleText)+'</span>'+
+          '<span class="veh-other-badge veh-other-only">타브랜드 · 실적 제외</span>'+
           '<span class="veh-memo-indicator'+(hasMemo?' show':'')+'">📝 메모</span>'+
           (vIsLegacy?'<span class="veh-legacy-badge">⚠ 차량정보 이전 필요</span>':'')+
         '</div>'+
@@ -3931,8 +4047,13 @@ function vehRowHtml(listId,v){
     '</div>'+
     '<div class="veh-card-body">'+
     '<div class="veh-grid">'+
-      '<div class="veh-field"><label>모델명</label><select class="veh-modelName" onchange="updateVehicleCardTitle(this.closest(\'.veh-card\'))">'+modelOpts+'</select></div>'+
-      '<div class="veh-field"><label>세부모델</label><input type="text" value="'+esc(v?v.detailModel||"":"")+'" placeholder="예: E 300 4MATIC" class="veh-detailModel" oninput="updateVehicleCardTitle(this.closest(\'.veh-card\'))" onchange="updateVehicleCardTitle(this.closest(\'.veh-card\'))"/></div>'+
+      '<div class="veh-field veh-field-full"><label>차량 구분</label><select class="veh-vehicleType" onchange="onVehicleTypeChange(this.closest(\'.veh-card\'))">'+typeOpts+'</select>'+
+        '<div class="veh-type-hint"></div></div>'+
+      '<div class="veh-field veh-benz-only"><label>모델명</label><select class="veh-modelName" onchange="updateVehicleCardTitle(this.closest(\'.veh-card\'))">'+modelOpts+'</select></div>'+
+      '<div class="veh-field veh-benz-only"><label>세부모델</label><input type="text" value="'+esc(benzDetail)+'" placeholder="예: E 300 4MATIC" class="veh-detailModel" oninput="updateVehicleCardTitle(this.closest(\'.veh-card\'))" onchange="updateVehicleCardTitle(this.closest(\'.veh-card\'))"/></div>'+
+      '<div class="veh-field veh-other-only"><label>브랜드명</label><input type="text" value="'+esc(otherBrand)+'" placeholder="예: 아우디" maxlength="40" class="veh-brandName" oninput="updateVehicleCardTitle(this.closest(\'.veh-card\'))" onchange="updateVehicleCardTitle(this.closest(\'.veh-card\'))"/></div>'+
+      '<div class="veh-field veh-other-only"><label>차종/모델명</label><input type="text" value="'+esc(otherModel)+'" placeholder="예: A6" maxlength="60" class="veh-otherModelName" oninput="updateVehicleCardTitle(this.closest(\'.veh-card\'))" onchange="updateVehicleCardTitle(this.closest(\'.veh-card\'))"/></div>'+
+      '<div class="veh-field veh-other-only veh-field-full"><label>세부모델 <span style="font-size:10px;color:var(--text-lt);">(선택)</span></label><input type="text" value="'+esc(otherDetail)+'" placeholder="예: 45 TFSI quattro" maxlength="80" class="veh-otherDetailModel" oninput="updateVehicleCardTitle(this.closest(\'.veh-card\'))" onchange="updateVehicleCardTitle(this.closest(\'.veh-card\'))"/></div>'+
       '<div class="veh-field"><label>구매방식</label><select class="veh-purchaseMethod">'+methodOpts+'</select></div>'+
       '<div class="veh-field"><label>차량상태</label><select class="veh-vehicleStatus">'+statusOpts+'</select></div>'+
       '<div class="veh-field"><label>계약일</label><input type="date" value="'+esc(v?v.contractDate||"":"")+'" class="veh-contractDate"/></div>'+
@@ -3985,8 +4106,45 @@ function updateVehicleCardTitle(card){
   if(!card)return;
   var titleEl=card.querySelector(".veh-card-title");
   if(!titleEl)return;
+  titleEl.textContent=vehCardTitleText(readCardVehicleIdentity(card)); // ★ v118
+  updateVehicleTypeHint(card);
+}
+// ★ v118 타브랜드 구매차량 — 카드에서 "선택된 차량구분"의 입력값만 읽는다.
+//   숨겨진 쪽(벤츠 모델 select 또는 타브랜드 입력칸) 값은 절대 섞이지 않는다.
+//   차량구분 select가 없는 카드는 벤츠로 본다.
+function readCardVehicleIdentity(card){
+  function val(sel){var el=card?card.querySelector(sel):null;return el?String(el.value||"").trim():"";}
+  var type=normalizeVehicleType(val(".veh-vehicleType"));
+  if(type===VEHICLE_TYPE_OTHER){
+    return {vehicleType:type, brandName:val(".veh-brandName"),
+            modelName:val(".veh-otherModelName"), detailModel:val(".veh-otherDetailModel")};
+  }
+  return {vehicleType:type, brandName:"", modelName:val(".veh-modelName"), detailModel:val(".veh-detailModel")};
+}
+// ★ v118 — 벤츠 ↔ 타브랜드 전환. 입력값은 지우지 않고 숨기기만 한다.
+function onVehicleTypeChange(card){
+  if(!card)return;
+  var sel=card.querySelector(".veh-vehicleType");
+  card.classList.toggle("is-other-brand", normalizeVehicleType(sel?sel.value:"")===VEHICLE_TYPE_OTHER);
+  updateVehicleCardTitle(card);
+}
+// ★ v118 — 숨겨진 쪽에 입력값이 남아 있으면 "저장되지 않는다"는 안내를 보여준다.
+function updateVehicleTypeHint(card){
+  var hint=card?card.querySelector(".veh-type-hint"):null;
+  if(!hint)return;
   function val(sel){var el=card.querySelector(sel);return el?String(el.value||"").trim():"";}
-  titleEl.textContent=vehCardTitleText({modelName:val(".veh-modelName"),detailModel:val(".veh-detailModel")});
+  var isOther=card.classList.contains("is-other-brand");
+  var msg="";
+  if(isOther){
+    var hb=[val(".veh-modelName"),val(".veh-detailModel")].filter(function(x){return x;}).join(" · ");
+    if(hb) msg="숨겨진 벤츠 모델 입력값("+hb+")은 저장되지 않습니다. 다시 '벤츠'를 선택하면 그대로 돌아옵니다.";
+    msg=(msg?msg+" ":"")+"타브랜드 차량은 고객 이력에만 기록되고 판매실적에는 포함되지 않습니다.";
+  } else {
+    var ho=[val(".veh-brandName"),val(".veh-otherModelName"),val(".veh-otherDetailModel")].filter(function(x){return x;}).join(" ");
+    if(ho) msg="숨겨진 타브랜드 입력값("+ho+")은 저장되지 않습니다. 다시 '타브랜드'를 선택하면 그대로 돌아옵니다.";
+  }
+  hint.textContent=msg;
+  hint.classList.toggle("show",!!msg);
 }
 // ★ 구매차량 수정 카드 열기/닫기 추가 — 메모 유무에 따라 뱃지 표시/숨김을 실시간 반영
 function updateVehicleMemoIndicator(card){
@@ -4054,12 +4212,15 @@ function readVehiclesFromDom(listId){
     var deliveryDate=val(".veh-deliveryDate");
     var deliveryMonth=val(".veh-deliveryMonth");
     if(!deliveryMonth&&deliveryDate.length>=7)deliveryMonth=deliveryDate.substring(0,7);
+    var ident=readCardVehicleIdentity(card); // ★ v118: 선택된 차량구분의 값만 읽는다
     result.push({
       vehicleId:      card.dataset.vehicleId||"",
       isNew:          card.dataset.isNew==="true", // ★ 차량서류 vehicleId 연결 끊김 방지 및 고아문서 복구 (code103)
       isLegacyVehicle:card.dataset.isLegacy==="true", // ★ 레거시 고객 차량의 구매차량 전환 및 문서관리 연결 복구 (code106)
-      modelName:      val(".veh-modelName"),
-      detailModel:    val(".veh-detailModel"),
+      vehicleType:    ident.vehicleType, // ★ v118
+      brandName:      ident.brandName,   // ★ v118
+      modelName:      ident.modelName,
+      detailModel:    ident.detailModel,
       purchaseMethod: val(".veh-purchaseMethod"),
       vehicleStatus:  val(".veh-vehicleStatus"),
       contractDate:   normalizeDateStr(val(".veh-contractDate"))||val(".veh-contractDate"),
@@ -4243,7 +4404,7 @@ function renderHomeContacts(){
     : '<div class="contact-empty">이번주 연락할 고객이 없습니다</div>';
 }
 function cItem(c,df){
-  var model=(c.modelName||"")+(c.detailModel?" · "+c.detailModel:"");
+  var model=customerModelLabel(c); // ★ v118
   var sd=mst(c.status)||c.status||"—";
   var safePhone=(c.phone||"").replace(/"/g,"&quot;");
   var safeName=(c.customerName||"").replace(/"/g,"&quot;");
@@ -4564,7 +4725,7 @@ function renderList(){
 // ============================================================
 function buildCard(c,idx){
   var sd=mst(c.status)||c.status||"—";
-  var model=(c.modelName||"")+(c.detailModel?" · "+c.detailModel:"");
+  var model=customerModelLabel(c); // ★ v118: 타브랜드 차량 고객은 "타브랜드 · 아우디 A6"
   var isUpd=!!c._updatedAt;
   var did="det-"+idx;
   var cid="care-"+idx;
@@ -4895,11 +5056,9 @@ function renderCustomerVehicleList(c, customerIndex){
     // 고객명/전화번호/차량명 등 원문 대신 인덱스 조합만으로 고유 ID 생성.
     var detailId = "vehicle-detail-" + customerIndex + "-" + vehicleIndex;
 
-    var nameParts = [];
-    if(v.modelName)   nameParts.push(v.modelName);
-    if(v.detailModel) nameParts.push(v.detailModel);
-    var nameLabel = nameParts.length
-      ? esc(nameParts.join(" · "))
+    var vName = vehicleDisplayName(v); // ★ v118: 타브랜드는 "타브랜드 · 아우디 A6"
+    var nameLabel = vName
+      ? esc(vName)
       : ("차량 " + (vehicleIndex + 1));
 
     var qty = Math.max(1, parseInt(v.quantity, 10) || 1);
@@ -4914,7 +5073,14 @@ function renderCustomerVehicleList(c, customerIndex){
       '</div>';
 
     var metaRows = "";
-    if(v.modelName)      metaRows += dr("모델명", v.modelName);
+    if(isOtherBrandVehicle(v)){
+      // ★ v118: 타브랜드 차량은 구분/브랜드명/차종을 명확히 표시(실적 제외 안내 포함)
+      metaRows += dr("차량구분", VEHICLE_TYPE_OTHER+" (판매실적 제외)");
+      if(v.brandName)    metaRows += dr("브랜드명", v.brandName);
+      if(v.modelName)    metaRows += dr("차종/모델명", v.modelName);
+    } else {
+      if(v.modelName)    metaRows += dr("모델명", v.modelName);
+    }
     if(v.detailModel)    metaRows += dr("세부모델", v.detailModel);
     if(v.purchaseMethod) metaRows += dr("구매방식", v.purchaseMethod);
     if(v.vehicleStatus)  metaRows += dr("차량상태", v.vehicleStatus);
@@ -4939,7 +5105,7 @@ function renderCustomerVehicleList(c, customerIndex){
         '<div><div class="doc-summary-label">📂 차량서류</div>'+
           '<div class="doc-summary-count" id="'+vdCountId+'">문서 개수 확인 중…</div></div>'+
         '<div class="doc-summary-actions">'+
-          '<button type="button" class="doc-btn" onclick="openVehicleDocModalReadOnly(\''+esc(c.customerId)+'\',\''+esc(v.vehicleId)+'\',\''+esc(c.customerName||"")+'\',\''+esc(c.companyName||"")+'\',\''+esc(v.modelName||"")+'\',\''+esc(v.detailModel||"")+'\','+qty+')">문서 목록 보기</button>'+
+          '<button type="button" class="doc-btn" onclick="openVehicleDocModalReadOnly(\''+esc(c.customerId)+'\',\''+esc(v.vehicleId)+'\',\''+esc(c.customerName||"")+'\',\''+esc(c.companyName||"")+'\',\''+escJsArg(vehicleDocModelName(v))+'\',\''+escJsArg(v.detailModel||"")+'\','+qty+')">문서 목록 보기</button>'+
           '<button type="button" class="doc-btn" onclick="openDriveFolderDirect(\'VEHICLE\',\''+esc(c.customerId)+'\',\''+esc(v.vehicleId)+'\',\'\')">차량 폴더 열기</button>'+
         '</div>'+
       '</div>';
@@ -5053,7 +5219,7 @@ function onUPhoneInput(el){
       var c=r.c,sd=mst(c.status)||c.status||"—";
       document.getElementById("prev-name").textContent=c.customerName||"—";
       document.getElementById("prev-meta").textContent=
-        (c.modelName?c.modelName+(c.detailModel?" · "+c.detailModel:""):"모델미정")+
+        (customerModelLabel(c)||"모델미정")+
         " | "+(c.leadSource||"—");
       document.getElementById("prev-status").innerHTML=
         '<span class="badge '+sc(c.status)+'">'+esc(sd)+'</span>'+
@@ -5090,7 +5256,8 @@ function hideMsg(id){var el=document.getElementById(id);if(!el)return;el.classNa
 // ============================================================
 function getFormData(){
   var vehicles=readVehiclesFromDom("new-veh-list");
-  var firstV=vehicles[0]||{};
+  // ★ v118: 고객 대표 필드는 첫 번째 "벤츠" 차량 기준(타브랜드는 대표 필드에 넣지 않음)
+  var firstV=pickRepresentativeVehicle(vehicles)||{};
   return {
     action:              "new",
     _savedAt:            getNow(),
@@ -5228,6 +5395,9 @@ async function submitNew(){
   if(!/^[0-9]{8,15}$/.test(crmDuplicatePhoneKey(data.phone))){
     showMsg("msg-new","err","⚠ 연락처에 올바른 전화번호를 입력해주세요.");return;
   }
+  // ★ v118: 타브랜드 차량은 브랜드명·차종이 있어야 저장한다(중복확인보다 먼저, 같은 흐름).
+  var vehErrNew=validateVehiclesForSave(data.vehicles);
+  if(vehErrNew){showMsg("msg-new","err",vehErrNew);return;}
   // 확인 중에는 버튼을 잠그되 Draft 최종저장 상태는 아직 변경하지 않는다.
   btn.disabled=true;btn.textContent="중복 고객 확인 중…";
   try {
@@ -5272,7 +5442,9 @@ async function submitNew(){
         deliveryDate:   v.deliveryDate||"",
         deliveryMonth:  v.deliveryMonth||"",
         quantity:       Math.max(1, parseInt(v.quantity,10)||1),
-        memo:           v.memo||""
+        memo:           v.memo||"",
+        vehicleType:    normalizeVehicleType(v.vehicleType), // ★ v118
+        brandName:      isOtherBrandVehicle(v) ? (v.brandName||"") : "" // ★ v118
       };
     });
   }
@@ -5715,7 +5887,7 @@ function _openCustDetailModal(c){
     html+='<div style="margin-top:18px;">'+
       '<div style="font-size:13px;font-weight:800;color:var(--black);margin-bottom:10px;">🚗 차량별 메모</div>';
     vehiclesWithMemo.forEach(function(v){
-      var title=(v.modelName||"")+(v.detailModel?" · "+v.detailModel:"")||"모델미정";
+      var title=vehicleDisplayName(v)||"모델미정"; // ★ v118
       html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;">'+
         '<div style="font-size:12px;font-weight:700;color:var(--black);margin-bottom:6px;">'+esc(title)+'</div>'+
         '<div style="font-size:13px;color:var(--black);line-height:1.6;white-space:pre-wrap;">'+esc(v.memo)+'</div>'+
@@ -5822,7 +5994,8 @@ function getEditFormData(){
   var eName  = document.getElementById("e-customerName").value.trim();
   var ePhone = document.getElementById("e-phone").value.trim();
   var editVehicles=readVehiclesFromDom("edit-veh-list");
-  var firstEV=editVehicles[0]||{};
+  // ★ v118: 고객 대표 필드는 첫 번째 "벤츠" 차량 기준(타브랜드는 대표 필드에 넣지 않음)
+  var firstEV=pickRepresentativeVehicle(editVehicles)||{};
   return {
     action:              "editCustomer",
     rowNumber:           _editOriginalRowNumber,
@@ -5879,6 +6052,12 @@ function submitEdit(){
   }
   if(!ePhone){
     if(msgEl){msgEl.className="st-msg edit-save-msg err";msgEl.textContent="⚠ 연락처를 입력해주세요.";}
+    return;
+  }
+  // ★ v118: 타브랜드 차량은 브랜드명·차종이 있어야 저장한다.
+  var vehErrEdit=validateVehiclesForSave(readVehiclesFromDom("edit-veh-list"));
+  if(vehErrEdit){
+    if(msgEl){msgEl.className="st-msg edit-save-msg err";msgEl.textContent=vehErrEdit;}
     return;
   }
 
@@ -6498,7 +6677,7 @@ function renderModelDelChart(list, yrStr, deliveredYear){
   // vehicles quantity 기준 집계
   var modelMap={};
   list.forEach(function(c){
-    migrateVehicles(c).forEach(function(v){
+    getCustomerVehiclesForStats(c).forEach(function(v){ // ★ v118: 벤츠만 집계
       var dd=normalizeDateStr(v.deliveryDate||"");
       if(!dd||dd.length<7)return;
       if(yrStr&&dd.substring(0,4)!==yrStr)return;
@@ -6589,7 +6768,7 @@ function renderLeadMonthlyChart(){
   // ── vehicles 기반 연도 목록 수집 ─────────────────────────────
   var yearSet={};
   list.forEach(function(c){
-    migrateVehicles(c).forEach(function(v){
+    getCustomerVehiclesForStats(c).forEach(function(v){ // ★ v118: 벤츠만 집계
       var dd=normalizeDateStr(v.deliveryDate||"");
       if(dd.length>=4) yearSet[dd.substring(0,4)]=true;
     });
@@ -6636,7 +6815,7 @@ function renderLeadMonthlyChart(){
   var leadMap={};
   list.forEach(function(c){
     var src=c.leadSource||"미기재";
-    migrateVehicles(c).forEach(function(v){
+    getCustomerVehiclesForStats(c).forEach(function(v){ // ★ v118: 벤츠만 집계
       var dd=normalizeDateStr(v.deliveryDate||"");
       if(dd.substring(0,7)!==targetYM)return;
       leadMap[src]=(leadMap[src]||0)+Math.max(1,parseInt(v.quantity,10)||1);
@@ -6673,7 +6852,7 @@ function renderLeadYearlyChart(){
   // vehicles 기반 연도 목록 수집
   var yrSet2={};
   list.forEach(function(c){
-    migrateVehicles(c).forEach(function(v){
+    getCustomerVehiclesForStats(c).forEach(function(v){ // ★ v118: 벤츠만 집계
       var dd=normalizeDateStr(v.deliveryDate||"");
       if(dd.length>=4) yrSet2[dd.substring(0,4)]=true;
     });
@@ -6702,7 +6881,7 @@ function renderLeadYearlyChart(){
   var leadMap2={};
   list.forEach(function(c){
     var src=c.leadSource||"미기재";
-    migrateVehicles(c).forEach(function(v){
+    getCustomerVehiclesForStats(c).forEach(function(v){ // ★ v118: 벤츠만 집계
       var dd=normalizeDateStr(v.deliveryDate||"");
       if(!dd||dd.length<7)return;
       if(_anLeadYear2&&dd.substring(0,4)!==_anLeadYear2)return;
@@ -6866,7 +7045,7 @@ function renderAnalytics(){
     var contractMap={}, deliveryMap={};
     months12.forEach(function(m){contractMap[m]=0;deliveryMap[m]=0;});
     list.forEach(function(c){
-      migrateVehicles(c).forEach(function(v){
+      getCustomerVehiclesForStats(c).forEach(function(v){ // ★ v118: 벤츠만 집계
         // 계약 집계
         var cd=normalizeDateStr(v.contractDate||"");
         if(cd.length>=7){
@@ -6944,6 +7123,7 @@ function syncFromSheet(isAuto){
   })
   .then(function(json){
     if(!json.success) throw new Error(json.message||"Apps Script 오류");
+    _lastServerVersion = String(json.serverVersion||""); // ★ v118 타브랜드 저장 가능 여부 확인용
 
     // ── 진단 정보 출력 ─────────────────────────────────────
     if(json.debug){
@@ -7475,8 +7655,8 @@ function openVehicleDocModalFromCard(btn){
     vehicleId:vehicleId,
     unitNo: quantity>=2 ? "1" : "",
     quantity:quantity,
-    modelName:val(".veh-modelName"),
-    detailModel:val(".veh-detailModel"),
+    modelName:vehicleDocModelName(readCardVehicleIdentity(card)),   // ★ v118: 타브랜드는 "아우디 A6"
+    detailModel:readCardVehicleIdentity(card).detailModel,
     purchaseMethod:val(".veh-purchaseMethod"),
     customerName:(document.getElementById("e-customerName").value||"").trim(),
     companyName:(document.getElementById("e-companyName").value||"").trim(),
